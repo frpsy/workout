@@ -20,6 +20,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      # 커밋된 Firebase 묶음이 소스·버전과 같은지 확인
+      - run: npm run build:firebase && git diff --exit-code js/vendor
       - run: npm test
       - run: npm run build:artifact
       # 사이트에 필요한 파일만 올립니다 (테스트·빌드 도구 제외)

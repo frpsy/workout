@@ -73,6 +73,10 @@ export function mountSettings(root, store) {
       <summary>기록 저장·백업</summary>
       <div class="set-body">
         <p class="sub" id="storeLabel"></p>
+        <div class="btnrow" id="acctRow" hidden>
+          <button type="button" class="btn" id="acctBtn"></button>
+        </div>
+        <p class="sub" id="acctHelp" hidden></p>
         <div class="btnrow">
           <button type="button" class="btn ghost" id="copyBak">백업 복사</button>
           <button type="button" class="btn ghost" id="saveBak">파일로 저장</button>
@@ -354,8 +358,33 @@ export function mountSettings(root, store) {
     pendingImport = null;
   });
 
+  /* ---------- 계정(Firebase 로그인) ---------- */
+
+  el('acctBtn').addEventListener('click', async () => {
+    const account = store.state.adapter.account;
+    if (!account) return;
+    el('acctBtn').disabled = true;
+    try {
+      if (account.signOut) await account.signOut();
+      else await account.signIn();
+    } catch {
+      bakStatus('로그인하지 못했습니다. 팝업 차단을 풀고 다시 시도해 주세요.', true);
+    }
+    el('acctBtn').disabled = false;
+  });
+
   return function render(state) {
     el('storeLabel').textContent = state.adapter.label;
+    const account = state.adapter.account;
+    el('acctRow').hidden = !account;
+    el('acctHelp').hidden = !account;
+    if (account) {
+      el('acctBtn').textContent = account.signOut ? '로그아웃' : 'Google로 로그인해 기기 간 동기화';
+      el('acctBtn').classList.toggle('ghost', !!account.signOut);
+      el('acctHelp').textContent = account.signOut
+        ? '로그아웃해도 계정의 기록은 지워지지 않습니다. 다시 로그인하면 보입니다.'
+        : '처음 로그인하면 이 브라우저의 기록이 계정으로 옮겨집니다(계정에 기록이 이미 있으면 옮기지 않으니 백업 가져오기를 쓰세요).';
+    }
     el('saveBak').hidden = !state.adapter.canDownload;
     for (const b of [el('saveCfg'), el('readBak'), el('impGo')]) b.disabled = !state.ready;
     // 저장소에서 설정이 바뀌었고 편집 중이 아니면 초안 갱신

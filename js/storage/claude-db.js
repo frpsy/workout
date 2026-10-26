@@ -1,7 +1,12 @@
-// claude.ai 아티팩트의 db 기능 어댑터. 계정에 저장되어 기기 간에 같은 기록이 보입니다.
+// 문서 db 어댑터. claude.ai 아티팩트의 db 기능과 Firebase(Firestore)가 같은 모양의 db를 주므로 함께 씁니다.
+//   db: { doc(path).onSnapshot/set, collection(path).onSnapshot, setMany?(map) }
 // 문서 구조: config/main, days/<YYYY-MM-DD>
 
 export function createClaudeDbAdapter(db) {
+  return createDbAdapter(db, { kind: 'claude-db', label: '계정에 저장되어 폰과 PC에서 같은 기록이 보입니다.' });
+}
+
+export function createDbAdapter(db, { kind, label, account }) {
   const chains = new Map();
 
   // 한 문서에는 한 번에 하나씩만 쓰도록 순서를 맞춥니다.
@@ -13,10 +18,11 @@ export function createClaudeDbAdapter(db) {
   }
 
   return {
-    kind: 'claude-db',
+    kind,
     synced: true,
-    canDownload: false,
-    label: '계정에 저장되어 폰과 PC에서 같은 기록이 보입니다.',
+    canDownload: typeof document !== 'undefined' && document.documentElement.classList.contains('standalone'),
+    label,
+    account,
 
     subscribe({ onConfig, onDays, onError }) {
       const unsubs = [
@@ -39,5 +45,16 @@ export function createClaudeDbAdapter(db) {
     saveDay(date, doc) {
       return enqueue('days/' + date, () => db.doc('days/' + date).set(doc));
     },
+
+    // 백업 가져오기: 일괄 쓰기가 되는 db만
+    ...(db.setMany
+      ? {
+          saveDays(docs) {
+            const map = {};
+            for (const [date, doc] of Object.entries(docs)) map['days/' + date] = doc;
+            return db.setMany(map);
+          },
+        }
+      : {}),
   };
 }

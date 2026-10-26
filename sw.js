@@ -20,11 +20,13 @@ const ASSETS = [
   './js/backup.js',
   './js/config.js',
   './js/dates.js',
+  './js/firebase-config.js',
   './js/main.js',
   './js/model.js',
   './js/progression.js',
   './js/stats.js',
   './js/storage/claude-db.js',
+  './js/storage/firebase.js',
   './js/storage/index.js',
   './js/storage/local.js',
   './js/store.js',
@@ -33,6 +35,7 @@ const ASSETS = [
   './js/ui/plan.js',
   './js/ui/settings.js',
   './js/ui/today.js',
+  './js/vendor/firebase.js',
 ];
 
 self.addEventListener('install', (e) => {
