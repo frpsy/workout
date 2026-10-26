@@ -3,6 +3,7 @@
 import { addDays, diffDays, labelMD, mondayOf, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
 import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent } from '../stats.js';
+import { fmtKo } from '../session.js';
 import { $, esc } from './dom.js';
 
 const WEEKS = 5; // 달력 전체 주 수: 최근 2주는 바로, 앞의 3주는 자세히 안에
@@ -33,6 +34,7 @@ export function mountHistory(root, store) {
           <dl class="totals" id="summary"></dl>
           <div class="glyphs" id="glyphs" role="img"></div>
           <p class="tallytext" id="tallyText"></p>
+          <p class="tallytext" id="workText"></p>
         </section>
         <section>
           <h2 class="sec">종목별 꾸준함</h2>
@@ -115,6 +117,19 @@ export function mountHistory(root, store) {
     glyphs.innerHTML = g;
     glyphs.setAttribute('aria-label', `모든 운동을 마친 날 ${complete}일`);
     $('#tallyText', root).innerHTML = `모두 마친 날 <b>${complete}</b>일`;
+
+    /* 운동시간: 오늘과 최근 7일 (스톱워치로 잰 총 운동시간) */
+    const secOf = (d) => (days[d] && days[d].workSec) || 0;
+    let week = 0;
+    let active = 0;
+    for (let i = 0; i < 7; i++) {
+      const s = secOf(addDays(today, -i));
+      week += s;
+      if (s) active++;
+    }
+    $('#workText', root).innerHTML = week
+      ? `운동시간 오늘 <b>${secOf(today) ? fmtKo(secOf(today)) : '없음'}</b> · 최근 7일 <b>${fmtKo(week)}</b> (하루 평균 ${fmtKo(Math.round(week / active))})`
+      : '운동시간은 위쪽 ▶ 시작·■ 종료로 잴 수 있습니다.';
 
     /* 연속·달성률 (모든 운동을 마친 날 기준) */
     const opts = { rest, startDate: config.startDate };

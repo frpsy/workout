@@ -310,35 +310,23 @@ test('설정: 계정이 있으면 로그인·로그아웃 버튼을 보여 주�
   assert.equal(root.querySelector('#acctRow').hidden, true, '계정 기능이 없으면 숨김');
 });
 
-test('타이머: 한 줄 UI에서 시간 조절·시작·중지, 운동/휴식 모드 전환, 끝남 알림', (t) => {
+test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
   document.body.innerHTML = '<div id="timer"></div>';
   const root = document.getElementById('timer');
   mountTimer(root);
   const time = () => root.querySelector('#tTime').textContent;
-  const mode = () => root.querySelector('#tMode').textContent;
-  assert.equal(mode(), '휴식');
-  assert.equal(time(), '1:00', '휴식 기본은 60초');
+  assert.equal(time(), '1:00', '기본은 60초');
   root.querySelector('#tPlus').click();
   assert.equal(time(), '1:15');
   root.querySelector('#tMinus').click();
   root.querySelector('#tMinus').click();
   assert.equal(time(), '0:45');
-  const saved = () => JSON.parse(localStorage.getItem('workout-check:timer'));
-  assert.equal(saved().rest, 45, '마지막 시간 기억');
-
-  root.querySelector('#tMode').click(); // 운동 모드: 따로 정한 시간
-  assert.equal(mode(), '운동');
-  assert.equal(time(), '0:30', '운동 기본은 30초');
-  root.querySelector('#tPlus').click();
-  assert.equal(time(), '0:45');
-  assert.equal(saved().work, 45);
-  assert.equal(root.querySelector('#timerBar').dataset.mode, 'work');
+  assert.equal(JSON.parse(localStorage.getItem('workout-check:timer')).duration, 45, '마지막 시간 기억');
 
   root.querySelector('#tGo').click();
   assert.equal(root.querySelector('#tGo').textContent, '중지');
-  assert.equal(root.querySelector('#tMode').disabled, true, '실행 중에는 모드를 못 바꿈');
   mock.timers.tick(10_000);
   assert.equal(time(), '0:35');
   root.querySelector('#tGo').click(); // 중지
@@ -348,9 +336,8 @@ test('타이머: 한 줄 UI에서 시간 조절·시작·중지, 운동/휴식 �
   root.querySelector('#tGo').click();
   mock.timers.tick(45_500);
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), true, '끝나면 알림 표시');
-  assert.equal(root.querySelector('#tDone').textContent, '운동 시간이 끝났습니다');
-  assert.equal(mode(), '휴식', '운동이 끝나면 휴식 모드로 넘어감');
-  assert.equal(time(), '0:45', '휴식 시간으로 준비됨');
+  assert.equal(root.querySelector('#tDone').textContent, '휴식이 끝났습니다');
+  assert.equal(root.querySelector('#tGo').textContent, '시작');
   mock.timers.tick(4_500);
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), false, '잠시 뒤 표시가 사라짐');
 });
@@ -391,4 +378,67 @@ test('오늘: 초 단위 운동은 시작·종료로 시간을 재서 그 세트
   assert.equal(b.querySelector('[data-f="watch"]').textContent, '종료');
   store.actions.flushAll();
   t2.store.actions.flushAll();
+});
+
+test('오늘: 시작을 누르면 시간이 흐르고, 종료하면 총 운동시간이 기록됨', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const btn = root.querySelector('#wBtn');
+  const time = root.querySelector('#wTime');
+  assert.equal(btn.textContent, '▶ 시작');
+  assert.equal(time.textContent, '', '기록이 없으면 비어 있음');
+  btn.click();
+  assert.equal(btn.textContent, '■ 종료');
+  mock.timers.tick(5_000);
+  assert.equal(time.textContent, '0:05', '시간이 흐름');
+  mock.timers.tick(65_000);
+  assert.equal(time.textContent, '1:10');
+  btn.click();
+  assert.equal(btn.textContent, '▶ 시작');
+  assert.equal(store.state.days[todayStr()].workSec, 70, '종료하면 잰 초가 기록됨');
+  assert.equal(time.textContent, '총 1분', '종료한 뒤에는 그날 총 운동시간을 보여 줌');
+  mock.timers.tick(10_000);
+  assert.equal(time.textContent, '총 1분', '종료 뒤에는 더 흐르지 않음');
+
+  btn.click();
+  mock.timers.tick(3_600_000);
+  btn.click();
+  assert.equal(store.state.days[todayStr()].workSec, 3670, '같은 날 여러 번이면 합산');
+  assert.equal(time.textContent, '총 1시간 1분');
+  store.actions.flushAll();
+});
+
+test('오늘: 앱을 다시 열어도 재던 시간이 이어짐', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  localStorage.setItem('workout-check:session', JSON.stringify({ startAt: Date.now() - 90_000, date: todayStr() }));
+  const { store, root } = setup(today);
+  assert.equal(root.querySelector('#wBtn').textContent, '■ 종료', '재던 중으로 열림');
+  assert.equal(root.querySelector('#wTime').textContent, '1:30');
+  mock.timers.tick(2_000);
+  assert.equal(root.querySelector('#wTime').textContent, '1:32', '이어서 흐름');
+  root.querySelector('#wBtn').click();
+  assert.equal(store.state.days[todayStr()].workSec, 92);
+  assert.equal(localStorage.getItem('workout-check:session'), null, '종료하면 시작 기록 삭제');
+  store.actions.flushAll();
+});
+
+test('기록: 자세히에 오늘·최근 7일 운동시간과 하루 평균을 보여 줌', () => {
+  const days = {
+    [todayStr()]: { entries: { push: { done: true } }, workSec: 3900 },
+    [addDays(todayStr(), -2)]: { entries: {}, workSec: 1800 },
+    [addDays(todayStr(), -10)]: { entries: {}, workSec: 9999 },
+  };
+  const { root } = setup(history, { days });
+  root.querySelector('#moreBox').open = true;
+  root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
+  const text = root.querySelector('#workText').textContent;
+  assert.match(text, /오늘 1시간 5분/);
+  assert.match(text, /최근 7일 1시간 35분/, '7일 밖(10일 전)은 빠짐');
+  assert.match(text, /하루 평균 47분/);
+  const none = setup(history, { days: fullDays(2) });
+  none.root.querySelector('#moreBox').open = true;
+  none.root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
+  assert.match(none.root.querySelector('#workText').textContent, /▶ 시작/, '기록이 없으면 사용법 안내');
 });

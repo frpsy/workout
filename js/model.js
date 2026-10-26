@@ -5,7 +5,8 @@ import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LIMITS, SCHEMA_VERSION, 
 import { isDateStr } from './dates.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-const RESERVED = new Set(['date', 'v', 'entries']);
+const RESERVED = new Set(['date', 'v', 'entries', 'workSec']);
+const MAX_WORK_SEC = 86400; // 하루 총 운동시간 상한(24시간)
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const inRange = (v, [lo, hi]) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -81,6 +82,7 @@ export function normalizeConfig(raw, fallbackStart) {
 export function normalizeDay(raw) {
   const entries = {};
   if (!isObj(raw)) return { entries };
+  const workSec = inRange(raw.workSec, [1, MAX_WORK_SEC]) ? Math.round(raw.workSec) : 0;
   const src = isObj(raw.entries) ? raw.entries : raw;
   for (const [id, v] of Object.entries(src)) {
     if (RESERVED.has(id) || !ID_RE.test(id) || !isObj(v)) continue;
@@ -90,11 +92,12 @@ export function normalizeDay(raw) {
     if (inRange(v.sets, LIMITS.sets)) e.sets = Math.round(v.sets);
     entries[id] = e;
   }
-  return { entries };
+  return workSec ? { entries, workSec } : { entries };
 }
 
 export function serializeDay(date, day) {
-  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}) };
+  // workSec: 그날 총 운동시간(초). 없으면 필드도 두지 않음
+  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(day.workSec ? { workSec: day.workSec } : {}) };
 }
 
 export function serializeConfig(config) {
@@ -130,7 +133,7 @@ export function validateConfig(cfg) {
 
 export function exportPayload(config, days) {
   const out = {};
-  for (const [d, day] of Object.entries(days)) if (Object.keys(day.entries).length) out[d] = serializeDay(d, day);
+  for (const [d, day] of Object.entries(days)) if (Object.keys(day.entries).length || day.workSec) out[d] = serializeDay(d, day);
   return { app: 'workout-check', v: SCHEMA_VERSION, exportedAt: new Date().toISOString(), config: serializeConfig(config), days: out };
 }
 
@@ -148,7 +151,7 @@ export function parseImport(text, fallbackStart) {
   for (const [d, v] of Object.entries(raw.days)) {
     if (!isDateStr(d)) continue;
     const day = normalizeDay(v);
-    if (Object.keys(day.entries).length) days[d] = day;
+    if (Object.keys(day.entries).length || day.workSec) days[d] = day;
   }
   return { config, days };
 }
