@@ -35,7 +35,7 @@ export const PRESETS = [
   { name: '플랭크', unit: 'sec', base: 30, step: 5 },
   { name: '런지', unit: 'reps', base: 20, step: 2 },
   { name: '딥스', unit: 'reps', base: 5, step: 1 },
-  { name: '윗몸일으키기', unit: 'reps', base: 20, step: 3 },
+  { name: '덤벨', unit: 'reps', base: 10, step: 1 },
   { name: '버피', unit: 'reps', base: 10, step: 1 },
 ];
 
