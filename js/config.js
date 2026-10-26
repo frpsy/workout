@@ -5,7 +5,7 @@ export const SCHEMA_VERSION = 2;
 /** 단위: label은 화면 표기, inc는 +/− 버튼을 한 번 누를 때, big은 꾹 누르고 있을 때 바뀌는 양 (개수는 1·5) */
 export const UNITS = {
   reps: { label: '개', inc: 1, big: 5 },
-  sec: { label: '초', inc: 5, big: 15 },
+  sec: { label: '초', inc: 5, big: 15, timed: true }, // timed: 행에 시작/종료 버튼으로 시간을 재서 기록
 };
 
 /** 목표는 '세트당 개수 × 세트 수' (예: 15 × 3). 기본 3세트 */

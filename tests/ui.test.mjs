@@ -310,23 +310,35 @@ test('설정: 계정이 있으면 로그인·로그아웃 버튼을 보여 주�
   assert.equal(root.querySelector('#acctRow').hidden, true, '계정 기능이 없으면 숨김');
 });
 
-test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림', (t) => {
+test('타이머: 한 줄 UI에서 시간 조절·시작·중지, 운동/휴식 모드 전환, 끝남 알림', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
   document.body.innerHTML = '<div id="timer"></div>';
   const root = document.getElementById('timer');
   mountTimer(root);
   const time = () => root.querySelector('#tTime').textContent;
-  assert.equal(time(), '1:00', '기본은 60초');
+  const mode = () => root.querySelector('#tMode').textContent;
+  assert.equal(mode(), '휴식');
+  assert.equal(time(), '1:00', '휴식 기본은 60초');
   root.querySelector('#tPlus').click();
   assert.equal(time(), '1:15');
   root.querySelector('#tMinus').click();
   root.querySelector('#tMinus').click();
   assert.equal(time(), '0:45');
-  assert.equal(JSON.parse(localStorage.getItem('workout-check:timer')).duration, 45, '마지막 시간 기억');
+  const saved = () => JSON.parse(localStorage.getItem('workout-check:timer'));
+  assert.equal(saved().rest, 45, '마지막 시간 기억');
+
+  root.querySelector('#tMode').click(); // 운동 모드: 따로 정한 시간
+  assert.equal(mode(), '운동');
+  assert.equal(time(), '0:30', '운동 기본은 30초');
+  root.querySelector('#tPlus').click();
+  assert.equal(time(), '0:45');
+  assert.equal(saved().work, 45);
+  assert.equal(root.querySelector('#timerBar').dataset.mode, 'work');
 
   root.querySelector('#tGo').click();
   assert.equal(root.querySelector('#tGo').textContent, '중지');
+  assert.equal(root.querySelector('#tMode').disabled, true, '실행 중에는 모드를 못 바꿈');
   mock.timers.tick(10_000);
   assert.equal(time(), '0:35');
   root.querySelector('#tGo').click(); // 중지
@@ -336,8 +348,47 @@ test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림',
   root.querySelector('#tGo').click();
   mock.timers.tick(45_500);
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), true, '끝나면 알림 표시');
-  assert.equal(root.querySelector('#tDone').textContent, '휴식이 끝났습니다');
-  assert.equal(root.querySelector('#tGo').textContent, '시작');
+  assert.equal(root.querySelector('#tDone').textContent, '운동 시간이 끝났습니다');
+  assert.equal(mode(), '휴식', '운동이 끝나면 휴식 모드로 넘어감');
+  assert.equal(time(), '0:45', '휴식 시간으로 준비됨');
   mock.timers.tick(4_500);
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), false, '잠시 뒤 표시가 사라짐');
+});
+
+test('오늘: 초 단위 운동은 시작·종료로 시간을 재서 그 세트의 기록으로 넣음 (개수 운동에는 버튼 없음)', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const plank = { id: 'plank', name: '플랭크', unit: 'sec', base: 30, step: 5, sets: 3, active: true };
+  const push = { id: 'push', name: '푸쉬업', unit: 'reps', base: 15, step: 2, sets: 3, active: true };
+  const { store, root } = setup(today, { config: { startDate: todayStr(), exercises: [plank, push] } });
+  const [rowPlank, rowPush] = root.querySelectorAll('.row');
+  assert.equal(rowPush.querySelector('[data-f="watch"]'), null, '개수 운동에는 시간 재기 버튼이 없음');
+  const watch = rowPlank.querySelector('[data-f="watch"]');
+  const cnt = rowPlank.querySelector('[data-f="cnt"]');
+  assert.equal(watch.textContent, '시작');
+  assert.equal(cnt.value, '30', '시작 전에는 목표 초');
+  watch.click();
+  assert.equal(watch.textContent, '종료');
+  assert.ok(rowPlank.classList.contains('timing'));
+  mock.timers.tick(12_000);
+  assert.equal(cnt.value, '12', '재는 동안 경과 초가 보임');
+  watch.click();
+  assert.equal(watch.textContent, '시작');
+  assert.equal(rowPlank.classList.contains('timing'), false);
+  assert.equal(cnt.value, '12');
+  assert.equal(store.state.days[todayStr()].entries.plank.count, 12, '종료하면 잰 초가 실제 기록으로 저장');
+  assert.equal(store.state.days[todayStr()].entries.plank.done, false, '완료 체크는 직접 함');
+
+  // 한 번에 한 종목만: 다른 종목을 시작하면 앞의 것은 기록하고 끝남
+  const plank2 = { ...plank, id: 'wall', name: '벽 서기' };
+  const t2 = setup(today, { config: { startDate: todayStr(), exercises: [plank, plank2] } });
+  const [a, b] = t2.root.querySelectorAll('.row');
+  a.querySelector('[data-f="watch"]').click();
+  mock.timers.tick(7_000);
+  b.querySelector('[data-f="watch"]').click();
+  assert.equal(t2.store.state.days[todayStr()].entries.plank.count, 7, '앞 종목은 그때까지 잰 값이 기록됨');
+  assert.equal(a.querySelector('[data-f="watch"]').textContent, '시작');
+  assert.equal(b.querySelector('[data-f="watch"]').textContent, '종료');
+  store.actions.flushAll();
+  t2.store.actions.flushAll();
 });
