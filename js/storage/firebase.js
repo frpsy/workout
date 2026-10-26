@@ -42,18 +42,35 @@ export async function createFirebaseStorage({ config, createLocal, readLocal, lo
     };
   }
 
+  const account = {
+    email: user.email || '',
+    async signOut() {
+      await fb.signOut();
+      reload();
+    },
+  };
+
   const db = fb.db(user.uid);
+  // Firestore를 아직 만들지 않았거나 규칙이 막고 있으면 기록을 읽고 쓸 수 없습니다.
+  // 그대로 쓰면 저장이 모두 실패하므로, 이 경우에는 브라우저 저장으로 열고 이유를 알립니다.
+  try {
+    await db.doc('config/main').get();
+  } catch (e) {
+    if (e && e.code === 'permission-denied') {
+      return {
+        ...createLocal(),
+        label: 'Firebase에 접근할 수 없어(Firestore 생성·규칙 설정 확인) 이 브라우저에만 저장합니다. 설정을 마치면 새로고침하세요.',
+        account,
+      };
+    }
+    // 오프라인 등은 그대로 진행: 기기에 쌓아 두었다가 연결되면 올립니다.
+  }
+
   await migrateLocal(db, readLocal);
   return createDbAdapter(db, {
     kind: 'firebase',
     label: `${user.email || '계정'}에 저장되어 폰과 PC에서 같은 기록이 보입니다.`,
-    account: {
-      email: user.email || '',
-      async signOut() {
-        await fb.signOut();
-        reload();
-      },
-    },
+    account,
   });
 }
 
