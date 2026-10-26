@@ -72,3 +72,14 @@ test('쉬는 요일: 범위 밖·중복 정리, 7일 모두는 받지 않음, �
   assert.deepEqual(serializeConfig(c).restDays, [0]);
   assert.ok(validateConfig({ ...c, restDays: [0, 1, 2, 3, 4, 5, 6] }).length > 0);
 });
+
+test('세트: 기본 3, 범위 안만 받고 기록에도 보존', async () => {
+  const { normalizeExercise } = await import('../js/model.js');
+  const base = { id: 'x', name: 'x', unit: 'reps', base: 5, step: 1 };
+  assert.equal(normalizeExercise(base).sets, 3, '이전 설정에는 세트가 없음');
+  assert.equal(normalizeExercise({ ...base, sets: 5 }).sets, 5);
+  assert.equal(normalizeExercise({ ...base, sets: 0 }).sets, 3);
+  assert.equal(normalizeExercise({ ...base, sets: 99 }).sets, 3);
+  assert.equal(normalizeDay({ entries: { x: { done: true, count: 10, sets: 4 } } }).entries.x.sets, 4);
+  assert.ok(validateConfig({ startDate: '2026-10-26', exercises: [{ ...base, sets: 0, active: true }], plan: {} }).some((m) => m.includes('세트')));
+});

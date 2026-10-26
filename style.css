@@ -179,7 +179,7 @@ input[type="file"] { font-size: 13px; max-width: 100%; min-width: 0; flex: 1; }
 .exitem.off { opacity: 0.6; }
 .exrow1 { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 8px; }
 .exrow1 input { width: 100%; font-weight: 700; }
-.exrow2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.exrow2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .exrow2 label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .exrow2 input { width: 100%; }
 .exrow3 { display: flex; align-items: center; gap: 6px; }
@@ -206,3 +206,7 @@ input[type="file"] { font-size: 13px; max-width: 100%; min-width: 0; flex: 1; }
 .restdays { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .restdays .radio { min-height: 40px; }
 .backup-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+
+/* 세트 */
+.goal .sets { font-family: var(--font-num); font-size: 30px; line-height: 1; font-weight: 700; color: var(--accent); margin-left: 2px; }
+td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; color: var(--muted); }

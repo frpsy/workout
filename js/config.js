@@ -8,10 +8,13 @@ export const UNITS = {
   sec: { label: '초', inc: 5 },
 };
 
+/** 목표는 '세트당 개수 × 세트 수' (예: 15 × 3). 기본 3세트 */
+export const DEFAULT_SETS = 3;
+
 export const DEFAULT_EXERCISES = [
-  { id: 'push', name: '푸쉬업', unit: 'reps', base: 15, step: 2, active: true },
-  { id: 'pull', name: '풀업', unit: 'reps', base: 3, step: 0.5, active: true },
-  { id: 'squat', name: '스쿼트', unit: 'reps', base: 30, step: 5, active: true },
+  { id: 'push', name: '푸쉬업', unit: 'reps', base: 15, step: 2, sets: DEFAULT_SETS, active: true },
+  { id: 'pull', name: '풀업', unit: 'reps', base: 3, step: 0.5, sets: DEFAULT_SETS, active: true },
+  { id: 'squat', name: '스쿼트', unit: 'reps', base: 30, step: 5, sets: DEFAULT_SETS, active: true },
 ];
 
 /**
@@ -41,6 +44,7 @@ export const LIMITS = {
   nameLength: 20,
   base: [1, 9999],
   step: [0, 500],
+  sets: [1, 10],
   count: [0, 99999],
   recoveryEvery: [0, 12],
   recoveryRatio: [0.3, 1],

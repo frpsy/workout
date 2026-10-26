@@ -1,0 +1,14 @@
+// Firestore 보안 규칙: 로그인한 본인만 자기 기록(users/<uid>/…)을 읽고 쓸 수 있습니다.
+// Firebase 콘솔 → Firestore Database → 규칙에 붙여 넣고 게시하세요. (firebase deploy --only firestore:rules 도 가능)
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/config/{doc} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /users/{uid}/days/{date} {
+      allow read, write: if request.auth != null && request.auth.uid == uid
+        && date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+  }
+}

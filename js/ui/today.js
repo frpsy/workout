@@ -74,11 +74,11 @@ export function mountToday(root, store) {
       el.innerHTML = `
         <div class="info">
           <h2 class="name">${esc(ex.name)}</h2>
-          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${esc(unit.label)}</span></p>
+          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${esc(unit.label)}</span><span class="sets" data-f="sets"></span></p>
         </div>
         <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${esc(ex.name)} 완료">${CHECK_SVG}</button>
         <div class="actual">
-          <label for="cnt-${ex.id}">실제</label>
+          <label for="cnt-${ex.id}">세트당</label>
           <div class="stepper">
             <button type="button" data-f="minus" aria-label="${esc(ex.name)} ${unit.inc}${esc(unit.label)} 줄이기">−</button>
             <input id="cnt-${ex.id}" data-f="cnt" type="number" inputmode="numeric" min="0" max="99999">
@@ -88,7 +88,7 @@ export function mountToday(root, store) {
         </div>
         <p class="hint" data-f="hint"></p>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
-      const r = { el, ex, target: q('target'), check: q('check'), minus: q('minus'), plus: q('plus'), cnt: q('cnt'), delta: q('delta'), hint: q('hint') };
+      const r = { el, ex, target: q('target'), sets: q('sets'), check: q('check'), minus: q('minus'), plus: q('plus'), cnt: q('cnt'), delta: q('delta'), hint: q('hint') };
       r.check.addEventListener('click', () => {
         haptic();
         actions.toggle(ex.id);
@@ -109,16 +109,17 @@ export function mountToday(root, store) {
     const w = Math.max(0, weekIndex(state.selected, config.startDate));
     const unit = UNITS[ex.unit].label;
     const next = res.targetForWeek(ex, w + 1);
+    const sets = ex.sets > 1 ? ` × ${ex.sets}` : '';
     const nextRec = isRecoveryWeek(w + 1, config.plan) ? ' (회복주)' : '';
     if (config.plan.mode === 'adaptive' && weekIndex(today, config.startDate) === w) {
       const doneDays = res.ctx.counts(ex.id).get(w) || 0;
       const need = Math.max(0, config.plan.passDays - doneDays);
-      if (isRecoveryWeek(w, config.plan)) return `이번 주 ${doneDays}일 · 다음 주 ${next}${unit}${nextRec}`;
+      if (isRecoveryWeek(w, config.plan)) return `이번 주 ${doneDays}일 · 다음 주 ${next}${unit}${sets}${nextRec}`;
       return need > 0
-        ? `이번 주 ${doneDays}일 · ${need}일 더 하면 다음 주 ${next}${unit}${nextRec}`
-        : `이번 주 ${doneDays}일 · 다음 주 ${next}${unit}${nextRec}`;
+        ? `이번 주 ${doneDays}일 · ${need}일 더 하면 다음 주 ${next}${unit}${sets}${nextRec}`
+        : `이번 주 ${doneDays}일 · 다음 주 ${next}${unit}${sets}${nextRec}`;
     }
-    return `다음 주 ${next}${unit}${nextRec}`;
+    return `다음 주 ${next}${unit}${sets}${nextRec}`;
   }
 
   return function render(state) {
@@ -146,6 +147,7 @@ export function mountToday(root, store) {
       const v = store.view(selected, r.ex, res);
       if (v.done) done++;
       r.target.textContent = v.target;
+      r.sets.textContent = v.sets > 1 ? `× ${v.sets}` : '';
       r.el.classList.toggle('done', v.done);
       r.check.setAttribute('aria-pressed', String(v.done));
       for (const b of [r.check, r.minus, r.plus, r.cnt]) b.disabled = !state.ready;

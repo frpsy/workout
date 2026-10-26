@@ -70,6 +70,15 @@ test('오늘: 체크 버튼을 누르면 완료 표시와 진행 문구가 바�
   store.actions.flushAll();
 });
 
+test('오늘: 목표가 "15 × 3"처럼 세트와 함께 보이고 다음 주 안내에도 붙음', () => {
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  assert.equal(row.querySelector('[data-f="target"]').textContent, '15');
+  assert.equal(row.querySelector('[data-f="sets"]').textContent, '× 3');
+  assert.match(row.querySelector('[data-f="hint"]').textContent, /다음 주 17개 × 3/);
+  store.actions.flushAll();
+});
+
 test('오늘: 실제 개수 +를 누르면 목표와의 차이가 보임', () => {
   const { store, root } = setup(today);
   root.querySelector('.row [data-f="plus"]').click();
@@ -118,6 +127,7 @@ test('설정: 추천 운동을 추가하고 쉬는 요일을 골라 저장', asy
   assert.equal(cfg.exercises.length, 4);
   assert.equal(cfg.exercises[3].name, '플랭크');
   assert.equal(cfg.exercises[3].since, todayStr());
+  assert.equal(cfg.exercises[3].sets, 3);
   assert.deepEqual(cfg.restDays, [0]);
 });
 
@@ -150,4 +160,26 @@ test('설정: 백업 복사를 하면 마지막 백업일이 남아 안내가 �
   await tick();
   assert.equal(document.getElementById('bakNote').hidden, true);
   assert.equal(JSON.parse(localStorage.getItem('workout-check:backup')).last, todayStr());
+});
+
+test('설정: 계정이 있으면 로그인·로그아웃 버튼을 보여 주고 누르면 호출', async () => {
+  let called = '';
+  const signedOut = { ...adapter(), account: { signIn: async () => void (called = 'in') } };
+  const signedIn = { ...adapter(), account: { email: 'a@b.c', signOut: async () => void (called = 'out') } };
+  for (const [ad, text, want] of [[signedOut, 'Google로 로그인해 기기 간 동기화', 'in'], [signedIn, '로그아웃', 'out']]) {
+    document.body.innerHTML = '<div id="settings"></div>';
+    const store = createStore(ad);
+    const root = document.getElementById('settings');
+    store.subscribe(mountSettings(root, store));
+    assert.equal(root.querySelector('#acctRow').hidden, false);
+    assert.equal(root.querySelector('#acctBtn').textContent, text);
+    root.querySelector('#acctBtn').click();
+    await tick();
+    assert.equal(called, want);
+  }
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(adapter());
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  assert.equal(root.querySelector('#acctRow').hidden, true, '계정 기능이 없으면 숨김');
 });

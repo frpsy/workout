@@ -1,6 +1,6 @@
 // 운동·목표 설정과 백업
 
-import { LIMITS, PRESETS, UNITS } from '../config.js';
+import { DEFAULT_SETS, LIMITS, PRESETS, UNITS } from '../config.js';
 import { writeBackupMeta } from '../backup.js';
 import { DOW, todayStr } from '../dates.js';
 import { exportPayload, newExerciseId, parseImport, validateConfig } from '../model.js';
@@ -65,7 +65,7 @@ export function mountSettings(root, store) {
           <button type="button" class="btn" id="saveCfg">저장</button>
           <button type="button" class="btn ghost" id="resetCfg">되돌리기</button>
         </div>
-        <p class="sub">풀업처럼 0.5를 넣으면 2주에 1개씩 늘어납니다. 이미 완료한 날의 목표는 바뀌지 않습니다.</p>
+        <p class="sub">목표는 세트당 개수 × 세트 수입니다(예: 15 × 3). 풀업처럼 0.5를 넣으면 2주에 1개씩 늘어납니다. 이미 완료한 날의 목표와 세트는 바뀌지 않습니다.</p>
       </div>
     </details>
 
@@ -73,6 +73,10 @@ export function mountSettings(root, store) {
       <summary>기록 저장·백업</summary>
       <div class="set-body">
         <p class="sub" id="storeLabel"></p>
+        <div class="btnrow" id="acctRow" hidden>
+          <button type="button" class="btn" id="acctBtn"></button>
+        </div>
+        <p class="sub" id="acctHelp" hidden></p>
         <div class="btnrow">
           <button type="button" class="btn ghost" id="copyBak">백업 복사</button>
           <button type="button" class="btn ghost" id="saveBak">파일로 저장</button>
@@ -138,6 +142,7 @@ export function mountSettings(root, store) {
         <div class="exrow2">
           <label>시작 <input data-k="base" type="number" inputmode="numeric" min="1" max="9999" value="${e.base}" id="bs-${e.id}"></label>
           <label>주당 + <input data-k="step" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="${e.step}" id="st-${e.id}"></label>
+          <label>세트 <input data-k="sets" type="number" inputmode="numeric" min="${LIMITS.sets[0]}" max="${LIMITS.sets[1]}" value="${e.sets}" id="se-${e.id}"></label>
         </div>
         <div class="exrow3">
           <label class="radio"><input type="checkbox" data-k="active"${e.active ? ' checked' : ''} id="ac-${e.id}"> 사용</label>
@@ -168,6 +173,7 @@ export function mountSettings(root, store) {
     else if (k === 'unit') ex.unit = ev.target.value;
     else if (k === 'base') ex.base = parseFloat(ev.target.value);
     else if (k === 'step') ex.step = parseFloat(ev.target.value);
+    else if (k === 'sets') ex.sets = parseInt(ev.target.value, 10);
     else if (k === 'active') {
       ex.active = ev.target.checked;
       item.classList.toggle('off', !ex.active);
@@ -211,9 +217,9 @@ export function mountSettings(root, store) {
   el('presets').addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-preset]');
     if (!b) return;
-    const p = b.dataset.preset === 'new' ? { name: '', unit: 'reps', base: 10, step: 1 } : PRESETS[+b.dataset.preset];
+    const p = b.dataset.preset === 'new' ? { name: '', unit: 'reps', base: 10, step: 1, sets: DEFAULT_SETS } : PRESETS[+b.dataset.preset];
     const id = newExerciseId(new Set(draft.exercises.map((e) => e.id)));
-    draft.exercises.push({ id, name: p.name, unit: p.unit, base: p.base, step: p.step, active: true, since: todayStr() });
+    draft.exercises.push({ id, name: p.name, unit: p.unit, base: p.base, step: p.step, sets: p.sets || DEFAULT_SETS, active: true, since: todayStr() });
     markDirty();
     renderList();
     const input = el('exList').querySelector(`[data-id="${id}"] .exname`);
@@ -354,8 +360,33 @@ export function mountSettings(root, store) {
     pendingImport = null;
   });
 
+  /* ---------- 계정(Firebase 로그인) ---------- */
+
+  el('acctBtn').addEventListener('click', async () => {
+    const account = store.state.adapter.account;
+    if (!account) return;
+    el('acctBtn').disabled = true;
+    try {
+      if (account.signOut) await account.signOut();
+      else await account.signIn();
+    } catch {
+      bakStatus('로그인하지 못했습니다. 팝업 차단을 풀고 다시 시도해 주세요.', true);
+    }
+    el('acctBtn').disabled = false;
+  });
+
   return function render(state) {
     el('storeLabel').textContent = state.adapter.label;
+    const account = state.adapter.account;
+    el('acctRow').hidden = !account;
+    el('acctHelp').hidden = !account;
+    if (account) {
+      el('acctBtn').textContent = account.signOut ? '로그아웃' : 'Google로 로그인해 기기 간 동기화';
+      el('acctBtn').classList.toggle('ghost', !!account.signOut);
+      el('acctHelp').textContent = account.signOut
+        ? '로그아웃해도 계정의 기록은 지워지지 않습니다. 다시 로그인하면 보입니다.'
+        : '처음 로그인하면 이 브라우저의 기록이 계정으로 옮겨집니다(계정에 기록이 이미 있으면 옮기지 않으니 백업 가져오기를 쓰세요).';
+    }
     el('saveBak').hidden = !state.adapter.canDownload;
     for (const b of [el('saveCfg'), el('readBak'), el('impGo')]) b.disabled = !state.ready;
     // 저장소에서 설정이 바뀌었고 편집 중이 아니면 초안 갱신

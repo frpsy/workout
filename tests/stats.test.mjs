@@ -28,6 +28,12 @@ test('운동이 하나도 없으면 완료로 세지 않음', () => {
   assert.equal(completeDayCount({ d: full }, []), 0);
 });
 
+test('누적·하루 최고는 세트당 개수 × 세트 수 (세트 없는 기록은 1세트)', () => {
+  const days = { d1: { entries: { a: { done: true, count: 15, sets: 3 } } }, d2: { entries: { a: { done: true, count: 10 } } } };
+  assert.deepEqual(totals(days, [{ id: 'a' }]), { a: 55 });
+  assert.deepEqual(bests(days, [{ id: 'a' }]), { a: 45 });
+});
+
 test('하루 최고: 완료한 날 중 가장 많은 값', () => {
   const days = { d1: full, d2: { entries: { a: { done: true, count: 14 }, b: { done: false, count: 99 } } } };
   assert.deepEqual(bests(days, [{ id: 'a' }, { id: 'b' }]), { a: 14, b: 5 });

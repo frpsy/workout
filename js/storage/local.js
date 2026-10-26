@@ -29,6 +29,12 @@ function read() {
   return null;
 }
 
+/** 이 브라우저에 저장된 { config, days } (없으면 null). 계정으로 옮길 때 씁니다. */
+export function readLocalData() {
+  const o = read();
+  return o && (o.config || Object.keys(o.days || {}).length) ? { config: o.config || null, days: o.days || {} } : null;
+}
+
 export function createLocalAdapter() {
   const available = probe();
   const loaded = read();

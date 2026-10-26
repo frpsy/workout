@@ -23,6 +23,8 @@ const js = await build({
   minify: true,
   write: false,
   legalComments: 'none',
+  // 아티팩트는 claude.ai 저장소를 쓰므로 Firebase 묶음(약 660KB)은 넣지 않습니다.
+  external: ['*/vendor/firebase.js'],
 });
 
 const pick = (re) => (html.match(re) || ['', ''])[1];

@@ -9,11 +9,14 @@
 //     saveDays?({date: doc}) -> Promise,   // 선택: 여러 날을 한 번에 (없으면 saveDay를 차례로)
 //   }
 // 저장 공간이 가득 차면 { code: 'quota_exceeded' } 오류를 던집니다.
-// 다른 백엔드(예: Firebase)를 붙이려면 같은 모양으로 파일을 하나 만들고
-// 아래 createStorage()의 순서에 넣으면 됩니다. 앱의 다른 부분은 바꿀 필요가 없습니다.
+// 선택 사항: account = { email?, signIn?(), signOut?() } — 설정 화면에 로그인·로그아웃 버튼을 보여 줍니다.
+// 다른 백엔드를 붙이려면 같은 모양으로 파일을 하나 만들고 아래 createStorage()의 순서에 넣으면 됩니다.
+// 앱의 다른 부분은 바꿀 필요가 없습니다.
 
 import { createClaudeDbAdapter } from './claude-db.js';
-import { createLocalAdapter } from './local.js';
+import { FIREBASE_CONFIG } from '../firebase-config.js';
+import { createFirebaseStorage } from './firebase.js';
+import { createLocalAdapter, readLocalData } from './local.js';
 
 /** claude.ai 뷰어가 주입하는 window.claude를 잠깐 기다립니다. */
 function waitForClaude(ms) {
@@ -37,6 +40,10 @@ export async function createStorage() {
     } catch {
       /* 로그인하지 않은 경우 등: 브라우저 저장으로 */
     }
+  }
+  if (FIREBASE_CONFIG) {
+    const fb = await createFirebaseStorage({ config: FIREBASE_CONFIG, createLocal: createLocalAdapter, readLocal: readLocalData });
+    if (fb) return fb;
   }
   return createLocalAdapter();
 }

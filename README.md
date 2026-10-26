@@ -10,11 +10,11 @@
 
 | 기능 | 설명 |
 |---|---|
-| 오늘 체크 | 종목별 목표, 원형 버튼으로 완료, 실제 개수 조정 |
+| 오늘 체크 | 종목별 목표(세트당 개수 × 세트 수, 기본 3세트 예: 15 × 3), 원형 버튼으로 완료, 세트당 실제 개수 조정 |
 | 목표 증가 | 매주 늘리기 / 해낸 주만 늘리기(주 N일 이상), N주마다 회복주 |
 | 기록 | 최근 5주 달력(날짜를 누르면 위 체크 칸으로 이동해 고치기, 쉬는 요일·목표 주차 시작일 표시), 正 누적, 연속·최고 연속, 종목별 합계·하루 최고 |
 | 계획 | 앞으로 4주 목표표 |
-| 운동 설정 | 추가·삭제·순서·단위(개/초)·사용 여부, 추천 종목 빠른 추가, 쉬는 요일(기록이 없어도 연속 유지) |
+| 운동 설정 | 추가·삭제·순서·단위(개/초)·세트 수·사용 여부, 추천 종목 빠른 추가, 쉬는 요일(기록이 없어도 연속 유지) |
 | 백업 | JSON 복사/파일 저장, 붙여 넣기/파일로 가져오기. 브라우저에만 저장하는 경우 기록이 쌓였는데 백업이 없거나 한 달 넘게 지났으면 오늘 화면에 안내 |
 
 ## 저장 위치
@@ -22,7 +22,20 @@
 | 실행 위치 | 저장소 | 기기 간 공유 |
 |---|---|---|
 | GitHub Pages | 브라우저 localStorage (영구 저장 요청) | 안 됨 (백업으로 옮기기) |
+| GitHub Pages + Firebase 설정 | Google 로그인 후 Firestore (`users/<uid>/…`), 오프라인 캐시 | 됨 |
 | claude.ai 아티팩트 | 아티팩트 db | 됨 |
+
+## Firebase로 기기 간 저장 켜기
+
+기본은 브라우저 저장입니다. 아래를 하면 로그인한 계정에 저장되어 폰·PC가 같은 기록을 봅니다. 설정이 없으면 지금처럼 동작합니다.
+
+1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트를 만들고 **웹 앱**을 추가해 `firebaseConfig`를 확인합니다.
+2. **Authentication → 로그인 방법**에서 Google을 켭니다. **설정 → 승인된 도메인**에 `frpsy.github.io`가 있는지 확인합니다 (기본 포함).
+3. **Firestore Database**를 만들고(프로덕션 모드), **규칙**에 `firestore.rules` 내용을 붙여 게시합니다.
+4. `js/firebase-config.js`의 `FIREBASE_CONFIG`에 1의 값을 붙여 넣고 커밋합니다. 이 값은 공개 식별자이며 데이터는 규칙이 지킵니다.
+5. 앱 → 기록 저장·백업 → **Google로 로그인**. 처음 로그인하면 이 브라우저의 기록이 계정으로 옮겨집니다 (계정에 기록이 이미 있으면 옮기지 않으니 백업 가져오기를 쓰세요).
+
+Firebase SDK는 `scripts/firebase-entry.js`를 묶어 `js/vendor/firebase.js`로 커밋해 둡니다 (오프라인에서도 동작). SDK 버전을 올렸다면 `npm run build:firebase`를 다시 실행하세요. CI가 최신 여부를 검사합니다.
 
 ## 구조
 
@@ -37,7 +50,9 @@ js/
   backup.js           백업 안내 조건과 마지막 백업일(이 브라우저에만 저장)
   model.js            저장 형식 정규화, v1→v2 변환, 검증, 백업
   store.js            앱 상태와 동작, 저장 지연·순서 처리
-  storage/            저장소 어댑터 (local, claude-db) — 같은 인터페이스
+  storage/            저장소 어댑터 (local, claude-db, firebase) — 같은 인터페이스
+  firebase-config.js  Firebase 연결 값 (null이면 사용 안 함)
+  vendor/firebase.js  Firebase SDK 묶음 (빌드 결과, 직접 고치지 않음)
   ui/                 화면 조각 (today, history, plan, settings)
   main.js             시작점
 fonts/                직접 포함한 글꼴 (필요한 글자만 추린 woff2, 오프라인·외부 요청 없음)
@@ -45,6 +60,8 @@ sw.js, manifest.webmanifest, icons/   홈 화면 설치·오프라인 (sw.js의 
 tests/                node --test 테스트 (계산·저장 형식·store·저장소·오프라인 파일 목록, jsdom 화면 테스트)
 scripts/build-artifact.mjs           claude.ai용 단일 파일 빌드
 scripts/update-sw.mjs                sw.js 미리 저장 목록·캐시 이름 자동 생성
+scripts/build-firebase.mjs           Firebase SDK 묶음 만들기
+firestore.rules                      Firestore 보안 규칙
 ```
 
 ## 확장하기

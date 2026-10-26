@@ -124,7 +124,9 @@ export function createStore(adapter) {
     const done = !!(e && e.done);
     const target = done && Number.isFinite(e.target) ? e.target : res.targetForDate(ex, date);
     const count = e && Number.isFinite(e.count) ? e.count : target;
-    return { done, target, count };
+    // 완료한 날은 그때의 세트 수(없으면 1), 아직이면 지금 설정
+    const sets = done ? (e.sets || 1) : ex.sets;
+    return { done, target, count, sets };
   }
 
   function ensureEntry(date, id) {
@@ -147,10 +149,12 @@ export function createStore(adapter) {
       if (v.done) {
         entry.done = false;
         delete entry.target;
+        delete entry.sets;
       } else {
         entry.done = true;
         entry.count = v.count;
         entry.target = v.target;
+        entry.sets = v.sets;
       }
       scheduleSave(date);
       emit();

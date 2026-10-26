@@ -58,7 +58,8 @@ export function completeDayCount(days, exs) {
   return Object.keys(days).filter((d) => isComplete(days[d], exs, d)).length;
 }
 
-const amountOf = (e) => (Number.isFinite(e.count) ? e.count : e.target || 0);
+// 합계는 세트당 개수 × 세트 수 (세트가 기록에 없는 예전 기록은 1세트)
+const amountOf = (e) => (Number.isFinite(e.count) ? e.count : e.target || 0) * (e.sets || 1);
 
 /** 종목별 누적 개수 (완료한 날만) */
 export function totals(days, exercises) {
