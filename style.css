@@ -57,18 +57,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
   margin: 0 auto;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 20px 56px;
+  padding-block: 12px 48px;
   display: flex;
   flex-direction: column;
   gap: 28px;
 }
 .wrap > * { min-width: 0; }
 .stack { display: flex; flex-direction: column; gap: 28px; }
-#today { display: flex; flex-direction: column; gap: 16px; }
+#today { display: flex; flex-direction: column; gap: 10px; }
 
 /* 머리말 */
 .eyebrow { margin: 0; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-h1 { margin: 4px 0 14px; font-size: 28px; line-height: 1.2; font-weight: 700; text-wrap: balance; }
+h1 { margin: 2px 0 10px; font-size: 24px; line-height: 1.2; font-weight: 700; text-wrap: balance; }
 .prog { display: flex; align-items: center; gap: 12px; }
 .segs { display: flex; gap: 4px; flex: 1; }
 .segs i { display: block; flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
@@ -81,30 +81,39 @@ h1 { margin: 4px 0 14px; font-size: 28px; line-height: 1.2; font-weight: 700; te
 .link { border: 0; background: none; color: var(--accent); font-weight: 700; font-size: 13px; padding: 8px 6px; cursor: pointer; }
 .tag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); line-height: 1.6; }
 
-/* 오늘 체크 */
-.rows { display: flex; flex-direction: column; gap: 12px; }
-.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 16px; align-items: center; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+/* 오늘 체크: 종목마다 이름 / 목표·실제·완료 한 줄 / 안내 한 줄로 낮게 만들어 세 종목이 한 화면에 들어오게 함 */
+.rows { display: flex; flex-direction: column; gap: 8px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "name name name" "goal actual check" "foot foot foot"; gap: 2px 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .row.done { background: var(--accent-soft); border-color: var(--accent); }
-.info { min-width: 0; }
-.name { margin: 0; font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
-.goal { margin: 4px 0 0; display: flex; align-items: baseline; gap: 6px; }
-.goal .label { font-size: 13px; color: var(--muted); }
-.goal .num { font-family: var(--font-num); font-size: 56px; line-height: 0.95; font-weight: 700; font-variant-numeric: tabular-nums; }
-.goal .unit { font-size: 15px; color: var(--muted); }
-.check { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); background: transparent; color: var(--on-accent); display: grid; place-items: center; cursor: pointer; padding: 0; touch-action: manipulation; }
-.check svg { opacity: 0; }
+.name { grid-area: name; margin: 0; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.goal { grid-area: goal; margin: 0; display: flex; align-items: baseline; gap: 2px 4px; min-width: 0; flex-wrap: wrap; }
+.goal .label { font-size: 11px; color: var(--muted); }
+.goal .num { font-family: var(--font-num); font-size: 40px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.goal .unit { font-size: 13px; color: var(--muted); }
+.goal .sets { font-family: var(--font-num); font-size: 22px; line-height: 1; font-weight: 700; color: var(--accent); }
+.check { grid-area: check; width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--accent); background: transparent; color: var(--on-accent); display: grid; place-items: center; cursor: pointer; padding: 0; touch-action: manipulation; }
+.check svg { width: 26px; height: 26px; opacity: 0; }
 .row.done .check { background: var(--accent); }
 .row.done .check svg { opacity: 1; }
 button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: default; }
-.actual { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 12px; }
-.actual label { font-size: 13px; color: var(--muted); }
+.actual { grid-area: actual; display: flex; align-items: center; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .stepper { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
-.stepper button { width: 44px; height: 44px; border: 0; background: transparent; font-size: 22px; line-height: 1; cursor: pointer; touch-action: manipulation; }
-.stepper input[type="number"] { min-width: 0; width: 76px; height: 44px; text-align: center; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: transparent; font-family: var(--font-num); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; border-radius: 0; }
+.stepper button { width: 36px; height: 44px; border: 0; background: transparent; font-size: 20px; line-height: 1; cursor: pointer; touch-action: manipulation; }
+.stepper input[type="number"] { min-width: 0; width: 52px; height: 44px; padding: 0; text-align: center; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: transparent; font-family: var(--font-num); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; border-radius: 0; }
 .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.delta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 400px) {
+  .row { gap: 2px 8px; padding: 10px; }
+  .goal .label { display: none; }
+  .goal .num { font-size: 34px; }
+  .stepper button { width: 32px; }
+  .stepper input[type="number"] { width: 44px; font-size: 20px; }
+  .check { width: 48px; height: 48px; }
+}
+.foot { grid-area: foot; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-height: 16px; }
+.delta { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .delta.over { color: var(--accent); font-weight: 700; }
-.hint { grid-column: 1 / -1; margin: -4px 0 0; font-size: 12px; color: var(--muted); }
+.hint { margin: 0; min-width: 0; font-size: 12px; color: var(--muted); }
 .empty { margin: 0; padding: 20px 16px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 14px; }
 
 .status { margin: 0; min-height: 20px; font-size: 13px; color: var(--muted); }
@@ -208,5 +217,16 @@ input[type="file"] { font-size: 13px; max-width: 100%; min-width: 0; flex: 1; }
 .backup-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 
 /* 세트 */
-.goal .sets { font-family: var(--font-num); font-size: 30px; line-height: 1; font-weight: 700; color: var(--accent); margin-left: 2px; }
 td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* 종목별 꾸준함 */
+.perex { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.perex li { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "head head" "bar pct"; gap: 6px 10px; align-items: center; }
+.pe-head { grid-area: head; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+.pe-name { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pe-meta { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pe-meta b { color: var(--fg); }
+.pe-bar { grid-area: bar; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.pe-bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.pe-pct { grid-area: pct; min-width: 40px; text-align: right; font-family: var(--font-num); font-size: 20px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.glyphs { margin-top: 14px; }

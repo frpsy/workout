@@ -1,10 +1,9 @@
-// 최근 5주 달력, 正 누적, 종목별 합계
+// 최근 5주 달력, 연속·달성률, 종목별 꾸준함
 
-import { UNITS } from '../config.js';
 import { addDays, diffDays, labelMD, mondayOf, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
-import { bestStreak, bests, completeDayCount, currentStreak, doneCount, isComplete, isDone, totals } from '../stats.js';
-import { $, esc, num } from './dom.js';
+import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent } from '../stats.js';
+import { $, esc } from './dom.js';
 
 const WEEKS = 5;
 const MAX_PIPS = 6;
@@ -26,10 +25,15 @@ export function mountHistory(root, store) {
       <p class="sub" id="calSub"></p>
     </section>
     <section>
-      <h2 class="sec">누적</h2>
+      <h2 class="sec">달성·연속</h2>
+      <dl class="totals" id="summary"></dl>
       <div class="glyphs" id="glyphs" role="img"></div>
       <p class="tallytext" id="tallyText"></p>
-      <dl class="totals" id="totals"></dl>
+    </section>
+    <section>
+      <h2 class="sec">종목별 꾸준함</h2>
+      <ul class="perex" id="perEx"></ul>
+      <p class="sub">달성률은 최근 30일 중 해야 했던 날(쉬는 요일·시작 전 제외) 대비 마친 날입니다.</p>
     </section>`;
 
   $('#cal', root).addEventListener('click', (ev) => {
@@ -90,18 +94,33 @@ export function mountHistory(root, store) {
     const glyphs = $('#glyphs', root);
     glyphs.innerHTML = g;
     glyphs.setAttribute('aria-label', `모든 운동을 마친 날 ${complete}일`);
+    $('#tallyText', root).innerHTML = `모두 마친 날 <b>${complete}</b>일`;
+
+    /* 연속·달성률 (모든 운동을 마친 날 기준) */
+    const opts = { rest, startDate: config.startDate };
     const cur = currentStreak(days, today, exs, rest);
     const best = bestStreak(days, exs, rest);
-    $('#tallyText', root).innerHTML = `모두 마친 날 <b>${complete}</b>일 · 연속 <b>${cur}</b>일 · 최고 <b>${best}</b>일`;
+    const a30 = achievement(days, today, exs, { ...opts, window: 30 });
+    const a7 = achievement(days, today, exs, { ...opts, window: 7 });
+    const p30 = percent(a30);
+    $('#summary', root).innerHTML =
+      `<div><dt>현재 연속</dt><dd>${cur}<small>일</small></dd></div>` +
+      `<div><dt>최고 연속</dt><dd>${best}<small>일</small></dd></div>` +
+      `<div><dt>30일 달성률</dt><dd>${p30 === null ? '–' : p30}<small>${p30 === null ? '' : '%'}</small></dd>` +
+      `<dd class="best">${a7.total ? `최근 7일 ${a7.done}/${a7.total}일` : '기록 시작 전'}</dd></div>`;
 
-    /* 종목별 합계 */
-    const sums = totals(days, exs);
-    const tops = bests(days, exs);
-    $('#totals', root).innerHTML = exs
+    /* 종목별: 연속·최고 연속·30일 달성률 */
+    $('#perEx', root).innerHTML = exs
       .map((e) => {
-        const u = esc(UNITS[e.unit].label);
-        const best = tops[e.id] ? `<dd class="best">하루 최고 ${num(tops[e.id])}${u}</dd>` : '';
-        return `<div><dt>${esc(e.name)}</dt><dd>${num(sums[e.id])}<small>${u}</small></dd>${best}</div>`;
+        const one = [e];
+        const p = percent(achievement(days, today, one, { ...opts, window: 30 }));
+        const c = currentStreak(days, today, one, rest);
+        const b = bestStreak(days, one, rest);
+        return (
+          `<li><div class="pe-head"><span class="pe-name">${esc(e.name)}</span><span class="pe-meta">연속 <b>${c}</b>일 · 최고 <b>${b}</b>일</span></div>` +
+          `<div class="pe-bar" role="img" aria-label="${esc(e.name)} 30일 달성률 ${p === null ? '없음' : p + '%'}"><i style="width:${p || 0}%"></i></div>` +
+          `<span class="pe-pct">${p === null ? '–' : p + '%'}</span></li>`
+        );
       })
       .join('');
   };

@@ -104,6 +104,13 @@ test('기록: 연속 일수와 달력 35칸, 쉬는 요일 표시', () => {
   const { root } = setup(history, { days: fullDays(5), config: { startDate: addDays(todayStr(), -40), restDays: rest } });
   assert.equal(root.querySelectorAll('button.cell').length, 35);
   assert.match(root.querySelector('#tallyText').textContent, /모두 마친 날 5일/);
+  const cards = [...root.querySelectorAll('#summary dt')].map((e) => e.textContent);
+  assert.deepEqual(cards, ['현재 연속', '최고 연속', '30일 달성률']);
+  assert.match(root.querySelector('#summary').textContent, /현재 연속5일/);
+  const per = root.querySelectorAll('#perEx li');
+  assert.equal(per.length, 3, '종목마다 한 줄');
+  assert.match(per[0].textContent, /푸쉬업.*연속 5일 · 최고 5일/);
+  assert.equal(root.textContent.includes('하루 최고'), false, '누적 개수·하루 최고는 더 이상 보이지 않음');
   const restCells = root.querySelectorAll('button.cell.rest').length;
   assert.ok(restCells >= 8 && restCells <= 10, `쉬는 날 칸 수 ${restCells}`);
   assert.ok(root.querySelectorAll('button.cell.wkstart').length >= 4, '목표 주차 시작 표시');
