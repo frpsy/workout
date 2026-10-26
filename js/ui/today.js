@@ -72,21 +72,18 @@ export function mountToday(root, store) {
       const el = document.createElement('article');
       el.className = 'row';
       el.innerHTML = `
-        <div class="info">
-          <h2 class="name">${esc(ex.name)}</h2>
-          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${esc(unit.label)}</span><span class="sets" data-f="sets"></span></p>
-        </div>
-        <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${esc(ex.name)} 완료">${CHECK_SVG}</button>
+        <h2 class="name">${esc(ex.name)}</h2>
+        <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${esc(unit.label)}</span><span class="sets" data-f="sets"></span></p>
         <div class="actual">
-          <label for="cnt-${ex.id}">세트당</label>
+          <label for="cnt-${ex.id}" class="sr">세트당 실제</label>
           <div class="stepper">
             <button type="button" data-f="minus" aria-label="${esc(ex.name)} ${unit.inc}${esc(unit.label)} 줄이기">−</button>
             <input id="cnt-${ex.id}" data-f="cnt" type="number" inputmode="numeric" min="0" max="99999">
             <button type="button" data-f="plus" aria-label="${esc(ex.name)} ${unit.inc}${esc(unit.label)} 늘리기">+</button>
           </div>
-          <span class="delta" data-f="delta"></span>
         </div>
-        <p class="hint" data-f="hint"></p>`;
+        <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${esc(ex.name)} 완료">${CHECK_SVG}</button>
+        <div class="foot"><p class="hint" data-f="hint"></p><span class="delta" data-f="delta"></span></div>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, target: q('target'), sets: q('sets'), check: q('check'), minus: q('minus'), plus: q('plus'), cnt: q('cnt'), delta: q('delta'), hint: q('hint') };
       r.check.addEventListener('click', () => {
