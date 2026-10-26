@@ -1,6 +1,6 @@
-// 한 줄 타이머: [휴식|운동] [−15] 1:00 [+15] [시작] — 모드 버튼으로 쉬는 시간과 운동 시간을 오갑니다
+// 한 줄 휴식 타이머: 휴식 [−15] 1:00 [+15] [시작]
 
-import { createTimer, fmt, MODE_LABEL, STEP_SEC } from '../timer.js';
+import { createTimer, fmt, STEP_SEC } from '../timer.js';
 import { $, haptic } from './dom.js';
 
 const TICK_MS = 250;
@@ -29,10 +29,10 @@ function beep(ctx) {
 export function mountTimer(root) {
   root.innerHTML = `
     <div class="timer" id="timerBar">
-      <button type="button" class="tmode" id="tMode" aria-label="타이머 모드 바꾸기">휴식</button>
-      <button type="button" class="tstep" id="tMinus" aria-label="${STEP_SEC}초 줄이기">−${STEP_SEC}</button>
+      <span class="tlabel">휴식</span>
+      <button type="button" class="tstep" id="tMinus" aria-label="휴식 ${STEP_SEC}초 줄이기">−${STEP_SEC}</button>
       <span class="time" id="tTime" role="timer" aria-live="off">1:00</span>
-      <button type="button" class="tstep" id="tPlus" aria-label="${STEP_SEC}초 늘리기">+${STEP_SEC}</button>
+      <button type="button" class="tstep" id="tPlus" aria-label="휴식 ${STEP_SEC}초 늘리기">+${STEP_SEC}</button>
       <button type="button" class="tgo" id="tGo">시작</button>
       <span class="sr" id="tDone" role="status"></span>
     </div>`;
@@ -44,7 +44,7 @@ export function mountTimer(root) {
 
   const timer = createTimer({
     onChange: render,
-    onDone(finished) {
+    onDone() {
       stopTicking();
       releaseLock();
       haptic();
@@ -56,7 +56,7 @@ export function mountTimer(root) {
       beep(ctx);
       const bar = $('#timerBar', root);
       bar.classList.add('done');
-      $('#tDone', root).textContent = `${MODE_LABEL[finished]} 시간이 끝났습니다`;
+      $('#tDone', root).textContent = '휴식이 끝났습니다';
       clearTimeout(doneTimer);
       doneTimer = setTimeout(() => {
         bar.classList.remove('done');
@@ -92,14 +92,7 @@ export function mountTimer(root) {
   function render() {
     const running = timer.running;
     $('#tTime', root).textContent = fmt(timer.remaining());
-    const bar = $('#timerBar', root);
-    bar.classList.toggle('running', running);
-    bar.dataset.mode = timer.mode;
-    const other = MODE_LABEL[timer.mode === 'work' ? 'rest' : 'work'];
-    const mode = $('#tMode', root);
-    mode.textContent = MODE_LABEL[timer.mode];
-    mode.disabled = running;
-    mode.setAttribute('aria-label', `${MODE_LABEL[timer.mode]} 시간 (누르면 ${other} 시간으로 바꿈)`);
+    $('#timerBar', root).classList.toggle('running', running);
     const go = $('#tGo', root);
     go.textContent = running ? '중지' : '시작';
     go.classList.toggle('stop', running);
@@ -127,7 +120,6 @@ export function mountTimer(root) {
     startTicking();
     takeLock();
   });
-  $('#tMode', root).addEventListener('click', () => timer.setMode(timer.mode === 'work' ? 'rest' : 'work'));
   $('#tMinus', root).addEventListener('click', () => timer.adjust(-STEP_SEC));
   $('#tPlus', root).addEventListener('click', () => timer.adjust(STEP_SEC));
 

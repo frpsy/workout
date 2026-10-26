@@ -24,6 +24,7 @@ const ASSETS = [
   './js/main.js',
   './js/model.js',
   './js/progression.js',
+  './js/session.js',
   './js/stats.js',
   './js/storage/claude-db.js',
   './js/storage/firebase.js',

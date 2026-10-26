@@ -178,6 +178,17 @@ export function createStore(adapter) {
       emit();
     },
 
+    /** 운동 스톱워치를 끝냈을 때: 그날 총 운동시간(초)에 더함 */
+    addWorkSec(date, sec) {
+      if (!state.ready || !isDateStr(date) || !Number.isFinite(sec) || sec <= 0) return;
+      if (!state.days[date]) state.days[date] = { entries: {} };
+      const day = state.days[date];
+      day.workSec = Math.min(86400, (day.workSec || 0) + Math.round(sec));
+      scheduleSave(date);
+      state.daysRev++;
+      emit();
+    },
+
     /** 그날 한 세트 수를 직접 고침 */
     setSets(id, n) {
       if (!state.ready) return;

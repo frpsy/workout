@@ -131,3 +131,24 @@ test('화면 갱신 판단용 값: 저장 문구 같은 변화에는 기록·설
   assert.equal(store.state.daysRev, daysRev + 1);
   store.actions.flushAll();
 });
+
+test('총 운동시간: 같은 날 여러 번 더해지고 저장되며 체크 기록은 그대로', async (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const ad = fakeAdapter();
+  const store = createStore(ad);
+  store.actions.toggle('push');
+  const rev = store.state.daysRev;
+  store.actions.addWorkSec(todayStr(), 600);
+  store.actions.addWorkSec(todayStr(), 125.4);
+  assert.equal(store.state.days[todayStr()].workSec, 725);
+  assert.equal(store.state.days[todayStr()].entries.push.done, true);
+  assert.ok(store.state.daysRev > rev);
+  store.actions.addWorkSec(todayStr(), 0);
+  store.actions.addWorkSec('abc', 60);
+  store.actions.addWorkSec(todayStr(), 999_999);
+  assert.equal(store.state.days[todayStr()].workSec, 86400, '하루 24시간까지');
+  mock.timers.tick(400);
+  await tick();
+  assert.equal(ad.saved.days.at(-1)[1].workSec, 86400, '저장 문서에 들어감');
+});

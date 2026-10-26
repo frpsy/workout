@@ -83,3 +83,19 @@ test('세트: 기본 3, 범위 안만 받고 기록에도 보존', async () => {
   assert.equal(normalizeDay({ entries: { x: { done: true, count: 10, sets: 4 } } }).entries.x.sets, 4);
   assert.ok(validateConfig({ startDate: '2026-10-26', exercises: [{ ...base, sets: 0, active: true }], plan: {} }).some((m) => m.includes('세트')));
 });
+
+test('하루 총 운동시간(workSec): 읽고 저장하고 백업에도 포함, 이상한 값은 버림', async () => {
+  const { serializeDay, exportPayload, parseImport } = await import('../js/model.js');
+  const day = normalizeDay({ entries: { a: { done: true } }, workSec: 1830.4 });
+  assert.equal(day.workSec, 1830);
+  assert.equal(normalizeDay({ entries: {}, workSec: -5 }).workSec, undefined);
+  assert.equal(normalizeDay({ entries: {}, workSec: 999999 }).workSec, undefined, '24시간을 넘으면 버림');
+  assert.equal(normalizeDay({ entries: {} }).workSec, undefined);
+  assert.equal(serializeDay('2026-10-26', day).workSec, 1830);
+  assert.equal('workSec' in serializeDay('2026-10-26', { entries: {} }), false, '없으면 필드를 두지 않음');
+  const cfg = normalizeConfig(null, '2026-10-01');
+  const onlyTime = { '2026-10-25': { entries: {}, workSec: 600 } };
+  const payload = exportPayload(cfg, onlyTime);
+  assert.equal(payload.days['2026-10-25'].workSec, 600, '운동시간만 있는 날도 백업에 들어감');
+  assert.equal(parseImport(JSON.stringify(payload), '2026-10-01').days['2026-10-25'].workSec, 600);
+});

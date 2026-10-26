@@ -4,6 +4,7 @@ import { UNITS } from '../config.js';
 import { backupDue, readBackupMeta, SNOOZE_DAYS, writeBackupMeta } from '../backup.js';
 import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
+import { createSession, fmtClock, fmtKo } from '../session.js';
 import { currentStreak } from '../stats.js';
 import { $, esc, haptic } from './dom.js';
 
@@ -54,9 +55,13 @@ export function mountToday(root, store) {
     <header class="head">
       <div class="headline">
         <h1 id="dateLabel" tabindex="-1"></h1>
-        <p class="eyebrow" id="weekLabel"></p>
+        <div class="work">
+          <span class="wtime" id="wTime" aria-live="off"></span>
+          <button type="button" class="wbtn" id="wBtn">▶ 시작</button>
+        </div>
       </div>
       <div class="prog">
+        <p class="eyebrow" id="weekLabel"></p>
         <div class="segs" id="segs"></div>
         <span class="progtext" id="progText"></span>
       </div>
@@ -77,6 +82,50 @@ export function mountToday(root, store) {
     <p class="status" id="status" role="status" aria-live="polite"></p>`;
 
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
+
+  /* ---------- 운동 스톱워치: 시작하면 시간이 흐르고, 종료하면 총 운동시간에 기록 ---------- */
+
+  const session = createSession();
+  let workTick = 0;
+
+  function renderWork() {
+    const state = store.state;
+    const running = session.running;
+    const wTime = $('#wTime', root);
+    const btn = $('#wBtn', root);
+    if (running) {
+      wTime.textContent = fmtClock(session.elapsed());
+    } else {
+      const total = (state.days[state.selected] && state.days[state.selected].workSec) || 0;
+      wTime.textContent = total ? `총 ${fmtKo(total)}` : '';
+    }
+    wTime.classList.toggle('running', running);
+    btn.textContent = running ? '■ 종료' : '▶ 시작';
+    btn.classList.toggle('stop', running);
+    btn.disabled = !state.ready;
+    btn.setAttribute('aria-label', running ? '운동 종료하고 총 운동시간 기록' : '운동 시작 (시간이 흐릅니다)');
+  }
+  function ticking(on) {
+    clearInterval(workTick);
+    workTick = on ? setInterval(renderWork, 1000) : 0;
+  }
+  $('#wBtn', root).addEventListener('click', () => {
+    haptic();
+    if (session.running) {
+      ticking(false);
+      const done = session.stop();
+      if (done) actions.addWorkSec(done.date, done.sec);
+    } else {
+      session.start(store.state.today);
+      ticking(true);
+    }
+    renderWork();
+  });
+  // 화면을 다시 켰을 때 흐른 시간을 바로 보여 줌
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) renderWork();
+  });
+  if (session.running) ticking(true); // 새로고침·재실행 뒤에도 이어서 잼
 
   /** 오래 백업하지 않았으면 안내 (이 브라우저에만 저장하는 경우) */
   function updateBackupNote(state) {
@@ -251,6 +300,7 @@ export function mountToday(root, store) {
     if (off) $('#backText', root).textContent = `${labelMD(selected)} 기록을 고치는 중입니다`;
 
     updateBackupNote(state);
+    renderWork();
 
     const st = $('#status', root);
     // 저장 문구가 없을 때는 꾹 누르기 사용법을 알려 줌
