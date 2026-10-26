@@ -21,7 +21,7 @@
 
 | 실행 위치 | 저장소 | 기기 간 공유 |
 |---|---|---|
-| GitHub Pages | 브라우저 localStorage | 안 됨 (백업으로 옮기기) |
+| GitHub Pages | 브라우저 localStorage (영구 저장 요청) | 안 됨 (백업으로 옮기기) |
 | claude.ai 아티팩트 | 아티팩트 db | 됨 |
 
 ## 구조
@@ -39,6 +39,7 @@ js/
   storage/            저장소 어댑터 (local, claude-db) — 같은 인터페이스
   ui/                 화면 조각 (today, history, plan, settings)
   main.js             시작점
+fonts/                직접 포함한 글꼴 (필요한 글자만 추린 woff2, 오프라인·외부 요청 없음)
 sw.js, manifest.webmanifest, icons/   홈 화면 설치·오프라인 (sw.js의 ASSETS에 앱 파일 전체)
 tests/                node --test 단위 테스트 (계산·저장 형식·store·저장소·오프라인 파일 목록)
 scripts/build-artifact.mjs           claude.ai용 단일 파일 빌드
@@ -50,7 +51,7 @@ scripts/build-artifact.mjs           claude.ai용 단일 파일 빌드
 - **단위 추가** (예: 미터): `UNITS`에 `{ label, inc }` 추가
 - **증가 방식 추가**: `js/progression.js`의 `LEVEL_RULES`에 함수 추가 후 설정 화면 라디오 추가
 - **저장소 추가** (예: Firebase로 기기 간 동기화): `js/storage/`에 같은 모양의 어댑터를 만들고 `storage/index.js`의 `createStorage()`에 연결
-- **앱 파일 추가·삭제**: `sw.js`의 `ASSETS`를 함께 고치고 `CACHE` 번호를 올리기 (안 맞으면 `npm test`가 실패)
+- **앱 파일 추가·삭제**: `sw.js`의 `ASSETS`를 함께 고치고 `CACHE` 번호를 올리기 (안 맞으면 `npm test`가 실패). 글꼴은 `fonts/`에 있고 아티팩트 빌드만 Google Fonts를 씁니다
 - **저장 형식 변경**: `SCHEMA_VERSION`을 올리고 `model.js`의 `normalize*`에서 이전 형식을 변환
 
 ## 개발

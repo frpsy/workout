@@ -1,4 +1,11 @@
 /* 레이아웃: 한 줄기 로그북. 오늘 체크 → 최근 5주 → 누적 → 앞으로 4주 → 설정 */
+/* fonts:start 직접 포함한 글꼴 (아티팩트 빌드는 이 블록을 빼고 Google Fonts를 씁니다) */
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/barlow-condensed-600.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/barlow-condensed-700.woff2) format('woff2'); }
+@font-face { font-family: 'Noto Sans KR'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/noto-sans-kr-400.woff2) format('woff2'); }
+@font-face { font-family: 'Noto Sans KR'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/noto-sans-kr-500.woff2) format('woff2'); }
+@font-face { font-family: 'Noto Sans KR'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/noto-sans-kr-700.woff2) format('woff2'); }
+/* fonts:end */
 :root {
   --bg: #F1F4F2;
   --surface: #FAFBFA;

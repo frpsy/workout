@@ -203,7 +203,7 @@ export function mountSettings(root, store) {
     if (!b) return;
     const p = b.dataset.preset === 'new' ? { name: '', unit: 'reps', base: 10, step: 1 } : PRESETS[+b.dataset.preset];
     const id = newExerciseId(new Set(draft.exercises.map((e) => e.id)));
-    draft.exercises.push({ id, name: p.name, unit: p.unit, base: p.base, step: p.step, active: true });
+    draft.exercises.push({ id, name: p.name, unit: p.unit, base: p.base, step: p.step, active: true, since: todayStr() });
     markDirty();
     renderList();
     const input = el('exList').querySelector(`[data-id="${id}"] .exname`);

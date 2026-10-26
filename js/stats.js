@@ -9,24 +9,28 @@ export function doneCount(day, ids) {
   return ids.reduce((n, id) => n + (isDone(day, id) ? 1 : 0), 0);
 }
 
-/** ids에 있는 종목을 모두 마친 날 */
-export function isComplete(day, ids) {
-  return ids.length > 0 && ids.every((id) => isDone(day, id));
+/** 그날 해야 했던 종목: 운동을 추가한 날(since) 이전의 기록에는 요구하지 않습니다. */
+export const requiredOn = (exs, date) => exs.filter((e) => !e.since || e.since <= date);
+
+/** 그날 해야 했던 종목을 모두 마친 날 */
+export function isComplete(day, exs, date) {
+  const req = requiredOn(exs, date);
+  return req.length > 0 && req.every((e) => isDone(day, e.id));
 }
 
 /** 오늘 아직 안 했으면 어제까지 이어진 연속 일수 */
-export function currentStreak(days, today, ids) {
-  let d = isComplete(days[today], ids) ? today : addDays(today, -1);
+export function currentStreak(days, today, exs) {
+  let d = isComplete(days[today], exs, today) ? today : addDays(today, -1);
   let n = 0;
-  while (isComplete(days[d], ids)) {
+  while (isComplete(days[d], exs, d)) {
     n++;
     d = addDays(d, -1);
   }
   return n;
 }
 
-export function bestStreak(days, ids) {
-  const dates = Object.keys(days).filter((d) => isComplete(days[d], ids)).sort();
+export function bestStreak(days, exs) {
+  const dates = Object.keys(days).filter((d) => isComplete(days[d], exs, d)).sort();
   let best = 0;
   let run = 0;
   let prev = null;
@@ -38,8 +42,8 @@ export function bestStreak(days, ids) {
   return best;
 }
 
-export function completeDayCount(days, ids) {
-  return Object.keys(days).filter((d) => isComplete(days[d], ids)).length;
+export function completeDayCount(days, exs) {
+  return Object.keys(days).filter((d) => isComplete(days[d], exs, d)).length;
 }
 
 const amountOf = (e) => (Number.isFinite(e.count) ? e.count : e.target || 0);

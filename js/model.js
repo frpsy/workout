@@ -25,6 +25,8 @@ export function normalizeExercise(raw) {
     base: inRange(raw.base, LIMITS.base) ? Math.round(raw.base) : 10,
     step: inRange(raw.step, LIMITS.step) ? raw.step : 1,
     active: raw.active !== false,
+    // 추가한 날. 이전 날짜의 연속 기록 계산에서 이 운동을 빼기 위한 값 (없으면 처음부터 있던 운동)
+    ...(isDateStr(raw.since) ? { since: raw.since } : {}),
   };
 }
 
