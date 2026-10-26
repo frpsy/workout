@@ -116,8 +116,22 @@ test('Firestore 접근이 막혀 있으면(permission-denied) 브라우저 저�
   });
   const ad = await run(loader({ user: { uid: 'u', email: 'me@example.com' }, db }));
   assert.equal(ad.kind, 'local');
-  assert.match(ad.label, /Firestore/);
+  assert.match(ad.label, /보안 규칙/);
   assert.equal(typeof ad.account.signOut, 'function');
+});
+
+test('설정 문서는 읽히지만 날짜별 기록 목록만 규칙에 막혀도(permission-denied) 브라우저 저장으로 열기', async () => {
+  const db = fakeDb();
+  db.collection = () => ({
+    get: async () => {
+      throw Object.assign(new Error('denied'), { code: 'permission-denied' });
+    },
+  });
+  const ad = await run(loader({ user: { uid: 'u', email: 'me@example.com' }, db }));
+  assert.equal(ad.kind, 'local', '화면이 멈추지 않고 브라우저 저장으로 열림');
+  assert.match(ad.label, /보안 규칙/);
+  assert.equal(typeof ad.account.signOut, 'function');
+  assert.deepEqual([...db.data.keys()], [], '막힌 상태에서는 쓰지 않음');
 });
 
 test('오프라인처럼 다른 오류는 계정 저장소로 그대로 진행', async () => {
