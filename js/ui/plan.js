@@ -8,13 +8,30 @@ const AHEAD = 4;
 
 export function mountPlan(root, store) {
   root.innerHTML = `
-    <section>
-      <h2 class="sec">앞으로 ${AHEAD}주 목표</h2>
-      <div class="tblwrap"><table id="plan"></table></div>
-      <p class="sub" id="planSub"></p>
-    </section>`;
+    <details class="block" id="planBox">
+      <summary>앞으로 ${AHEAD}주 목표</summary>
+      <div class="set-body">
+        <div class="tblwrap"><table id="plan"></table></div>
+        <p class="sub" id="planSub"></p>
+      </div>
+    </details>`;
 
-  return function render(state) {
+  let key = '';
+  let last = null;
+  $('#planBox', root).addEventListener('toggle', () => {
+    if ($('#planBox', root).open && last) {
+      key = '';
+      render(last);
+    }
+  });
+
+  // 접혀 있는 동안은 그리지 않고, 기록·설정이 바뀌었을 때만 다시 그림
+  function render(state) {
+    last = state;
+    if (!$('#planBox', root).open) return;
+    const next = `${state.daysRev}:${state.configRev}:${state.today}`;
+    if (next === key) return;
+    key = next;
     const { config, today } = state;
     const exs = store.activeExercises();
     const res = store.resolver();
@@ -33,5 +50,6 @@ export function mountPlan(root, store) {
       config.plan.mode === 'adaptive'
         ? `주 ${config.plan.passDays}일 이상 한 종목만 다음 주에 늘어납니다. 표는 앞으로 모두 해낸다고 가정한 값입니다.`
         : '매주 정해진 만큼 늘어납니다.';
-  };
+  }
+  return render;
 }

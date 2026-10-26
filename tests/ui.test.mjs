@@ -53,7 +53,7 @@ function setup(mount, opts) {
   const root = document.getElementById(mount.id);
   const render = mount.fn(root, store);
   store.subscribe(render);
-  return { store, root };
+  return { store, root, render };
 }
 
 const today = { id: 'today', fn: (r, s) => mountToday(r, s) };
@@ -70,19 +70,77 @@ test('오늘: 체크 버튼을 누르면 완료 표시와 진행 문구가 바�
   store.actions.flushAll();
 });
 
-test('오늘: 목표가 "15 × 3"처럼 세트와 함께 보이고 다음 주 안내에도 붙음', () => {
+test('오늘: 목표가 "15 × 3"처럼 세트와 함께 보임', () => {
   const { store, root } = setup(today);
   const row = root.querySelector('.row');
   assert.equal(row.querySelector('[data-f="target"]').textContent, '15');
   assert.equal(row.querySelector('[data-f="sets"]').textContent, '× 3');
-  assert.match(row.querySelector('[data-f="hint"]').textContent, /다음 주 17개 × 3/);
+  assert.equal(row.querySelector('[data-f="cnt"]').value, '15');
+  assert.equal(row.querySelector('[data-f="setsIn"]').value, '3', '실제 세트도 기본은 목표 세트');
   store.actions.flushAll();
+});
+
+test('오늘: 개수는 −5 −1 +1 +5로, 세트는 − +로 바꿀 수 있고 직접 입력도 됨', () => {
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  const f = (n) => row.querySelector(`[data-f="${n}"]`);
+  f('plus5').click();
+  assert.equal(f('cnt').value, '20');
+  f('minus').click();
+  assert.equal(f('cnt').value, '19');
+  f('minus5').click();
+  f('minus5').click();
+  f('minus5').click();
+  f('minus5').click();
+  assert.equal(f('cnt').value, '0', '0 아래로 내려가지 않음');
+  f('plus').click();
+  assert.equal(f('cnt').value, '1');
+  f('cnt').value = '42';
+  f('cnt').dispatchEvent(new Event('change'));
+  assert.equal(f('cnt').value, '42');
+  f('setsPlus').click();
+  assert.equal(f('setsIn').value, '4');
+  f('setsMinus').click();
+  f('setsMinus').click();
+  f('setsMinus').click();
+  f('setsMinus').click();
+  assert.equal(f('setsIn').value, '1', '1세트 아래로 내려가지 않음');
+  f('setsIn').value = '5';
+  f('setsIn').dispatchEvent(new Event('change'));
+  assert.equal(f('setsIn').value, '5');
+  assert.equal(f('delta').textContent, '+27개 · 세트 +2', '목표와 다른 부분만 보임');
+  store.actions.flushAll();
+});
+
+test('오늘: 완료한 뒤에도 개수와 세트를 고칠 수 있고 완료 상태는 유지', () => {
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  const f = (n) => row.querySelector(`[data-f="${n}"]`);
+  f('check').click();
+  f('plus5').click();
+  f('setsPlus').click();
+  assert.ok(row.classList.contains('done'));
+  const e = store.state.days[todayStr()].entries.push;
+  assert.deepEqual({ done: e.done, count: e.count, sets: e.sets }, { done: true, count: 20, sets: 4 });
+  store.actions.flushAll();
+});
+
+test('오늘: 모두 마치면 이어진 연속 일수를 보여 줌', () => {
+  const { store, root } = setup(today, { days: fullDays(0) });
+  for (const b of root.querySelectorAll('[data-f="check"]')) b.click();
+  assert.equal(root.querySelector('#progText').textContent, '모두 완료');
+  store.actions.flushAll();
+  const yesterday = Object.fromEntries(Object.entries(fullDays(4)).filter(([d]) => d !== todayStr()));
+  const t2 = setup(today, { days: yesterday });
+  for (const b of t2.root.querySelectorAll('[data-f="check"]')) b.click();
+  assert.equal(t2.root.querySelector('#progText').textContent, '모두 완료 · 연속 4일');
+  t2.store.actions.flushAll();
 });
 
 test('오늘: 실제 개수 +를 누르면 목표와의 차이가 보임', () => {
   const { store, root } = setup(today);
   root.querySelector('.row [data-f="plus"]').click();
-  assert.equal(root.querySelector('.row [data-f="delta"]').textContent, '목표보다 +1');
+  assert.equal(root.querySelector('.row [data-f="delta"]').textContent, '+1개');
   store.actions.flushAll();
 });
 
@@ -99,13 +157,17 @@ test('오늘: 백업 안내는 기록이 쌓인 단독 실행에서만 보이고
   assert.equal(root.querySelector('#bakNote').hidden, true, '기록이 적으면 안내 없음');
 });
 
-test('기록: 연속 일수와 달력 35칸, 쉬는 요일 표시', () => {
+test('기록: 최근 2주만 바로 보이고 자세히는 펼쳐야 그려짐(달력 14칸 + 지난 3주 21칸)', async () => {
   const rest = [0, 6];
-  const { root } = setup(history, { days: fullDays(5), config: { startDate: addDays(todayStr(), -40), restDays: rest } });
+  const { root, render, store } = setup(history, { days: fullDays(5), config: { startDate: addDays(todayStr(), -40), restDays: rest } });
+  assert.equal(root.querySelectorAll('#calRecent button.cell').length, 14);
+  assert.equal(root.querySelector('#summary').innerHTML, '', '접혀 있는 동안은 계산하지 않음');
+  assert.equal(root.querySelector('#calOlder').innerHTML, '');
+  root.querySelector('#moreBox').open = true;
+  root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
   assert.equal(root.querySelectorAll('button.cell').length, 35);
   assert.match(root.querySelector('#tallyText').textContent, /모두 마친 날 5일/);
-  const cards = [...root.querySelectorAll('#summary dt')].map((e) => e.textContent);
-  assert.deepEqual(cards, ['현재 연속', '최고 연속', '30일 달성률']);
+  assert.deepEqual([...root.querySelectorAll('#summary dt')].map((e) => e.textContent), ['현재 연속', '최고 연속', '30일 달성률']);
   assert.match(root.querySelector('#summary').textContent, /현재 연속5일/);
   const per = root.querySelectorAll('#perEx li');
   assert.equal(per.length, 3, '종목마다 한 줄');
@@ -114,6 +176,15 @@ test('기록: 연속 일수와 달력 35칸, 쉬는 요일 표시', () => {
   const restCells = root.querySelectorAll('button.cell.rest').length;
   assert.ok(restCells >= 8 && restCells <= 10, `쉬는 날 칸 수 ${restCells}`);
   assert.ok(root.querySelectorAll('button.cell.wkstart').length >= 4, '목표 주차 시작 표시');
+
+  // 저장 문구처럼 기록·설정과 무관한 변화에는 달력을 다시 그리지 않음
+  const before = root.querySelector('#calRecent button.cell');
+  store.state.rev++;
+  render(store.state);
+  assert.equal(root.querySelector('#calRecent button.cell'), before, '같은 요소 유지');
+  store.state.daysRev++;
+  render(store.state);
+  assert.notEqual(root.querySelector('#calRecent button.cell'), before, '기록이 바뀌면 다시 그림');
 });
 
 test('설정: 추천 운동을 추가하고 쉬는 요일을 골라 저장', async () => {

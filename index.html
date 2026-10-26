@@ -16,12 +16,13 @@
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preload" href="fonts/noto-sans-kr-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="js/vendor/firebase.js">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main class="wrap">
   <div id="today"></div>
-  <p class="status err" id="boot-status" hidden></p>
+  <p class="status" id="boot-status" role="status">불러오는 중…</p>
   <div id="history" class="stack"></div>
   <div id="plan-sec"></div>
   <div id="settings" class="stack"></div>
