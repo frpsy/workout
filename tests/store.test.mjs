@@ -102,3 +102,32 @@ test('세트: 기본 3세트로 보이고, 완료한 날은 그때 세트 수를
   assert.equal(store.view(todayStr(), { id: 'pull', sets: 3 }).sets, 1, 'sets가 없는 예전 기록');
   store.actions.flushAll();
 });
+
+test('세트 직접 수정: 범위 안으로 맞추고, 완료 전에도 후에도 값 유지, 값이 바뀐 때만 기록 변경 표시', () => {
+  const store = createStore(fakeAdapter());
+  const ex = store.state.config.exercises.find((e) => e.id === 'push');
+  const rev = store.state.daysRev;
+  store.actions.setSets('push', 5);
+  assert.equal(store.view(todayStr(), ex).sets, 5);
+  assert.ok(store.state.daysRev > rev, '기록이 바뀌었음을 화면 조각에 알림');
+  store.actions.setSets('push', 99);
+  assert.equal(store.view(todayStr(), ex).sets, 10, '최대 10');
+  store.actions.setSets('push', 0);
+  assert.equal(store.view(todayStr(), ex).sets, 1, '최소 1');
+  store.actions.setSets('push', NaN);
+  assert.equal(store.view(todayStr(), ex).sets, 1, '숫자가 아니면 그대로');
+  store.actions.toggle('push');
+  assert.equal(store.state.days[todayStr()].entries.push.sets, 1, '완료할 때 지금 값이 기록됨');
+  store.actions.flushAll();
+});
+
+test('화면 갱신 판단용 값: 저장 문구 같은 변화에는 기록·설정 값이 그대로', () => {
+  const store = createStore(fakeAdapter());
+  const { daysRev, configRev } = store.state;
+  store.actions.select(todayStr());
+  assert.equal(store.state.daysRev, daysRev);
+  assert.equal(store.state.configRev, configRev);
+  store.actions.toggle('push');
+  assert.equal(store.state.daysRev, daysRev + 1);
+  store.actions.flushAll();
+});

@@ -41,6 +41,8 @@ async function boot() {
   setInterval(() => store.actions.refreshToday(), 60_000);
 
   document.documentElement.dataset.storage = adapter.kind;
+  const bootStatus = document.getElementById('boot-status');
+  if (bootStatus) bootStatus.hidden = true;
 
   // 브라우저가 저장 공간이 부족할 때 기록을 임의로 지우지 않도록 영구 저장을 요청합니다.
   if (adapter.kind === 'local') requestPersistentStorage();
@@ -50,6 +52,7 @@ boot().catch((err) => {
   const st = document.getElementById('boot-status');
   if (st) {
     st.hidden = false;
+    st.classList.add('err');
     st.textContent = '화면을 띄우지 못했습니다. 새로고침해 주세요.';
   }
   console.error(err);

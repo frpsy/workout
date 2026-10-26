@@ -1,11 +1,12 @@
-// 최근 5주 달력, 연속·달성률, 종목별 꾸준함
+// 최근 2주 달력(바로 보임), 자세히(달성·연속, 종목별 꾸준함, 지난 3주 — 접어 두고 펼쳤을 때만 그림)
 
 import { addDays, diffDays, labelMD, mondayOf, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
 import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent } from '../stats.js';
 import { $, esc } from './dom.js';
 
-const WEEKS = 5;
+const WEEKS = 5; // 달력 전체 주 수: 최근 2주는 바로, 앞의 3주는 자세히 안에
+const RECENT = 2;
 const MAX_PIPS = 6;
 const STROKES = ['M3 4H21', 'M12 4V20', 'M12 12H18', 'M7 9V16', 'M3 20H21'];
 
@@ -17,48 +18,60 @@ function glyph(on) {
   );
 }
 
+const HEAD = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목', '금', '토', '일'].map((x) => `<span>${x}</span>`).join('') + '</div>';
+
 export function mountHistory(root, store) {
   root.innerHTML = `
-    <section>
-      <h2 class="sec">최근 ${WEEKS}주</h2>
-      <div id="cal" class="cal"></div>
-      <p class="sub" id="calSub"></p>
+    <section aria-label="최근 2주">
+      <div id="calRecent" class="cal"></div>
     </section>
-    <section>
-      <h2 class="sec">달성·연속</h2>
-      <dl class="totals" id="summary"></dl>
-      <div class="glyphs" id="glyphs" role="img"></div>
-      <p class="tallytext" id="tallyText"></p>
-    </section>
-    <section>
-      <h2 class="sec">종목별 꾸준함</h2>
-      <ul class="perex" id="perEx"></ul>
-      <p class="sub">달성률은 최근 30일 중 해야 했던 날(쉬는 요일·시작 전 제외) 대비 마친 날입니다.</p>
-    </section>`;
+    <details class="block" id="moreBox">
+      <summary>기록 자세히</summary>
+      <div class="set-body">
+        <section>
+          <h2 class="sec">달성·연속</h2>
+          <dl class="totals" id="summary"></dl>
+          <div class="glyphs" id="glyphs" role="img"></div>
+          <p class="tallytext" id="tallyText"></p>
+        </section>
+        <section>
+          <h2 class="sec">종목별 꾸준함</h2>
+          <ul class="perex" id="perEx"></ul>
+          <p class="sub">달성률은 최근 30일 중 해야 했던 날(쉬는 요일·시작 전 제외) 대비 마친 날입니다.</p>
+        </section>
+        <section>
+          <h2 class="sec">지난 ${WEEKS - RECENT}주</h2>
+          <div id="calOlder" class="cal"></div>
+          <p class="sub" id="calSub"></p>
+        </section>
+      </div>
+    </details>`;
 
-  $('#cal', root).addEventListener('click', (ev) => {
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function onPick(ev) {
     const b = ev.target.closest('button.cell');
     if (!b || b.disabled) return;
     store.actions.select(b.dataset.date);
-    // 고칠 체크 행은 맨 위에 있어 달력에서는 보이지 않으므로 그쪽으로 옮깁니다.
-    const top = document.getElementById('today');
+    // 고칠 체크 행이 화면 위로 벗어나 있을 때만 그쪽으로 옮깁니다.
+    const rows = document.getElementById('rows');
+    if (rows && rows.getBoundingClientRect().top < 0) rows.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
     const title = document.getElementById('dateLabel');
-    if (top) top.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     if (title) title.focus({ preventScroll: true });
-  });
+  }
+  $('#calRecent', root).addEventListener('click', onPick);
+  $('#calOlder', root).addEventListener('click', onPick);
 
-  return function render(state) {
+  let key = '';
+  let last = null;
+
+  /** w주 전(0=가장 오래된 주 … WEEKS-1=이번 주)부터 n주 */
+  function calHtml(state, ctx, from, to) {
     const { days, today, selected, config } = state;
-    const exs = store.activeExercises();
-    const ids = exs.map((e) => e.id);
-    const rest = new Set(config.restDays || []);
-    // 목표 주차는 시작일부터 7일 단위라 월요일 시작이 아니면 달력 줄과 어긋납니다.
-    const offGrid = parse(config.startDate).getDay() !== 1;
-
-    /* 달력 */
+    const { exs, ids, rest } = ctx;
     const start = addDays(mondayOf(today), -7 * (WEEKS - 1));
-    let h = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목', '금', '토', '일'].map((x) => `<span>${x}</span>`).join('') + '</div>';
-    for (let w = 0; w < WEEKS; w++) {
+    let h = HEAD;
+    for (let w = from; w < to; w++) {
       const ws = addDays(start, w * 7);
       h += `<div class="cal-row"><span class="wk">${shortMD(ws)}</span>`;
       for (let i = 0; i < 7; i++) {
@@ -75,14 +88,21 @@ export function mountHistory(root, store) {
       }
       h += '</div>';
     }
-    $('#cal', root).innerHTML = h;
-    const calHelp = [
+    return h;
+  }
+
+  function renderMore(state, ctx) {
+    const { days, today, config } = state;
+    const { exs, rest } = ctx;
+    const offGrid = parse(config.startDate).getDay() !== 1; // 목표 주차는 시작일 기준 7일 단위
+    const help = [
       '날짜를 누르면 그날 기록을 고칠 수 있습니다.',
-      ids.length <= MAX_PIPS ? `점은 ${exs.map((e) => e.name).join(', ')} 순서입니다.` : '',
+      ctx.ids.length <= MAX_PIPS ? `점은 ${exs.map((e) => e.name).join(', ')} 순서입니다.` : '',
       offGrid ? '왼쪽에 초록 선이 있는 날은 새 목표 주차가 시작되는 날입니다.' : '',
       rest.size ? '흐린 날은 쉬는 요일입니다.' : '',
     ];
-    $('#calSub', root).textContent = calHelp.filter(Boolean).join(' ');
+    $('#calOlder', root).innerHTML = calHtml(state, ctx, 0, WEEKS - RECENT);
+    $('#calSub', root).textContent = help.filter(Boolean).join(' ');
 
     /* 正 누적 */
     const complete = completeDayCount(days, exs);
@@ -109,7 +129,10 @@ export function mountHistory(root, store) {
       `<div><dt>30일 달성률</dt><dd>${p30 === null ? '–' : p30}<small>${p30 === null ? '' : '%'}</small></dd>` +
       `<dd class="best">${a7.total ? `최근 7일 ${a7.done}/${a7.total}일` : '기록 시작 전'}</dd></div>`;
 
-    /* 종목별: 연속·최고 연속·30일 달성률 */
+    /* 종목별: 연속·최고 연속·30일 달성률 (해낸 주만 늘리기면 이번 주 진행도 함께) */
+    const adaptive = config.plan.mode === 'adaptive';
+    const res = adaptive ? store.resolver() : null;
+    const wk = Math.max(0, weekIndex(today, config.startDate));
     $('#perEx', root).innerHTML = exs
       .map((e) => {
         const one = [e];
@@ -117,11 +140,34 @@ export function mountHistory(root, store) {
         const c = currentStreak(days, today, one, rest);
         const b = bestStreak(days, one, rest);
         return (
-          `<li><div class="pe-head"><span class="pe-name">${esc(e.name)}</span><span class="pe-meta">연속 <b>${c}</b>일 · 최고 <b>${b}</b>일</span></div>` +
+          `<li><div class="pe-head"><span class="pe-name">${esc(e.name)}</span><span class="pe-meta">연속 <b>${c}</b>일 · 최고 <b>${b}</b>일${adaptive ? ` · 이번 주 <b>${res.ctx.counts(e.id).get(wk) || 0}</b>/${config.plan.passDays}일` : ''}</span></div>` +
           `<div class="pe-bar" role="img" aria-label="${esc(e.name)} 30일 달성률 ${p === null ? '없음' : p + '%'}"><i style="width:${p || 0}%"></i></div>` +
           `<span class="pe-pct">${p === null ? '–' : p + '%'}</span></li>`
         );
       })
       .join('');
-  };
+  }
+
+  // 펼치면 그때 그림 (접혀 있는 동안은 계산하지 않음)
+  $('#moreBox', root).addEventListener('toggle', () => {
+    if ($('#moreBox', root).open && last) {
+      key = '';
+      render(last);
+    }
+  });
+
+  function render(state) {
+    last = state;
+    const open = $('#moreBox', root).open;
+    // 기록·설정·날짜·선택이 바뀌었을 때만 다시 그림 (저장 상태 문구 같은 변화에는 그대로 둠)
+    const next = `${state.daysRev}:${state.configRev}:${state.selected}:${state.today}:${open}`;
+    if (next === key) return;
+    key = next;
+
+    const exs = store.activeExercises();
+    const ctx = { exs, ids: exs.map((e) => e.id), rest: new Set(state.config.restDays || []) };
+    $('#calRecent', root).innerHTML = calHtml(state, ctx, WEEKS - RECENT, WEEKS);
+    if (open) renderMore(state, ctx);
+  }
+  return render;
 }

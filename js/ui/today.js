@@ -4,10 +4,11 @@ import { UNITS } from '../config.js';
 import { backupDue, readBackupMeta, SNOOZE_DAYS, writeBackupMeta } from '../backup.js';
 import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
+import { currentStreak } from '../stats.js';
 import { $, esc, haptic } from './dom.js';
 
 const CHECK_SVG =
-  '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 export function mountToday(root, store) {
   const { actions } = store;
@@ -16,8 +17,10 @@ export function mountToday(root, store) {
 
   root.innerHTML = `
     <header class="head">
-      <p class="eyebrow" id="weekLabel"></p>
-      <h1 id="dateLabel" tabindex="-1"></h1>
+      <div class="headline">
+        <h1 id="dateLabel" tabindex="-1"></h1>
+        <p class="eyebrow" id="weekLabel"></p>
+      </div>
       <div class="prog">
         <div class="segs" id="segs"></div>
         <span class="progtext" id="progText"></span>
@@ -46,9 +49,7 @@ export function mountToday(root, store) {
     const due = state.ready && state.adapter.kind === 'local' && backupDue({ days: state.days, today: state.today, last: meta.last, snoozeUntil: meta.snoozeUntil });
     $('#bakNote', root).hidden = !due;
     if (due) {
-      $('#bakNoteText', root).textContent = meta.last
-        ? `마지막 백업(${labelMD(meta.last)}) 뒤로 기록이 쌓였습니다. 백업해 두세요.`
-        : '아직 백업한 적이 없습니다. 브라우저 데이터를 지우면 기록이 사라지니 백업해 두세요.';
+      $('#bakNoteText', root).textContent = meta.last ? `${labelMD(meta.last)} 이후 백업이 없어요` : '아직 백업이 없어요';
     }
   }
   $('#bakGo', root).addEventListener('click', () => {
@@ -69,54 +70,53 @@ export function mountToday(root, store) {
     rows = new Map();
     for (const ex of exs) {
       const unit = UNITS[ex.unit];
+      const u = esc(unit.label);
+      const n = esc(ex.name);
       const el = document.createElement('article');
       el.className = 'row';
       el.innerHTML = `
-        <h2 class="name">${esc(ex.name)}</h2>
-        <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${esc(unit.label)}</span><span class="sets" data-f="sets"></span></p>
-        <div class="actual">
-          <label for="cnt-${ex.id}" class="sr">세트당 실제</label>
-          <div class="stepper">
-            <button type="button" data-f="minus" aria-label="${esc(ex.name)} ${unit.inc}${esc(unit.label)} 줄이기">−</button>
-            <input id="cnt-${ex.id}" data-f="cnt" type="number" inputmode="numeric" min="0" max="99999">
-            <button type="button" data-f="plus" aria-label="${esc(ex.name)} ${unit.inc}${esc(unit.label)} 늘리기">+</button>
-          </div>
+        <div class="info">
+          <h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>
+          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span></p>
         </div>
-        <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${esc(ex.name)} 완료">${CHECK_SVG}</button>
-        <div class="foot"><p class="hint" data-f="hint"></p><span class="delta" data-f="delta"></span></div>`;
+        <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}</button>
+        <div class="ctrl">
+          <div class="stepper reps" role="group" aria-label="${n} 세트당 ${u}">
+            <button type="button" data-f="minus5" aria-label="${n} ${unit.big}${u} 줄이기">−${unit.big}</button>
+            <button type="button" data-f="minus" aria-label="${n} ${unit.inc}${u} 줄이기">−${unit.inc}</button>
+            <input data-f="cnt" type="number" inputmode="numeric" min="0" max="99999" aria-label="${n} 세트당 실제 ${u}">
+            <button type="button" data-f="plus" aria-label="${n} ${unit.inc}${u} 늘리기">+${unit.inc}</button>
+            <button type="button" data-f="plus5" aria-label="${n} ${unit.big}${u} 늘리기">+${unit.big}</button>
+          </div>
+          <span class="times" aria-hidden="true">×</span>
+          <div class="stepper setstep" role="group" aria-label="${n} 세트 수">
+            <button type="button" data-f="setsMinus" aria-label="${n} 세트 줄이기">−</button>
+            <input data-f="setsIn" type="number" inputmode="numeric" min="1" max="10" aria-label="${n} 실제 세트 수">
+            <button type="button" data-f="setsPlus" aria-label="${n} 세트 늘리기">+</button>
+          </div>
+        </div>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
-      const r = { el, ex, target: q('target'), sets: q('sets'), check: q('check'), minus: q('minus'), plus: q('plus'), cnt: q('cnt'), delta: q('delta'), hint: q('hint') };
+      const r = { el, ex, unit };
+      for (const f of ['target', 'sets', 'delta', 'check', 'minus5', 'minus', 'plus', 'plus5', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
+      const view = () => store.view(store.state.selected, ex);
+      const bump = (d) => () => actions.setCount(ex.id, view().count + d);
       r.check.addEventListener('click', () => {
         haptic();
         actions.toggle(ex.id);
       });
-      r.minus.addEventListener('click', () => actions.setCount(ex.id, store.view(store.state.selected, ex).count - unit.inc));
-      r.plus.addEventListener('click', () => actions.setCount(ex.id, store.view(store.state.selected, ex).count + unit.inc));
+      r.minus5.addEventListener('click', bump(-unit.big));
+      r.minus.addEventListener('click', bump(-unit.inc));
+      r.plus.addEventListener('click', bump(unit.inc));
+      r.plus5.addEventListener('click', bump(unit.big));
       r.cnt.addEventListener('change', () => actions.setCount(ex.id, parseInt(r.cnt.value, 10)));
-      r.cnt.addEventListener('focus', () => r.cnt.select());
+      r.setsMinus.addEventListener('click', () => actions.setSets(ex.id, view().sets - 1));
+      r.setsPlus.addEventListener('click', () => actions.setSets(ex.id, view().sets + 1));
+      r.setsIn.addEventListener('change', () => actions.setSets(ex.id, parseInt(r.setsIn.value, 10)));
+      for (const input of [r.cnt, r.setsIn]) input.addEventListener('focus', () => input.select());
       box.appendChild(el);
       rows.set(ex.id, r);
     }
     if (!exs.length) box.innerHTML = '<p class="empty">사용 중인 운동이 없습니다. 아래 운동 설정에서 추가해 주세요.</p>';
-  }
-
-  /** 다음 주 목표 안내 문구 */
-  function hintFor(ex, res, state) {
-    const { config, today } = state;
-    const w = Math.max(0, weekIndex(state.selected, config.startDate));
-    const unit = UNITS[ex.unit].label;
-    const next = res.targetForWeek(ex, w + 1);
-    const sets = ex.sets > 1 ? ` × ${ex.sets}` : '';
-    const nextRec = isRecoveryWeek(w + 1, config.plan) ? ' (회복주)' : '';
-    if (config.plan.mode === 'adaptive' && weekIndex(today, config.startDate) === w) {
-      const doneDays = res.ctx.counts(ex.id).get(w) || 0;
-      const need = Math.max(0, config.plan.passDays - doneDays);
-      if (isRecoveryWeek(w, config.plan)) return `이번 주 ${doneDays}일 · 다음 주 ${next}${unit}${sets}${nextRec}`;
-      return need > 0
-        ? `이번 주 ${doneDays}일 · ${need}일 더 하면 다음 주 ${next}${unit}${sets}${nextRec}`
-        : `이번 주 ${doneDays}일 · 다음 주 ${next}${unit}${sets}${nextRec}`;
-    }
-    return `다음 주 ${next}${unit}${sets}${nextRec}`;
   }
 
   return function render(state) {
@@ -144,15 +144,20 @@ export function mountToday(root, store) {
       const v = store.view(selected, r.ex, res);
       if (v.done) done++;
       r.target.textContent = v.target;
-      r.sets.textContent = v.sets > 1 ? `× ${v.sets}` : '';
+      r.sets.textContent = r.ex.sets > 1 ? `× ${r.ex.sets}` : '';
       r.el.classList.toggle('done', v.done);
       r.check.setAttribute('aria-pressed', String(v.done));
-      for (const b of [r.check, r.minus, r.plus, r.cnt]) b.disabled = !state.ready;
+      for (const b of [r.check, r.minus5, r.minus, r.plus, r.plus5, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) b.disabled = !state.ready;
       if (document.activeElement !== r.cnt) r.cnt.value = v.count;
+      if (document.activeElement !== r.setsIn) r.setsIn.value = v.sets;
+      // 목표와 다르게 한 부분만 짧게 알려 줌 (예: +2개 · 세트 -1)
       const diff = v.count - v.target;
-      r.delta.textContent = diff ? `목표보다 ${diff > 0 ? '+' : ''}${diff}` : '';
-      r.delta.classList.toggle('over', diff > 0);
-      r.hint.textContent = hintFor(r.ex, res, state);
+      const setDiff = v.setsKnown ? v.sets - r.ex.sets : 0;
+      const parts = [];
+      if (diff) parts.push(`${diff > 0 ? '+' : ''}${diff}${r.unit.label}`);
+      if (setDiff) parts.push(`세트 ${setDiff > 0 ? '+' : ''}${setDiff}`);
+      r.delta.textContent = parts.join(' · ');
+      r.delta.classList.toggle('over', diff > 0 || setDiff > 0);
     }
 
     const segs = $('#segs', root);
@@ -160,7 +165,9 @@ export function mountToday(root, store) {
     [...segs.children].forEach((s, i) => s.classList.toggle('on', i < done));
     const all = exs.length > 0 && done === exs.length;
     const pt = $('#progText', root);
-    pt.textContent = all ? '모두 완료' : `${done}/${exs.length} 완료`;
+    // 모두 마치면 이어진 연속 일수를 보여 줌 (그날의 완료 처리가 반영된 값)
+    const streak = all && selected === today ? currentStreak(state.days, today, exs, new Set(config.restDays || [])) : 0;
+    pt.textContent = all ? (streak > 1 ? `모두 완료 · 연속 ${streak}일` : '모두 완료') : `${done}/${exs.length} 완료`;
     pt.classList.toggle('all', all);
 
     const recNote = $('#recNote', root);

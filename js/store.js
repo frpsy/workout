@@ -20,6 +20,9 @@ export function createStore(adapter) {
     ready: false,
     status: { text: '불러오는 중…', error: false },
     rev: 0,
+    // 화면 조각이 다시 그릴지 판단하는 값: 기록(days)·설정(config)이 실제로 바뀔 때만 올라감
+    daysRev: 0,
+    configRev: 0,
   };
 
   const listeners = new Set();
@@ -55,6 +58,7 @@ export function createStore(adapter) {
   adapter.subscribe({
     onConfig(raw) {
       state.config = normalizeConfig(raw, state.config.startDate);
+      state.configRev++;
       state.configSaved = !!raw;
       state.loaded.config = true;
       if (state.loaded.days && state.status.text === '불러오는 중…') state.status = { text: '', error: false };
@@ -66,6 +70,7 @@ export function createStore(adapter) {
       // 저장 대기 중인 날은 화면의 값을 유지
       for (const date of timers.keys()) if (state.days[date]) next[date] = state.days[date];
       state.days = next;
+      state.daysRev++;
       state.loaded.days = true;
       if (state.loaded.config && state.status.text === '불러오는 중…') state.status = { text: '', error: false };
       emit();
@@ -124,9 +129,10 @@ export function createStore(adapter) {
     const done = !!(e && e.done);
     const target = done && Number.isFinite(e.target) ? e.target : res.targetForDate(ex, date);
     const count = e && Number.isFinite(e.count) ? e.count : target;
-    // 완료한 날은 그때의 세트 수(없으면 1), 아직이면 지금 설정
-    const sets = done ? (e.sets || 1) : ex.sets;
-    return { done, target, count, sets };
+    // 직접 고친 세트 수가 있으면 그 값, 완료했는데 기록에 없으면 1(예전 기록), 아직이면 지금 설정
+    const hasSets = !!(e && Number.isFinite(e.sets));
+    const sets = hasSets ? e.sets : done ? 1 : ex.sets;
+    return { done, target, count, sets, setsKnown: hasSets || !done };
   }
 
   function ensureEntry(date, id) {
@@ -157,6 +163,7 @@ export function createStore(adapter) {
         entry.sets = v.sets;
       }
       scheduleSave(date);
+      state.daysRev++;
       emit();
     },
 
@@ -167,6 +174,19 @@ export function createStore(adapter) {
       const entry = ensureEntry(state.selected, id);
       entry.count = Math.max(LIMITS.count[0], Math.min(LIMITS.count[1], Math.round(n)));
       scheduleSave(state.selected);
+      state.daysRev++;
+      emit();
+    },
+
+    /** 그날 한 세트 수를 직접 고침 */
+    setSets(id, n) {
+      if (!state.ready) return;
+      const ex = state.config.exercises.find((e) => e.id === id);
+      if (!ex || !Number.isFinite(n)) return emit();
+      const entry = ensureEntry(state.selected, id);
+      entry.sets = Math.max(LIMITS.sets[0], Math.min(LIMITS.sets[1], Math.round(n)));
+      scheduleSave(state.selected);
+      state.daysRev++;
       emit();
     },
 
@@ -187,12 +207,14 @@ export function createStore(adapter) {
       if (t === state.today) return;
       const wasToday = state.selected === state.today;
       state.today = t;
+      state.daysRev++;
       if (wasToday) state.selected = t;
       emit();
     },
 
     async saveConfig(cfg) {
       state.config = normalizeConfig(cfg, state.config.startDate);
+      state.configRev++;
       emit();
       try {
         await persistConfig();
@@ -206,8 +228,12 @@ export function createStore(adapter) {
     /** 백업 가져오기: 같은 날짜는 덮어쓰고 나머지 기록은 유지 */
     async importData({ config, days }, { replaceConfig }) {
       const dates = Object.keys(days);
-      if (replaceConfig) state.config = config;
+      if (replaceConfig) {
+        state.config = config;
+        state.configRev++;
+      }
       for (const d of dates) state.days[d] = days[d];
+      state.daysRev++;
       emit();
       try {
         if (replaceConfig || !state.configSaved) await persistConfig();
