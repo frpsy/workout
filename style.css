@@ -210,3 +210,15 @@ input[type="file"] { font-size: 13px; max-width: 100%; min-width: 0; flex: 1; }
 /* 세트 */
 .goal .sets { font-family: var(--font-num); font-size: 30px; line-height: 1; font-weight: 700; color: var(--accent); margin-left: 2px; }
 td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* 종목별 꾸준함 */
+.perex { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.perex li { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "head head" "bar pct"; gap: 6px 10px; align-items: center; }
+.pe-head { grid-area: head; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+.pe-name { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pe-meta { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pe-meta b { color: var(--fg); }
+.pe-bar { grid-area: bar; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.pe-bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.pe-pct { grid-area: pct; min-width: 40px; text-align: right; font-family: var(--font-num); font-size: 20px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.glyphs { margin-top: 14px; }

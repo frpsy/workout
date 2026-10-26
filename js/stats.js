@@ -1,4 +1,4 @@
-// 완료 여부, 연속 일수, 누적 개수 계산
+// 완료 여부, 연속 일수, 달성률 계산
 
 import { addDays, parse } from './dates.js';
 
@@ -58,31 +58,24 @@ export function completeDayCount(days, exs) {
   return Object.keys(days).filter((d) => isComplete(days[d], exs, d)).length;
 }
 
-// 합계는 세트당 개수 × 세트 수 (세트가 기록에 없는 예전 기록은 1세트)
-const amountOf = (e) => (Number.isFinite(e.count) ? e.count : e.target || 0) * (e.sets || 1);
-
-/** 종목별 누적 개수 (완료한 날만) */
-export function totals(days, exercises) {
-  const out = {};
-  for (const ex of exercises) out[ex.id] = 0;
-  for (const day of Object.values(days)) {
-    for (const ex of exercises) {
-      const e = entryOf(day, ex.id);
-      if (e && e.done) out[ex.id] += amountOf(e);
-    }
+/**
+ * 최근 window일(오늘 포함)의 달성: 해야 했던 날 중 모두 마친 날.
+ * 시작 전, 운동을 추가하기 전, 쉬는 요일, 아직 하지 않은 오늘은 해야 했던 날에서 뺍니다.
+ */
+export function achievement(days, today, exs, { rest, startDate, window = 30 } = {}) {
+  let done = 0;
+  let total = 0;
+  for (let i = 0; i < window; i++) {
+    const d = addDays(today, -i);
+    if (startDate && d < startDate) break;
+    if (isRest(d, rest) || !requiredOn(exs, d).length) continue;
+    const ok = isComplete(days[d], exs, d);
+    if (d === today && !ok) continue;
+    total++;
+    if (ok) done++;
   }
-  return out;
+  return { done, total };
 }
 
-/** 종목별 하루 최고 개수 (완료한 날만) */
-export function bests(days, exercises) {
-  const out = {};
-  for (const ex of exercises) out[ex.id] = 0;
-  for (const day of Object.values(days)) {
-    for (const ex of exercises) {
-      const e = entryOf(day, ex.id);
-      if (e && e.done) out[ex.id] = Math.max(out[ex.id], amountOf(e));
-    }
-  }
-  return out;
-}
+/** 퍼센트(반올림). 해야 했던 날이 없으면 null */
+export const percent = ({ done, total }) => (total ? Math.round((done / total) * 100) : null);
