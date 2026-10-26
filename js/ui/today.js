@@ -1,7 +1,8 @@
 // 머리말(날짜·진행)과 오늘의 운동 체크 행
 
 import { UNITS } from '../config.js';
-import { dowName, labelMD, diffDays } from '../dates.js';
+import { backupDue, readBackupMeta, SNOOZE_DAYS, writeBackupMeta } from '../backup.js';
+import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { $, esc, haptic } from './dom.js';
 
@@ -22,6 +23,13 @@ export function mountToday(root, store) {
         <span class="progtext" id="progText"></span>
       </div>
       <p class="note warn" id="recNote" hidden></p>
+      <div class="back backup-note" id="bakNote" hidden>
+        <span id="bakNoteText"></span>
+        <span>
+          <button type="button" class="link" id="bakGo">백업하기</button>
+          <button type="button" class="link" id="bakLater">나중에</button>
+        </span>
+      </div>
       <div class="back" id="back" hidden>
         <span id="backText"></span>
         <button type="button" class="link" id="backBtn">오늘로 돌아가기</button>
@@ -31,6 +39,29 @@ export function mountToday(root, store) {
     <p class="status" id="status" role="status" aria-live="polite"></p>`;
 
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
+
+  /** 오래 백업하지 않았으면 안내 (이 브라우저에만 저장하는 경우) */
+  function updateBackupNote(state) {
+    const meta = readBackupMeta();
+    const due = state.ready && state.adapter.kind === 'local' && backupDue({ days: state.days, today: state.today, last: meta.last, snoozeUntil: meta.snoozeUntil });
+    $('#bakNote', root).hidden = !due;
+    if (due) {
+      $('#bakNoteText', root).textContent = meta.last
+        ? `마지막 백업(${labelMD(meta.last)}) 뒤로 기록이 쌓였습니다. 백업해 두세요.`
+        : '아직 백업한 적이 없습니다. 브라우저 데이터를 지우면 기록이 사라지니 백업해 두세요.';
+    }
+  }
+  $('#bakGo', root).addEventListener('click', () => {
+    const box = document.getElementById('bakBox');
+    if (!box) return;
+    box.open = true;
+    box.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  });
+  $('#bakLater', root).addEventListener('click', () => {
+    writeBackupMeta({ snoozeUntil: addDays(store.state.today, SNOOZE_DAYS) });
+    updateBackupNote(store.state);
+  });
+  document.addEventListener('wc:backup', () => updateBackupNote(store.state));
 
   function buildRows(exs) {
     const box = $('#rows', root);
@@ -140,6 +171,8 @@ export function mountToday(root, store) {
     const off = selected !== today;
     $('#back', root).hidden = !off;
     if (off) $('#backText', root).textContent = `${labelMD(selected)} 기록을 고치는 중입니다`;
+
+    updateBackupNote(state);
 
     const st = $('#status', root);
     st.textContent = state.status.text;

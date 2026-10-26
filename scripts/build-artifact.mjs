@@ -25,7 +25,7 @@ const js = await build({
   legalComments: 'none',
 });
 
-const pick = (re) => (html.match(re) || [, ''])[1];
+const pick = (re) => (html.match(re) || ['', ''])[1];
 const title = pick(/<title>([\s\S]*?)<\/title>/);
 const body = pick(/<body>([\s\S]*?)<\/body>/).replace(/<script[^>]*src="js\/main\.js"[^>]*><\/script>/, '');
 

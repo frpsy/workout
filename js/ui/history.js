@@ -1,7 +1,8 @@
 // 최근 5주 달력, 正 누적, 종목별 합계
 
 import { UNITS } from '../config.js';
-import { addDays, labelMD, mondayOf, parse, shortMD } from '../dates.js';
+import { addDays, diffDays, labelMD, mondayOf, parse, shortMD } from '../dates.js';
+import { weekIndex } from '../progression.js';
 import { bestStreak, bests, completeDayCount, currentStreak, doneCount, isComplete, isDone, totals } from '../stats.js';
 import { $, esc, num } from './dom.js';
 
@@ -46,6 +47,9 @@ export function mountHistory(root, store) {
     const { days, today, selected, config } = state;
     const exs = store.activeExercises();
     const ids = exs.map((e) => e.id);
+    const rest = new Set(config.restDays || []);
+    // 목표 주차는 시작일부터 7일 단위라 월요일 시작이 아니면 달력 줄과 어긋납니다.
+    const offGrid = parse(config.startDate).getDay() !== 1;
 
     /* 달력 */
     const start = addDays(mondayOf(today), -7 * (WEEKS - 1));
@@ -58,20 +62,23 @@ export function mountHistory(root, store) {
         const day = days[d];
         const n = doneCount(day, ids);
         const full = isComplete(day, exs, d);
-        const cls = ['cell', full && 'full', d === today && 'today', d === selected && 'sel', d < config.startDate && 'pre'].filter(Boolean).join(' ');
+        const cls = ['cell', full && 'full', d === today && 'today', d === selected && 'sel', d < config.startDate && 'pre', rest.has(parse(d).getDay()) && 'rest', d >= config.startDate && diffDays(d, config.startDate) % 7 === 0 && 'wkstart'].filter(Boolean).join(' ');
         const pips =
           ids.length <= MAX_PIPS
             ? '<span class="pips">' + ids.map((id) => `<i class="${isDone(day, id) ? 'on' : ''}"></i>`).join('') + '</span>'
             : `<span class="frac">${n}/${ids.length}</span>`;
-        h += `<button type="button" class="${cls}" data-date="${d}"${d > today ? ' disabled' : ''}${d === selected ? ' aria-current="date"' : ''} aria-label="${labelMD(d)}, ${n}종목 완료"><span class="dn">${parse(d).getDate()}</span>${pips}</button>`;
+        h += `<button type="button" class="${cls}" data-date="${d}"${d > today ? ' disabled' : ''}${d === selected ? ' aria-current="date"' : ''} aria-label="${labelMD(d)}, ${n}종목 완료${cls.includes('wkstart') ? `, ${weekIndex(d, config.startDate) + 1}주차 시작` : ''}${cls.includes('rest') ? ', 쉬는 날' : ''}"><span class="dn">${parse(d).getDate()}</span>${pips}</button>`;
       }
       h += '</div>';
     }
     $('#cal', root).innerHTML = h;
-    $('#calSub', root).textContent =
-      ids.length <= MAX_PIPS
-        ? `날짜를 누르면 그날 기록을 고칠 수 있습니다. 점은 ${exs.map((e) => e.name).join(', ')} 순서입니다.`
-        : '날짜를 누르면 그날 기록을 고칠 수 있습니다.';
+    const calHelp = [
+      '날짜를 누르면 그날 기록을 고칠 수 있습니다.',
+      ids.length <= MAX_PIPS ? `점은 ${exs.map((e) => e.name).join(', ')} 순서입니다.` : '',
+      offGrid ? '왼쪽에 초록 선이 있는 날은 새 목표 주차가 시작되는 날입니다.' : '',
+      rest.size ? '흐린 날은 쉬는 요일입니다.' : '',
+    ];
+    $('#calSub', root).textContent = calHelp.filter(Boolean).join(' ');
 
     /* 正 누적 */
     const complete = completeDayCount(days, exs);
@@ -83,8 +90,8 @@ export function mountHistory(root, store) {
     const glyphs = $('#glyphs', root);
     glyphs.innerHTML = g;
     glyphs.setAttribute('aria-label', `모든 운동을 마친 날 ${complete}일`);
-    const cur = currentStreak(days, today, exs);
-    const best = bestStreak(days, exs);
+    const cur = currentStreak(days, today, exs, rest);
+    const best = bestStreak(days, exs, rest);
     $('#tallyText', root).innerHTML = `모두 마친 날 <b>${complete}</b>일 · 연속 <b>${cur}</b>일 · 최고 <b>${best}</b>일`;
 
     /* 종목별 합계 */
