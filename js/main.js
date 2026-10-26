@@ -7,6 +7,14 @@ import { mountPlan } from './ui/plan.js';
 import { mountSettings } from './ui/settings.js';
 import { mountToday } from './ui/today.js';
 
+async function requestPersistentStorage() {
+  try {
+    if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
+  } catch {
+    /* 지원하지 않거나 거절됨: 기록은 그대로 저장됩니다 */
+  }
+}
+
 async function boot() {
   const adapter = await createStorage();
   const store = createStore(adapter);
@@ -33,6 +41,9 @@ async function boot() {
   setInterval(() => store.actions.refreshToday(), 60_000);
 
   document.documentElement.dataset.storage = adapter.kind;
+
+  // 브라우저가 저장 공간이 부족할 때 기록을 임의로 지우지 않도록 영구 저장을 요청합니다.
+  if (adapter.kind === 'local') requestPersistentStorage();
 }
 
 boot().catch((err) => {

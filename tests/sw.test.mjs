@@ -16,6 +16,6 @@ function files(dir) {
 test('서비스 워커가 앱 파일을 모두 미리 저장', () => {
   const src = readFileSync(join(root, 'sw.js'), 'utf8');
   const listed = [...src.match(/const ASSETS = \[([\s\S]*?)\];/)[1].matchAll(/'\.\/([^']*)'/g)].map((m) => m[1]).filter(Boolean);
-  const expected = ['index.html', 'style.css', 'manifest.webmanifest', ...files('js'), ...files('icons')];
+  const expected = ['index.html', 'style.css', 'manifest.webmanifest', ...files('js'), ...files('icons'), ...files('fonts')];
   assert.deepEqual([...listed].sort(), [...expected].sort());
 });

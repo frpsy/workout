@@ -1,6 +1,6 @@
 // 네트워크 우선, 실패하면 캐시. 새 버전은 다음 접속 때 바로 반영됩니다.
 // 앱 파일을 추가·삭제하면 ASSETS도 고치고 CACHE 번호를 올립니다 (tests/sw.test.mjs가 목록을 검사).
-const CACHE = 'workout-check-v3';
+const CACHE = 'workout-check-v4';
 
 const ASSETS = [
   './',
@@ -11,6 +11,11 @@ const ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
+  './fonts/barlow-condensed-600.woff2',
+  './fonts/barlow-condensed-700.woff2',
+  './fonts/noto-sans-kr-400.woff2',
+  './fonts/noto-sans-kr-500.woff2',
+  './fonts/noto-sans-kr-700.woff2',
   './js/config.js',
   './js/dates.js',
   './js/main.js',

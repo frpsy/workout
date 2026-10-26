@@ -2,7 +2,7 @@
 
 import { UNITS } from '../config.js';
 import { addDays, labelMD, mondayOf, parse, shortMD } from '../dates.js';
-import { bestStreak, bests, completeDayCount, currentStreak, doneCount, isDone, totals } from '../stats.js';
+import { bestStreak, bests, completeDayCount, currentStreak, doneCount, isComplete, isDone, totals } from '../stats.js';
 import { $, esc, num } from './dom.js';
 
 const WEEKS = 5;
@@ -57,7 +57,7 @@ export function mountHistory(root, store) {
         const d = addDays(ws, i);
         const day = days[d];
         const n = doneCount(day, ids);
-        const full = ids.length > 0 && n === ids.length;
+        const full = isComplete(day, exs, d);
         const cls = ['cell', full && 'full', d === today && 'today', d === selected && 'sel', d < config.startDate && 'pre'].filter(Boolean).join(' ');
         const pips =
           ids.length <= MAX_PIPS
@@ -74,7 +74,7 @@ export function mountHistory(root, store) {
         : '날짜를 누르면 그날 기록을 고칠 수 있습니다.';
 
     /* 正 누적 */
-    const complete = completeDayCount(days, ids);
+    const complete = completeDayCount(days, exs);
     const full = Math.floor(complete / 5);
     const shown = Math.min(full, 40);
     let g = full > shown ? '<span class="more">…</span>' : '';
@@ -83,8 +83,8 @@ export function mountHistory(root, store) {
     const glyphs = $('#glyphs', root);
     glyphs.innerHTML = g;
     glyphs.setAttribute('aria-label', `모든 운동을 마친 날 ${complete}일`);
-    const cur = currentStreak(days, today, ids);
-    const best = bestStreak(days, ids);
+    const cur = currentStreak(days, today, exs);
+    const best = bestStreak(days, exs);
     $('#tallyText', root).innerHTML = `모두 마친 날 <b>${complete}</b>일 · 연속 <b>${cur}</b>일 · 최고 <b>${best}</b>일`;
 
     /* 종목별 합계 */

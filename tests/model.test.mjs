@@ -54,3 +54,11 @@ test('엉뚱한 내용은 오류', () => {
   assert.throws(() => parseImport('hello', '2026-10-26'));
   assert.throws(() => parseImport('{"a":1}', '2026-10-26'));
 });
+
+test('운동 추가일(since)은 올바른 날짜만 유지', async () => {
+  const { normalizeExercise } = await import('../js/model.js');
+  const base = { id: 'x', name: 'x', unit: 'reps', base: 5, step: 1 };
+  assert.equal(normalizeExercise({ ...base, since: '2026-10-25' }).since, '2026-10-25');
+  assert.equal('since' in normalizeExercise({ ...base, since: 'abc' }), false);
+  assert.equal('since' in normalizeExercise(base), false);
+});
