@@ -62,3 +62,13 @@ test('운동 추가일(since)은 올바른 날짜만 유지', async () => {
   assert.equal('since' in normalizeExercise({ ...base, since: 'abc' }), false);
   assert.equal('since' in normalizeExercise(base), false);
 });
+
+test('쉬는 요일: 범위 밖·중복 정리, 7일 모두는 받지 않음, 저장에 포함', async () => {
+  const { normalizeRestDays, serializeConfig } = await import('../js/model.js');
+  assert.deepEqual(normalizeRestDays([6, 0, 0, 9, -1, 'x', 2.5]), [0, 6]);
+  assert.deepEqual(normalizeRestDays([0, 1, 2, 3, 4, 5, 6]), []);
+  assert.deepEqual(normalizeRestDays(undefined), []);
+  const c = normalizeConfig({ startDate: '2026-10-26', exercises: [{ id: 'a', name: 'a' }], restDays: [0] }, '2026-01-01');
+  assert.deepEqual(serializeConfig(c).restDays, [0]);
+  assert.ok(validateConfig({ ...c, restDays: [0, 1, 2, 3, 4, 5, 6] }).length > 0);
+});

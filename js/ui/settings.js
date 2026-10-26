@@ -1,7 +1,8 @@
 // 운동·목표 설정과 백업
 
 import { LIMITS, PRESETS, UNITS } from '../config.js';
-import { todayStr } from '../dates.js';
+import { writeBackupMeta } from '../backup.js';
+import { DOW, todayStr } from '../dates.js';
 import { exportPayload, newExerciseId, parseImport, validateConfig } from '../model.js';
 import { $, copyText, esc } from './dom.js';
 
@@ -46,6 +47,14 @@ export function mountSettings(root, store) {
             ${[0.6, 0.7, 0.8, 0.9].map((r) => `<option value="${r}">${Math.round(r * 100)}%로</option>`).join('')}
           </select>
         </div>
+
+        <fieldset class="field">
+          <legend>쉬는 요일</legend>
+          <div class="restdays" id="restDays">
+            ${[1, 2, 3, 4, 5, 6, 0].map((d) => `<label class="radio"><input type="checkbox" value="${d}"> ${DOW[d]}</label>`).join('')}
+          </div>
+          <p class="sub">쉬는 요일에 기록이 없어도 연속 기록이 끊기지 않습니다.</p>
+        </fieldset>
 
         <h3 class="sub-h">운동 목록</h3>
         <div id="exList" class="exlist"></div>
@@ -110,6 +119,7 @@ export function mountSettings(root, store) {
     el('recEvery').value = String(draft.plan.recoveryEvery);
     el('recRatio').value = String(draft.plan.recoveryRatio);
     el('recRatio').disabled = draft.plan.recoveryEvery === 0;
+    for (const box of root.querySelectorAll('#restDays input')) box.checked = (draft.restDays || []).includes(+box.value);
     renderList();
   }
 
@@ -235,6 +245,11 @@ export function mountSettings(root, store) {
     markDirty();
   });
 
+  el('restDays').addEventListener('change', () => {
+    draft.restDays = [...root.querySelectorAll('#restDays input:checked')].map((b) => +b.value).sort((a, b) => a - b);
+    markDirty();
+  });
+
   el('saveCfg').addEventListener('click', async () => {
     draft.exercises.forEach((e) => (e.name = e.name.trim()));
     const errors = validateConfig(draft);
@@ -268,10 +283,17 @@ export function mountSettings(root, store) {
     el('bakStatus').classList.toggle('err', err);
   };
   const backupText = () => JSON.stringify(exportPayload(store.state.config, store.state.days), null, 1);
+  const backedUp = () => {
+    writeBackupMeta({ last: todayStr(), snoozeUntil: null });
+    document.dispatchEvent(new Event('wc:backup'));
+  };
 
   el('copyBak').addEventListener('click', async () => {
     const text = backupText();
-    if (await copyText(text)) bakStatus('백업을 복사했습니다. 메모 앱 등에 붙여 넣어 보관하세요.');
+    if (await copyText(text)) {
+      backedUp();
+      bakStatus('백업을 복사했습니다. 메모 앱 등에 붙여 넣어 보관하세요.');
+    }
     else {
       el('bakText').value = text;
       el('bakText').select();
@@ -288,6 +310,7 @@ export function mountSettings(root, store) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    backedUp();
     bakStatus('백업 파일을 저장했습니다.');
   });
 

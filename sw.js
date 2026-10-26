@@ -1,31 +1,33 @@
 // 네트워크 우선, 실패하면 캐시. 새 버전은 다음 접속 때 바로 반영됩니다.
-// 앱 파일을 추가·삭제하면 ASSETS도 고치고 CACHE 번호를 올립니다 (tests/sw.test.mjs가 목록을 검사).
-const CACHE = 'workout-check-v4';
+// ASSETS는 `npm run sw`가 실제 파일에서 만듭니다 (tests/sw.test.mjs가 목록을 검사).
+// 배포할 때는 CI가 --hash로 CACHE 이름을 파일 내용에서 정해, 번호를 손으로 올릴 필요가 없습니다.
+const CACHE = 'workout-check-dev';
 
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './manifest.webmanifest',
-  './icons/icon.svg',
+  './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/apple-touch-icon.png',
+  './icons/icon.svg',
   './fonts/barlow-condensed-600.woff2',
   './fonts/barlow-condensed-700.woff2',
   './fonts/noto-sans-kr-400.woff2',
   './fonts/noto-sans-kr-500.woff2',
   './fonts/noto-sans-kr-700.woff2',
+  './js/backup.js',
   './js/config.js',
   './js/dates.js',
   './js/main.js',
   './js/model.js',
   './js/progression.js',
   './js/stats.js',
-  './js/store.js',
   './js/storage/claude-db.js',
   './js/storage/index.js',
   './js/storage/local.js',
+  './js/store.js',
   './js/ui/dom.js',
   './js/ui/history.js',
   './js/ui/plan.js',

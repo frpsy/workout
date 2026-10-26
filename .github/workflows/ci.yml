@@ -19,6 +19,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm test
       - run: npm run build:artifact
       # 사이트에 필요한 파일만 올립니다 (테스트·빌드 도구 제외)
@@ -26,6 +27,7 @@ jobs:
         run: |
           mkdir _site
           cp -r index.html style.css sw.js manifest.webmanifest icons fonts js _site/
+          node scripts/update-sw.mjs _site --hash
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:

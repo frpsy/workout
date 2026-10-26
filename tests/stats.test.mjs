@@ -43,3 +43,21 @@ test('운동을 나중에 추가해도 그 전 날짜의 연속 기록은 유지
   // 추가한 날 이후에는 새 운동도 해야 완료
   assert.equal(completeDayCount({ '2026-10-26': onlyA }, withNew), 0);
 });
+
+test('쉬는 요일은 기록이 없어도 연속이 끊기지 않음', () => {
+  // 2026-10-26은 월요일. 일요일(0)을 쉬는 날로 둔다.
+  const rest = new Set([0]);
+  const days = { '2026-10-23': full, '2026-10-24': full, '2026-10-26': full };
+  assert.equal(currentStreak(days, '2026-10-26', ids, rest), 3);
+  assert.equal(currentStreak(days, '2026-10-26', ids), 1, '쉬는 요일 설정이 없으면 일요일에 끊김');
+  assert.equal(bestStreak(days, ids, rest), 3);
+  assert.equal(bestStreak(days, ids), 2);
+  // 쉬는 요일이 아닌 날을 빼먹으면 끊김
+  assert.equal(currentStreak({ '2026-10-23': full, '2026-10-26': full }, '2026-10-26', ids, rest), 1);
+});
+
+test('오늘이 쉬는 날이고 기록이 없어도 어제까지의 연속 유지, 모든 요일을 쉬는 값은 무시하고 멈추지 않음', () => {
+  const days = { '2026-10-23': full, '2026-10-24': full };
+  assert.equal(currentStreak(days, '2026-10-25', ids, new Set([0])), 2);
+  assert.equal(currentStreak(days, '2026-10-25', ids, new Set([0, 1, 2, 3, 4, 5, 6])), 2);
+});

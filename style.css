@@ -199,3 +199,10 @@ input[type="file"] { font-size: 13px; max-width: 100%; min-width: 0; flex: 1; }
 @media (prefers-reduced-motion: no-preference) {
   .row, .check, .segs i, .cell { transition: background-color 0.18s, border-color 0.18s; }
 }
+
+/* 달력: 쉬는 요일, 목표 주차 시작 */
+.cell.rest:not(.sel) { background: transparent; border-color: var(--line); border-style: dashed; }
+.cell.wkstart { box-shadow: inset 3px 0 0 var(--accent); }
+.restdays { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.restdays .radio { min-height: 40px; }
+.backup-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }

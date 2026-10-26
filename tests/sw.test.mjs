@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,4 +19,25 @@ test('서비스 워커가 앱 파일을 모두 미리 저장', () => {
   const listed = [...src.match(/const ASSETS = \[([\s\S]*?)\];/)[1].matchAll(/'\.\/([^']*)'/g)].map((m) => m[1]).filter(Boolean);
   const expected = ['index.html', 'style.css', 'manifest.webmanifest', ...files('js'), ...files('icons'), ...files('fonts')];
   assert.deepEqual([...listed].sort(), [...expected].sort());
+});
+
+// 자동 생성 스크립트: 목록이 파일과 같고, 파일 내용이 바뀌면 CACHE 이름도 바뀜
+test('update-sw가 목록을 다시 만들고 CACHE를 내용 해시로 정함', async () => {
+  const { updateServiceWorker } = await import('../scripts/update-sw.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'wc-sw-'));
+  try {
+    for (const f of ['index.html', 'style.css', 'sw.js', 'manifest.webmanifest']) cpSync(join(root, f), join(dir, f));
+    for (const d of ['icons', 'fonts', 'js']) cpSync(join(root, d), join(dir, d), { recursive: true });
+    writeFileSync(join(dir, 'js', 'extra.js'), 'export {};\n');
+    await updateServiceWorker(dir, { hash: true });
+    const first = readFileSync(join(dir, 'sw.js'), 'utf8');
+    assert.ok(first.includes("'./js/extra.js'"));
+    const cache = first.match(/const CACHE = '([^']+)'/)[1];
+    assert.match(cache, /^workout-check-[0-9a-f]{10}$/);
+    writeFileSync(join(dir, 'style.css'), 'body{}');
+    await updateServiceWorker(dir, { hash: true });
+    assert.notEqual(readFileSync(join(dir, 'sw.js'), 'utf8').match(/const CACHE = '([^']+)'/)[1], cache);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

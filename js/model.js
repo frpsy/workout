@@ -12,7 +12,7 @@ const inRange = (v, [lo, hi]) => typeof v === 'number' && Number.isFinite(v) && 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
 export function defaultConfig(startDate) {
-  return { v: SCHEMA_VERSION, startDate, exercises: clone(DEFAULT_EXERCISES), plan: { ...DEFAULT_PLAN } };
+  return { v: SCHEMA_VERSION, startDate, exercises: clone(DEFAULT_EXERCISES), plan: { ...DEFAULT_PLAN }, restDays: [] };
 }
 
 export function normalizeExercise(raw) {
@@ -40,6 +40,13 @@ function normalizePlan(p) {
   };
 }
 
+/** 쉬는 요일(0=일 … 6=토). 모든 요일을 쉬는 값은 받지 않습니다. */
+export function normalizeRestDays(v) {
+  if (!Array.isArray(v)) return [];
+  const days = [...new Set(v.filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))].sort((a, b) => a - b);
+  return days.length >= 7 ? [] : days;
+}
+
 /** v1({push:{base,step},...}) 과 v2({exercises:[...]}) 모두 받습니다. */
 export function normalizeConfig(raw, fallbackStart) {
   if (!isObj(raw)) return defaultConfig(fallbackStart);
@@ -64,6 +71,7 @@ export function normalizeConfig(raw, fallbackStart) {
     startDate: isDateStr(raw.startDate) ? raw.startDate : fallbackStart,
     exercises,
     plan: normalizePlan(raw.plan),
+    restDays: normalizeRestDays(raw.restDays),
   };
 }
 
@@ -87,7 +95,7 @@ export function serializeDay(date, day) {
 }
 
 export function serializeConfig(config) {
-  return clone({ v: SCHEMA_VERSION, startDate: config.startDate, exercises: config.exercises, plan: config.plan });
+  return clone({ v: SCHEMA_VERSION, startDate: config.startDate, exercises: config.exercises, plan: config.plan, restDays: config.restDays || [] });
 }
 
 export function newExerciseId(existingIds) {
@@ -102,6 +110,7 @@ export function validateConfig(cfg) {
   const errors = [];
   if (!isDateStr(cfg.startDate)) errors.push('시작일을 입력해 주세요.');
   if (!cfg.exercises.length) errors.push('운동을 하나 이상 넣어 주세요.');
+  if (Array.isArray(cfg.restDays) && new Set(cfg.restDays).size >= 7) errors.push('쉬는 요일은 6일까지만 고를 수 있습니다.');
   if (!cfg.exercises.some((e) => e.active)) errors.push('사용하는 운동을 하나 이상 남겨 주세요.');
   if (cfg.exercises.length > LIMITS.maxExercises) errors.push(`운동은 ${LIMITS.maxExercises}개까지 넣을 수 있습니다.`);
   cfg.exercises.forEach((e, i) => {
