@@ -1,5 +1,5 @@
 // 화면 조각을 가짜 DOM(jsdom)에 붙여 눌러 보는 테스트
-import { before, beforeEach, test } from 'node:test';
+import { before, beforeEach, mock, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { addDays, todayStr } from '../js/dates.js';
@@ -80,30 +80,50 @@ test('오늘: 목표가 "15 × 3"처럼 세트와 함께 보임', () => {
   store.actions.flushAll();
 });
 
-test('오늘: 개수는 −5 −1 +1 +5로, 세트는 − +로 바꿀 수 있고 직접 입력도 됨', () => {
+test('오늘: 5단위 버튼은 숨겨져 있다가 1단위 버튼을 누르면 그 행에만 나타남', (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const [a, b] = root.querySelectorAll('.row');
+  const f = (row, n) => row.querySelector(`[data-f="${n}"]`);
+  assert.equal(f(a, 'plus5').hidden, true);
+  assert.equal(f(a, 'minus5').hidden, true);
+  f(a, 'plus').click();
+  assert.equal(f(a, 'plus5').hidden, false, '누른 행에 나타남');
+  assert.equal(f(a, 'minus5').hidden, false);
+  assert.equal(f(b, 'plus5').hidden, true, '다른 행은 그대로 숨김');
+  f(b, 'minus').click();
+  assert.equal(f(b, 'plus5').hidden, false);
+  assert.equal(f(a, 'plus5').hidden, true, '다른 행에서 누르면 이전 행은 다시 숨김');
+  mock.timers.tick(3000);
+  f(b, 'plus5').click(); // 5단위를 눌러도 시간이 다시 셈
+  mock.timers.tick(3000);
+  assert.equal(f(b, 'plus5').hidden, false);
+  mock.timers.tick(1500);
+  assert.equal(f(b, 'plus5').hidden, true, '쓰지 않으면 몇 초 뒤 숨김');
+  store.actions.flushAll();
+});
+
+test('오늘: 개수는 1·5 단위 버튼과 직접 입력으로, 세트는 − +로 바꾸고 범위를 넘지 않음', () => {
   const { store, root } = setup(today);
   const row = root.querySelector('.row');
   const f = (n) => row.querySelector(`[data-f="${n}"]`);
-  f('plus5').click();
-  assert.equal(f('cnt').value, '20');
-  f('minus').click();
-  assert.equal(f('cnt').value, '19');
-  f('minus5').click();
-  f('minus5').click();
-  f('minus5').click();
-  f('minus5').click();
-  assert.equal(f('cnt').value, '0', '0 아래로 내려가지 않음');
   f('plus').click();
-  assert.equal(f('cnt').value, '1');
+  assert.equal(f('cnt').value, '16');
+  f('plus5').click();
+  assert.equal(f('cnt').value, '21');
+  f('minus').click();
+  assert.equal(f('cnt').value, '20');
+  f('minus5').click();
+  assert.equal(f('cnt').value, '15');
+  for (let i = 0; i < 4; i++) f('minus5').click();
+  assert.equal(f('cnt').value, '0', '0 아래로 내려가지 않음');
   f('cnt').value = '42';
   f('cnt').dispatchEvent(new Event('change'));
   assert.equal(f('cnt').value, '42');
   f('setsPlus').click();
   assert.equal(f('setsIn').value, '4');
-  f('setsMinus').click();
-  f('setsMinus').click();
-  f('setsMinus').click();
-  f('setsMinus').click();
+  for (let i = 0; i < 4; i++) f('setsMinus').click();
   assert.equal(f('setsIn').value, '1', '1세트 아래로 내려가지 않음');
   f('setsIn').value = '5';
   f('setsIn').dispatchEvent(new Event('change'));

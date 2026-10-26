@@ -10,6 +10,8 @@ import { $, esc, haptic } from './dom.js';
 const CHECK_SVG =
   '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+const BIG_SHOW_MS = 4000; // 5단위 버튼이 보이는 시간 (누를 때마다 다시 셈)
+
 export function mountToday(root, store) {
   const { actions } = store;
   let rowsKey = '';
@@ -66,6 +68,7 @@ export function mountToday(root, store) {
 
   function buildRows(exs) {
     const box = $('#rows', root);
+    for (const r of rows.values()) clearTimeout(r.bigTimer);
     box.innerHTML = '';
     rows = new Map();
     for (const ex of exs) {
@@ -82,11 +85,11 @@ export function mountToday(root, store) {
         <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}</button>
         <div class="ctrl">
           <div class="stepper reps" role="group" aria-label="${n} 세트당 ${u}">
-            <button type="button" data-f="minus5" aria-label="${n} ${unit.big}${u} 줄이기">−${unit.big}</button>
+            <button type="button" data-f="minus5" aria-label="${n} ${unit.big}${u} 줄이기" hidden>−${unit.big}</button>
             <button type="button" data-f="minus" aria-label="${n} ${unit.inc}${u} 줄이기">−${unit.inc}</button>
             <input data-f="cnt" type="number" inputmode="numeric" min="0" max="99999" aria-label="${n} 세트당 실제 ${u}">
             <button type="button" data-f="plus" aria-label="${n} ${unit.inc}${u} 늘리기">+${unit.inc}</button>
-            <button type="button" data-f="plus5" aria-label="${n} ${unit.big}${u} 늘리기">+${unit.big}</button>
+            <button type="button" data-f="plus5" aria-label="${n} ${unit.big}${u} 늘리기" hidden>+${unit.big}</button>
           </div>
           <span class="times" aria-hidden="true">×</span>
           <div class="stepper setstep" role="group" aria-label="${n} 세트 수">
@@ -99,14 +102,25 @@ export function mountToday(root, store) {
       const r = { el, ex, unit };
       for (const f of ['target', 'sets', 'delta', 'check', 'minus5', 'minus', 'plus', 'plus5', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
-      const bump = (d) => () => actions.setCount(ex.id, view().count + d);
+      // 5단위 버튼은 평소엔 숨기고, 1단위 버튼을 누르면 그 행에만 잠깐 보여 줌
+      const showBig = (on) => {
+        clearTimeout(r.bigTimer);
+        r.minus5.hidden = r.plus5.hidden = !on;
+        if (on) r.bigTimer = setTimeout(() => showBig(false), BIG_SHOW_MS);
+      };
+      r.showBig = showBig;
+      const bump = (d, reveal) => () => {
+        for (const other of rows.values()) if (other !== r && !other.plus5.hidden) other.showBig(false);
+        showBig(reveal || !r.plus5.hidden);
+        actions.setCount(ex.id, view().count + d);
+      };
       r.check.addEventListener('click', () => {
         haptic();
         actions.toggle(ex.id);
       });
       r.minus5.addEventListener('click', bump(-unit.big));
-      r.minus.addEventListener('click', bump(-unit.inc));
-      r.plus.addEventListener('click', bump(unit.inc));
+      r.minus.addEventListener('click', bump(-unit.inc, true));
+      r.plus.addEventListener('click', bump(unit.inc, true));
       r.plus5.addEventListener('click', bump(unit.big));
       r.cnt.addEventListener('change', () => actions.setCount(ex.id, parseInt(r.cnt.value, 10)));
       r.setsMinus.addEventListener('click', () => actions.setSets(ex.id, view().sets - 1));
