@@ -1,0 +1,83 @@
+// 운동 사이 휴식 타이머의 상태. 종료 시각(endAt)으로 계산해, 화면이 꺼졌다 켜져도 정확합니다.
+
+export const MIN_SEC = 15;
+export const MAX_SEC = 600;
+export const STEP_SEC = 15;
+export const DEFAULT_SEC = 60;
+
+const KEY = 'workout-check:timer';
+
+export const clampDuration = (n) => (Number.isFinite(n) ? Math.max(MIN_SEC, Math.min(MAX_SEC, Math.round(n / STEP_SEC) * STEP_SEC)) : DEFAULT_SEC);
+
+/** 0:00 형식 */
+export const fmt = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+
+/** 마지막으로 정한 시간은 이 브라우저에만 남깁니다. */
+export function loadDuration() {
+  try {
+    return clampDuration(JSON.parse(localStorage.getItem(KEY) || '{}').duration);
+  } catch {
+    return DEFAULT_SEC;
+  }
+}
+
+function saveDuration(duration) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ duration }));
+  } catch {
+    /* 저장이 막힌 브라우저에서는 다음에 기본값으로 시작할 뿐입니다 */
+  }
+}
+
+/**
+ * onChange(): 화면을 다시 그릴 때, onDone(): 시간이 다 됐을 때.
+ * 실행 중에는 tick()을 주기적으로 불러 주세요 (끝났는지 확인하고 알립니다).
+ */
+export function createTimer({ now = Date.now, duration = loadDuration(), onChange = () => {}, onDone = () => {} } = {}) {
+  let endAt = null;
+  let dur = duration;
+
+  const remaining = () => (endAt === null ? dur : Math.max(0, Math.ceil((endAt - now()) / 1000)));
+
+  return {
+    get duration() {
+      return dur;
+    },
+    get running() {
+      return endAt !== null;
+    },
+    remaining,
+
+    start() {
+      endAt = now() + dur * 1000;
+      onChange();
+    },
+
+    stop() {
+      endAt = null;
+      onChange();
+    },
+
+    /** 쉬는 시간을 ±STEP씩 조절. 실행 중이면 남은 시간도 같이 바뀜 */
+    adjust(delta) {
+      const next = clampDuration(dur + delta);
+      if (next === dur) return;
+      if (endAt !== null) endAt += (next - dur) * 1000;
+      dur = next;
+      saveDuration(dur);
+      onChange();
+    },
+
+    /** 끝났으면 멈추고 onDone을 부름. 아직이면 화면만 갱신 */
+    tick() {
+      if (endAt === null) return;
+      if (endAt - now() <= 0) {
+        endAt = null;
+        onChange();
+        onDone();
+      } else {
+        onChange();
+      }
+    },
+  };
+}

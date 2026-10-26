@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { addDays, todayStr } from '../js/dates.js';
 
-let createStore, mountToday, mountHistory, mountSettings;
+let createStore, mountToday, mountHistory, mountSettings, mountTimer;
 
 before(async () => {
   const dom = new JSDOM('<!doctype html><body></body>', { url: 'http://localhost/' });
@@ -16,6 +16,7 @@ before(async () => {
   ({ mountToday } = await import('../js/ui/today.js'));
   ({ mountHistory } = await import('../js/ui/history.js'));
   ({ mountSettings } = await import('../js/ui/settings.js'));
+  ({ mountTimer } = await import('../js/ui/timer.js'));
 });
 
 const tick = () => new Promise((r) => setImmediate(r));
@@ -307,4 +308,36 @@ test('설정: 계정이 있으면 로그인·로그아웃 버튼을 보여 주�
   const root = document.getElementById('settings');
   store.subscribe(mountSettings(root, store));
   assert.equal(root.querySelector('#acctRow').hidden, true, '계정 기능이 없으면 숨김');
+});
+
+test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  document.body.innerHTML = '<div id="timer"></div>';
+  const root = document.getElementById('timer');
+  mountTimer(root);
+  const time = () => root.querySelector('#tTime').textContent;
+  assert.equal(time(), '1:00', '기본은 60초');
+  root.querySelector('#tPlus').click();
+  assert.equal(time(), '1:15');
+  root.querySelector('#tMinus').click();
+  root.querySelector('#tMinus').click();
+  assert.equal(time(), '0:45');
+  assert.equal(JSON.parse(localStorage.getItem('workout-check:timer')).duration, 45, '마지막 시간 기억');
+
+  root.querySelector('#tGo').click();
+  assert.equal(root.querySelector('#tGo').textContent, '중지');
+  mock.timers.tick(10_000);
+  assert.equal(time(), '0:35');
+  root.querySelector('#tGo').click(); // 중지
+  assert.equal(time(), '0:45');
+  assert.equal(root.querySelector('#tGo').textContent, '시작');
+
+  root.querySelector('#tGo').click();
+  mock.timers.tick(45_500);
+  assert.equal(root.querySelector('#timerBar').classList.contains('done'), true, '끝나면 알림 표시');
+  assert.equal(root.querySelector('#tDone').textContent, '휴식이 끝났습니다');
+  assert.equal(root.querySelector('#tGo').textContent, '시작');
+  mock.timers.tick(4_500);
+  assert.equal(root.querySelector('#timerBar').classList.contains('done'), false, '잠시 뒤 표시가 사라짐');
 });

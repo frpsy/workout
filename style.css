@@ -61,11 +61,11 @@ button { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-us
   padding-block: 12px 48px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 .wrap > * { min-width: 0; }
 .stack { display: flex; flex-direction: column; gap: 14px; }
-#today { display: flex; flex-direction: column; gap: 10px; }
+#today { display: flex; flex-direction: column; gap: 8px; }
 
 /* 머리말: 날짜와 주차를 한 줄에, 진행 막대 아래 */
 .headline { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
@@ -84,7 +84,7 @@ h1 { margin: 0 0 8px; font-size: 22px; line-height: 1.25; font-weight: 700; }
 .tag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); line-height: 1.6; }
 
 /* 오늘 체크: 종목마다 (이름·목표 | 완료) / (개수 −5 −1 [ ] +1 +5 × 세트 − [ ] +) 두 줄. 3종목이 한 화면에 들어옴 */
-.rows { display: flex; flex-direction: column; gap: 8px; }
+.rows { display: flex; flex-direction: column; gap: 6px; }
 .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info check" "ctrl ctrl"; gap: 6px 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .row.done { background: var(--accent-soft); border-color: var(--accent); }
 .info { grid-area: info; min-width: 0; }
@@ -102,10 +102,10 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 .ctrl { grid-area: ctrl; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .times { color: var(--muted); font-size: 14px; }
 .stepper { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
-.stepper button { width: 46px; height: 44px; padding: 0; border: 0; background: transparent; font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; cursor: pointer; touch-action: manipulation; -webkit-touch-callout: none; font-variant-numeric: tabular-nums; }
+.stepper button { width: 46px; height: 40px; padding: 0; border: 0; background: transparent; font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; cursor: pointer; touch-action: manipulation; -webkit-touch-callout: none; font-variant-numeric: tabular-nums; }
 .stepper button:active:not(:disabled) { background: var(--accent-soft); }
 .stepper.setstep button { width: 38px; }
-.stepper input[type="number"] { min-width: 0; width: 56px; height: 44px; padding: 0; text-align: center; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: transparent; font-family: var(--font-num); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; border-radius: 0; }
+.stepper input[type="number"] { min-width: 0; width: 56px; height: 40px; padding: 0; text-align: center; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: transparent; font-family: var(--font-num); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; border-radius: 0; }
 .stepper.setstep input[type="number"] { width: 34px; }
 .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .delta { margin-left: 6px; font-size: 12px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -120,7 +120,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 }
 .empty { margin: 0; padding: 20px 16px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 14px; }
 
-.status { margin: 0; min-height: 16px; line-height: 16px; font-size: 12px; color: var(--muted); }
+.status { margin: 0; min-height: 14px; line-height: 14px; font-size: 12px; color: var(--muted); }
 .status.err { color: var(--err); }
 
 /* 공통 섹션 */
@@ -236,3 +236,18 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .pe-bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
 .pe-pct { grid-area: pct; min-width: 40px; text-align: right; font-family: var(--font-num); font-size: 20px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
 .glyphs { margin-top: 14px; }
+
+/* 한 줄 휴식 타이머 */
+.timer { display: flex; align-items: center; gap: 6px; height: 46px; padding: 0 8px 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.timer .tlabel { font-size: 12px; color: var(--muted); }
+.timer .time { flex: 1; min-width: 0; text-align: center; font-family: var(--font-num); font-size: 30px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.timer.running .time { color: var(--accent); }
+.timer .tstep { width: 44px; height: 36px; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; font-variant-numeric: tabular-nums; }
+.timer .tgo { min-width: 64px; height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+.timer .tgo.stop { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .timer.done { animation: timer-flash 0.5s ease-in-out 6; }
+}
+@keyframes timer-flash { 50% { background: var(--accent-soft); border-color: var(--accent); } }
+.timer.done { border-color: var(--accent); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

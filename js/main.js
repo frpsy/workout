@@ -5,6 +5,7 @@ import { createStore } from './store.js';
 import { mountHistory } from './ui/history.js';
 import { mountPlan } from './ui/plan.js';
 import { mountSettings } from './ui/settings.js';
+import { mountTimer } from './ui/timer.js';
 import { mountToday } from './ui/today.js';
 
 async function requestPersistentStorage() {
@@ -18,6 +19,8 @@ async function requestPersistentStorage() {
 async function boot() {
   const adapter = await createStorage();
   const store = createStore(adapter);
+
+  mountTimer(document.getElementById('timer')); // 기록과 무관해 상태 구독 없이 스스로 갱신
 
   const renders = [
     mountToday(document.getElementById('today'), store),
