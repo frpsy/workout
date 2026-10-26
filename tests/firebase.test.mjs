@@ -107,6 +107,30 @@ test('옮길 기록이 없거나 옮기다 실패해도 어댑터는 정상', as
   assert.equal(failed.kind, 'firebase');
 });
 
+test('Firestore 접근이 막혀 있으면(permission-denied) 브라우저 저장으로 열고 로그아웃은 가능', async () => {
+  const db = fakeDb();
+  db.doc = () => ({
+    get: async () => {
+      throw Object.assign(new Error('denied'), { code: 'permission-denied' });
+    },
+  });
+  const ad = await run(loader({ user: { uid: 'u', email: 'me@example.com' }, db }));
+  assert.equal(ad.kind, 'local');
+  assert.match(ad.label, /Firestore/);
+  assert.equal(typeof ad.account.signOut, 'function');
+});
+
+test('오프라인처럼 다른 오류는 계정 저장소로 그대로 진행', async () => {
+  const db = fakeDb();
+  db.doc = () => ({
+    get: async () => {
+      throw Object.assign(new Error('offline'), { code: 'unavailable' });
+    },
+  });
+  const ad = await run(loader({ user: { uid: 'u', email: '' }, db }));
+  assert.equal(ad.kind, 'firebase');
+});
+
 test('로그아웃은 signOut 뒤 새로고침', async () => {
   let reloaded = 0;
   globalThis.location = { reload: () => reloaded++ };
