@@ -80,43 +80,70 @@ test('오늘: 목표가 "15 × 3"처럼 세트와 함께 보임', () => {
   store.actions.flushAll();
 });
 
-test('오늘: 5단위 버튼은 숨겨져 있다가 1단위 버튼을 누르면 그 행에만 나타남', (t) => {
-  mock.timers.enable({ apis: ['setTimeout'] });
-  t.after(() => mock.timers.reset());
+test('오늘: 5단위 버튼은 없고, − +를 한 번 누르면 1씩', () => {
   const { store, root } = setup(today);
-  const [a, b] = root.querySelectorAll('.row');
-  const f = (row, n) => row.querySelector(`[data-f="${n}"]`);
-  assert.equal(f(a, 'plus5').hidden, true);
-  assert.equal(f(a, 'minus5').hidden, true);
-  f(a, 'plus').click();
-  assert.equal(f(a, 'plus5').hidden, false, '누른 행에 나타남');
-  assert.equal(f(a, 'minus5').hidden, false);
-  assert.equal(f(b, 'plus5').hidden, true, '다른 행은 그대로 숨김');
-  f(b, 'minus').click();
-  assert.equal(f(b, 'plus5').hidden, false);
-  assert.equal(f(a, 'plus5').hidden, true, '다른 행에서 누르면 이전 행은 다시 숨김');
-  mock.timers.tick(3000);
-  f(b, 'plus5').click(); // 5단위를 눌러도 시간이 다시 셈
-  mock.timers.tick(3000);
-  assert.equal(f(b, 'plus5').hidden, false);
-  mock.timers.tick(1500);
-  assert.equal(f(b, 'plus5').hidden, true, '쓰지 않으면 몇 초 뒤 숨김');
+  const row = root.querySelector('.row');
+  assert.equal(row.querySelector('[data-f="plus5"]'), null);
+  assert.equal(row.querySelector('[data-f="minus5"]'), null);
+  assert.equal(row.querySelectorAll('.stepper.reps button').length, 2, '개수 쪽 버튼은 − + 두 개');
+  const f = (n) => row.querySelector(`[data-f="${n}"]`);
+  f('plus').click();
+  f('plus').click();
+  assert.equal(f('cnt').value, '17');
+  f('minus').click();
+  assert.equal(f('cnt').value, '16');
   store.actions.flushAll();
 });
 
-test('오늘: 개수는 1·5 단위 버튼과 직접 입력으로, 세트는 − +로 바꾸고 범위를 넘지 않음', () => {
+test('오늘: − +를 꾹 누르면 5씩 계속 바뀌고, 떼면 멈추며 뒤따르는 click은 무시', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  t.after(() => mock.timers.reset());
   const { store, root } = setup(today);
   const row = root.querySelector('.row');
   const f = (n) => row.querySelector(`[data-f="${n}"]`);
+  const down = (b) => b.dispatchEvent(new Event('pointerdown'));
+  const up = (b) => b.dispatchEvent(new Event('pointerup'));
+
+  down(f('plus'));
+  mock.timers.tick(400);
+  assert.equal(f('cnt').value, '15', '아직 꾹 누름이 아님');
+  mock.timers.tick(50);
+  assert.equal(f('cnt').value, '20', '꾹 누르면 바로 5 증가');
+  mock.timers.tick(200);
+  assert.equal(f('cnt').value, '25', '누르고 있는 동안 반복');
+  mock.timers.tick(400);
+  assert.equal(f('cnt').value, '35');
+  up(f('plus'));
+  f('plus').click(); // 꾹 누른 뒤 따라오는 click
+  mock.timers.tick(1000);
+  assert.equal(f('cnt').value, '35', '떼면 멈추고 click은 +1로 세지 않음');
+
   f('plus').click();
-  assert.equal(f('cnt').value, '16');
-  f('plus5').click();
-  assert.equal(f('cnt').value, '21');
+  assert.equal(f('cnt').value, '36', '그다음 짧게 누르면 다시 1씩');
+
+  down(f('minus'));
+  mock.timers.tick(450);
+  up(f('minus'));
   f('minus').click();
-  assert.equal(f('cnt').value, '20');
-  f('minus5').click();
-  assert.equal(f('cnt').value, '15');
-  for (let i = 0; i < 4; i++) f('minus5').click();
+  assert.equal(f('cnt').value, '31', '줄이기도 꾹 누르면 5씩');
+
+  down(f('plus')); // 꾹 누르기 전에 떼면 그냥 짧게 누른 것
+  mock.timers.tick(200);
+  up(f('plus'));
+  mock.timers.tick(1000);
+  f('plus').click();
+  assert.equal(f('cnt').value, '32');
+  store.actions.flushAll();
+});
+
+test('오늘: 0 아래로는 내려가지 않고, 직접 입력과 세트 수정도 됨', () => {
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  const f = (n) => row.querySelector(`[data-f="${n}"]`);
+  f('cnt').value = '1';
+  f('cnt').dispatchEvent(new Event('change'));
+  f('minus').click();
+  f('minus').click();
   assert.equal(f('cnt').value, '0', '0 아래로 내려가지 않음');
   f('cnt').value = '42';
   f('cnt').dispatchEvent(new Event('change'));
@@ -137,11 +164,11 @@ test('오늘: 완료한 뒤에도 개수와 세트를 고칠 수 있고 완료 �
   const row = root.querySelector('.row');
   const f = (n) => row.querySelector(`[data-f="${n}"]`);
   f('check').click();
-  f('plus5').click();
+  f('plus').click();
   f('setsPlus').click();
   assert.ok(row.classList.contains('done'));
   const e = store.state.days[todayStr()].entries.push;
-  assert.deepEqual({ done: e.done, count: e.count, sets: e.sets }, { done: true, count: 20, sets: 4 });
+  assert.deepEqual({ done: e.done, count: e.count, sets: e.sets }, { done: true, count: 16, sets: 4 });
   store.actions.flushAll();
 });
 

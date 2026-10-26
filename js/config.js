@@ -2,7 +2,7 @@
 
 export const SCHEMA_VERSION = 2;
 
-/** 단위: label은 화면 표기, inc는 작은 +/− 버튼, big은 큰 +/− 버튼이 한 번에 바꾸는 양 (개수는 1·5) */
+/** 단위: label은 화면 표기, inc는 +/− 버튼을 한 번 누를 때, big은 꾹 누르고 있을 때 바뀌는 양 (개수는 1·5) */
 export const UNITS = {
   reps: { label: '개', inc: 1, big: 5 },
   sec: { label: '초', inc: 5, big: 15 },
