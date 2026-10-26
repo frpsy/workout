@@ -99,8 +99,45 @@ export function mountToday(root, store) {
   });
   document.addEventListener('wc:backup', () => updateBackupNote(store.state));
 
+  /* ---------- 초 단위 운동 스톱워치 (한 번에 한 종목) ---------- */
+
+  let watch = null; // { id, startAt }
+  let watchTick = 0;
+  const elapsed = () => (watch ? Math.max(0, Math.round((Date.now() - watch.startAt) / 1000)) : 0);
+
+  function showWatch() {
+    for (const r of rows.values()) {
+      if (!r.watch) continue;
+      const on = !!watch && watch.id === r.ex.id;
+      r.el.classList.toggle('timing', on);
+      r.watch.textContent = on ? '종료' : '시작';
+      r.watch.classList.toggle('stop', on);
+      r.watch.setAttribute('aria-label', `${r.ex.name} 시간 재기 ${on ? '종료' : '시작'}`);
+      if (on && document.activeElement !== r.cnt) r.cnt.value = elapsed();
+    }
+  }
+  function startWatch(id) {
+    if (!store.state.ready) return;
+    if (watch) stopWatch();
+    watch = { id, startAt: Date.now() };
+    clearInterval(watchTick);
+    watchTick = setInterval(showWatch, 250);
+    showWatch();
+  }
+  function stopWatch() {
+    if (!watch) return;
+    const { id } = watch;
+    const sec = Math.max(1, elapsed());
+    watch = null;
+    clearInterval(watchTick);
+    showWatch();
+    haptic();
+    actions.setCount(id, sec);
+  }
+
   function buildRows(exs) {
     const box = $('#rows', root);
+    if (watch) stopWatch(); // 목록이 바뀌기 전에 재던 시간은 기록하고 끝냄
     box.innerHTML = '';
     rows = new Map();
     for (const ex of exs) {
@@ -116,6 +153,7 @@ export function mountToday(root, store) {
         </div>
         <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}</button>
         <div class="ctrl">
+          ${unit.timed ? `<button type="button" class="watch" data-f="watch" aria-label="${n} 시간 재기 시작">시작</button>` : ''}
           <div class="stepper reps" role="group" aria-label="${n} 세트당 ${u}">
             <button type="button" data-f="minus" aria-label="${n} ${unit.inc}${u} 줄이기 (길게 누르면 ${unit.big}${u}씩)">−</button>
             <input data-f="cnt" type="number" inputmode="numeric" min="0" max="99999" aria-label="${n} 세트당 실제 ${u}">
@@ -130,9 +168,11 @@ export function mountToday(root, store) {
         </div>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };
-      for (const f of ['target', 'sets', 'delta', 'check', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
+      for (const f of ['target', 'sets', 'delta', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
       const step = (d) => actions.setCount(ex.id, view().count + d);
+      // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
+      if (r.watch) r.watch.addEventListener('click', () => (watch && watch.id === ex.id ? stopWatch() : startWatch(ex.id)));
       r.check.addEventListener('click', () => {
         haptic();
         actions.toggle(ex.id);
@@ -179,8 +219,8 @@ export function mountToday(root, store) {
       r.sets.textContent = r.ex.sets > 1 ? `× ${r.ex.sets}` : '';
       r.el.classList.toggle('done', v.done);
       r.check.setAttribute('aria-pressed', String(v.done));
-      for (const b of [r.check, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) b.disabled = !state.ready;
-      if (document.activeElement !== r.cnt) r.cnt.value = v.count;
+      for (const b of [r.check, r.watch, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) if (b) b.disabled = !state.ready;
+      if (document.activeElement !== r.cnt) r.cnt.value = watch && watch.id === r.ex.id ? elapsed() : v.count;
       if (document.activeElement !== r.setsIn) r.setsIn.value = v.sets;
       // 목표와 다르게 한 부분만 짧게 알려 줌 (예: +2개 · 세트 -1)
       const diff = v.count - v.target;

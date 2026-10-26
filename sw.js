@@ -30,10 +30,12 @@ const ASSETS = [
   './js/storage/index.js',
   './js/storage/local.js',
   './js/store.js',
+  './js/timer.js',
   './js/ui/dom.js',
   './js/ui/history.js',
   './js/ui/plan.js',
   './js/ui/settings.js',
+  './js/ui/timer.js',
   './js/ui/today.js',
   './js/vendor/firebase.js',
 ];
