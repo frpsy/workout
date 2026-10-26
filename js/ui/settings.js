@@ -1,6 +1,6 @@
 // 운동·목표 설정과 백업
 
-import { LIMITS, PRESETS, UNITS } from '../config.js';
+import { DEFAULT_SETS, LIMITS, PRESETS, UNITS } from '../config.js';
 import { writeBackupMeta } from '../backup.js';
 import { DOW, todayStr } from '../dates.js';
 import { exportPayload, newExerciseId, parseImport, validateConfig } from '../model.js';
@@ -65,7 +65,7 @@ export function mountSettings(root, store) {
           <button type="button" class="btn" id="saveCfg">저장</button>
           <button type="button" class="btn ghost" id="resetCfg">되돌리기</button>
         </div>
-        <p class="sub">풀업처럼 0.5를 넣으면 2주에 1개씩 늘어납니다. 이미 완료한 날의 목표는 바뀌지 않습니다.</p>
+        <p class="sub">목표는 세트당 개수 × 세트 수입니다(예: 15 × 3). 풀업처럼 0.5를 넣으면 2주에 1개씩 늘어납니다. 이미 완료한 날의 목표와 세트는 바뀌지 않습니다.</p>
       </div>
     </details>
 
@@ -142,6 +142,7 @@ export function mountSettings(root, store) {
         <div class="exrow2">
           <label>시작 <input data-k="base" type="number" inputmode="numeric" min="1" max="9999" value="${e.base}" id="bs-${e.id}"></label>
           <label>주당 + <input data-k="step" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="${e.step}" id="st-${e.id}"></label>
+          <label>세트 <input data-k="sets" type="number" inputmode="numeric" min="${LIMITS.sets[0]}" max="${LIMITS.sets[1]}" value="${e.sets}" id="se-${e.id}"></label>
         </div>
         <div class="exrow3">
           <label class="radio"><input type="checkbox" data-k="active"${e.active ? ' checked' : ''} id="ac-${e.id}"> 사용</label>
@@ -172,6 +173,7 @@ export function mountSettings(root, store) {
     else if (k === 'unit') ex.unit = ev.target.value;
     else if (k === 'base') ex.base = parseFloat(ev.target.value);
     else if (k === 'step') ex.step = parseFloat(ev.target.value);
+    else if (k === 'sets') ex.sets = parseInt(ev.target.value, 10);
     else if (k === 'active') {
       ex.active = ev.target.checked;
       item.classList.toggle('off', !ex.active);
@@ -215,9 +217,9 @@ export function mountSettings(root, store) {
   el('presets').addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-preset]');
     if (!b) return;
-    const p = b.dataset.preset === 'new' ? { name: '', unit: 'reps', base: 10, step: 1 } : PRESETS[+b.dataset.preset];
+    const p = b.dataset.preset === 'new' ? { name: '', unit: 'reps', base: 10, step: 1, sets: DEFAULT_SETS } : PRESETS[+b.dataset.preset];
     const id = newExerciseId(new Set(draft.exercises.map((e) => e.id)));
-    draft.exercises.push({ id, name: p.name, unit: p.unit, base: p.base, step: p.step, active: true, since: todayStr() });
+    draft.exercises.push({ id, name: p.name, unit: p.unit, base: p.base, step: p.step, sets: p.sets || DEFAULT_SETS, active: true, since: todayStr() });
     markDirty();
     renderList();
     const input = el('exList').querySelector(`[data-id="${id}"] .exname`);

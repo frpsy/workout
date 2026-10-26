@@ -1,7 +1,7 @@
 // 저장 형식 정규화와 이전 버전(v1) 데이터 변환.
 // 저장소에서 읽은 값은 모두 여기를 거쳐 앱 상태가 됩니다.
 
-import { DEFAULT_EXERCISES, DEFAULT_PLAN, LIMITS, SCHEMA_VERSION, UNITS } from './config.js';
+import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LIMITS, SCHEMA_VERSION, UNITS } from './config.js';
 import { isDateStr } from './dates.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
@@ -24,6 +24,8 @@ export function normalizeExercise(raw) {
     unit: Object.prototype.hasOwnProperty.call(UNITS, raw.unit) ? raw.unit : 'reps',
     base: inRange(raw.base, LIMITS.base) ? Math.round(raw.base) : 10,
     step: inRange(raw.step, LIMITS.step) ? raw.step : 1,
+    // 이전 설정에는 세트가 없어 기본 세트로 읽습니다. 이미 완료한 날은 기록에 남은 sets(없으면 1)를 씁니다.
+    sets: inRange(raw.sets, LIMITS.sets) ? Math.round(raw.sets) : DEFAULT_SETS,
     active: raw.active !== false,
     // 추가한 날. 이전 날짜의 연속 기록 계산에서 이 운동을 빼기 위한 값 (없으면 처음부터 있던 운동)
     ...(isDateStr(raw.since) ? { since: raw.since } : {}),
@@ -85,6 +87,7 @@ export function normalizeDay(raw) {
     const e = { done: !!v.done };
     if (inRange(v.count, LIMITS.count)) e.count = Math.round(v.count);
     if (inRange(v.target, LIMITS.count)) e.target = Math.round(v.target);
+    if (inRange(v.sets, LIMITS.sets)) e.sets = Math.round(v.sets);
     entries[id] = e;
   }
   return { entries };
@@ -117,6 +120,7 @@ export function validateConfig(cfg) {
     const label = e.name || `${i + 1}번째 운동`;
     if (!e.name.trim()) errors.push(`${i + 1}번째 운동 이름을 입력해 주세요.`);
     if (!inRange(e.base, LIMITS.base)) errors.push(`${label}: 시작 목표는 1 이상이어야 합니다.`);
+    if (!inRange(e.sets, LIMITS.sets)) errors.push(`${label}: 세트는 ${LIMITS.sets[0]}~${LIMITS.sets[1]} 사이여야 합니다.`);
     if (!inRange(e.step, LIMITS.step)) errors.push(`${label}: 주당 증가는 0 이상이어야 합니다.`);
   });
   return errors;

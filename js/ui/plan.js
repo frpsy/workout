@@ -25,7 +25,7 @@ export function mountPlan(root, store) {
       h +=
         `<tr class="${i === 0 ? 'cur' : ''}"><td>${w + 1}주차${isRecoveryWeek(w, config.plan) ? ' <span class="tag">회복</span>' : ''}</td>` +
         `<td>${shortMD(addDays(config.startDate, w * 7))}</td>` +
-        exs.map((e) => `<td class="n">${res.targetForWeek(e, w)}</td>`).join('') +
+        exs.map((e) => `<td class="n">${res.targetForWeek(e, w)}${e.sets > 1 ? `<small> × ${e.sets}</small>` : ''}</td>`).join('') +
         '</tr>';
     }
     $('#plan', root).innerHTML = h + '</tbody>';

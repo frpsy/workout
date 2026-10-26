@@ -39,7 +39,7 @@ test('체크하면 그때 목표·개수를 남기고, 잠시 뒤 한 번만 저
   assert.equal(ad.saved.days.length, 1);
   const [date, doc] = ad.saved.days[0];
   assert.equal(date, todayStr());
-  assert.deepEqual(doc.entries.push, { done: true, count: 18, target: 15 });
+  assert.deepEqual(doc.entries.push, { done: true, count: 18, target: 15, sets: 3 });
 });
 
 test('다시 누르면 완료 해제, 목표 기록은 지움', async (t) => {
@@ -51,6 +51,7 @@ test('다시 누르면 완료 해제, 목표 기록은 지움', async (t) => {
   const e = store.state.days[todayStr()].entries.push;
   assert.equal(e.done, false);
   assert.equal(e.target, undefined);
+  assert.equal(e.sets, undefined);
 });
 
 test('페이지를 닫을 때 대기 중인 저장을 바로 보냄', async (t) => {
@@ -88,4 +89,16 @@ test('가져오기는 saveDays가 있으면 한 번에 저장', async (t) => {
   assert.deepEqual(Object.keys(batches[0]), ['2026-10-01', '2026-10-02']);
   assert.equal(ad.saved.days.length, 0);
   assert.ok(store.state.days['2026-10-02'].entries.pull.done);
+});
+
+test('세트: 기본 3세트로 보이고, 완료한 날은 그때 세트 수를 유지(예전 기록은 1세트)', () => {
+  const store = createStore(fakeAdapter());
+  const ex = store.state.config.exercises.find((e) => e.id === 'push');
+  assert.equal(store.view(todayStr(), ex).sets, 3);
+  store.actions.toggle('push');
+  ex.sets = 5; // 나중에 설정을 바꿔도
+  assert.equal(store.view(todayStr(), ex).sets, 3, '완료한 날은 그대로');
+  store.state.days[todayStr()].entries.pull = { done: true, count: 3, target: 3 };
+  assert.equal(store.view(todayStr(), { id: 'pull', sets: 3 }).sets, 1, 'sets가 없는 예전 기록');
+  store.actions.flushAll();
 });
