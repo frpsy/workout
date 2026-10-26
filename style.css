@@ -102,20 +102,20 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 .ctrl { grid-area: ctrl; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .times { color: var(--muted); font-size: 14px; }
 .stepper { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
-.stepper button { width: 34px; height: 40px; padding: 0; border: 0; background: transparent; font-size: 13px; font-weight: 700; color: var(--accent); line-height: 1; cursor: pointer; touch-action: manipulation; font-variant-numeric: tabular-nums; }
+.stepper button { width: 46px; height: 44px; padding: 0; border: 0; background: transparent; font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; cursor: pointer; touch-action: manipulation; -webkit-touch-callout: none; font-variant-numeric: tabular-nums; }
 .stepper button:active:not(:disabled) { background: var(--accent-soft); }
-.stepper.setstep button { width: 28px; font-size: 18px; }
-.stepper input[type="number"] { min-width: 0; width: 46px; height: 40px; padding: 0; text-align: center; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: transparent; font-family: var(--font-num); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; border-radius: 0; }
-.stepper.setstep input[type="number"] { width: 30px; }
+.stepper.setstep button { width: 38px; }
+.stepper input[type="number"] { min-width: 0; width: 56px; height: 44px; padding: 0; text-align: center; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: transparent; font-family: var(--font-num); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; border-radius: 0; }
+.stepper.setstep input[type="number"] { width: 34px; }
 .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .delta { margin-left: 6px; font-size: 12px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .delta.over { color: var(--accent); font-weight: 700; }
 @media (max-width: 360px) {
   .row { gap: 6px 8px; padding: 10px; }
-  .stepper button { width: 30px; }
-  .stepper.setstep button { width: 26px; }
-  .stepper input[type="number"] { width: 40px; }
-  .stepper.setstep input[type="number"] { width: 26px; }
+  .stepper button { width: 40px; }
+  .stepper.setstep button { width: 32px; }
+  .stepper input[type="number"] { width: 46px; }
+  .stepper.setstep input[type="number"] { width: 28px; }
   .goal .label { display: none; }
 }
 .empty { margin: 0; padding: 20px 16px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 14px; }
