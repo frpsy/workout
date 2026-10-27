@@ -59,7 +59,7 @@ export function mountToday(root, store) {
         <div class="work">
           <span class="wtime" id="wTime" aria-live="off"></span>
           <button type="button" class="wsec" id="wPause" hidden>중지</button>
-          <button type="button" class="wbtn" id="wBtn">▶ 시작</button>
+          <button type="button" class="wbtn" id="wBtn">▶ 운동 시작</button>
           <button type="button" class="wsec wcancel" id="wCancel" hidden>취소</button>
           <button type="button" class="wsec wcancel wreset" id="wReset" hidden>초기화</button>
         </div>
@@ -140,10 +140,13 @@ export function mountToday(root, store) {
     wTime.textContent = running ? fmtClock(session.elapsed()) : total ? `총 ${fmtKo(total)}` : '';
     wTime.classList.toggle('running', running);
     wTime.classList.toggle('paused', paused);
-    btn.textContent = running ? '■ 종료' : '▶ 시작';
+    btn.textContent = running ? '■ 종료' : '▶ 운동 시작';
     btn.classList.toggle('stop', running);
     btn.disabled = !state.ready;
-    btn.setAttribute('aria-label', running ? '운동 종료하고 총 운동시간 기록' : '운동 시작 (시간이 흐릅니다)');
+    // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
+    const finished = running && state.selected === state.today && store.activeExercises().length > 0 && store.activeExercises().every((e) => store.view(state.selected, e).done);
+    btn.classList.toggle('ready', finished);
+    btn.setAttribute('aria-label', finished ? '운동을 모두 마쳤습니다. 눌러서 운동을 종료하고 총 운동시간 기록' : running ? '운동 종료하고 총 운동시간 기록' : '운동 시작 (시간이 흐릅니다)');
     // 재는 동안에만 중지·취소가 보임. 재는 중에는 날짜 대신 시간을 크게 보여 줌
     pauseBtn.hidden = !running;
     cancelBtn.hidden = !running;

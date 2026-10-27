@@ -307,3 +307,8 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .timer button.tlabel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 34px; height: 36px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 11px; line-height: 1.1; cursor: pointer; touch-action: manipulation; }
 .timer button.tlabel b { font-weight: 700; color: var(--muted); }
 .timer button.tlabel[aria-pressed="true"] b { color: var(--accent); }
+.wbtn.ready { box-shadow: 0 0 0 3px var(--accent-soft); }
+@media (prefers-reduced-motion: no-preference) {
+  .wbtn.ready { animation: ready-pulse 1.4s ease-in-out infinite; }
+}
+@keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
