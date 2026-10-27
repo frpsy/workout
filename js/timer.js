@@ -13,30 +13,42 @@ export const clampDuration = (n) => (Number.isFinite(n) ? Math.max(MIN_SEC, Math
 /** 0:00 형식 */
 export const fmt = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
-/** 마지막으로 정한 시간은 이 브라우저에만 남깁니다. */
-export function loadDuration() {
+function readSaved() {
   try {
-    return clampDuration(JSON.parse(localStorage.getItem(KEY) || '{}').duration);
+    const v = JSON.parse(localStorage.getItem(KEY) || '{}');
+    return v && typeof v === 'object' ? v : {};
   } catch {
-    return DEFAULT_SEC;
+    return {};
   }
 }
 
-function saveDuration(duration) {
+/** 마지막으로 정한 시간은 이 브라우저에만 남깁니다. */
+export function loadDuration() {
+  return clampDuration(readSaved().duration);
+}
+
+/** 세트를 체크하면 휴식이 자동으로 시작되는지(기본 켜짐) */
+export function loadAuto() {
+  return readSaved().auto !== false;
+}
+
+function save(patch) {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ duration }));
+    localStorage.setItem(KEY, JSON.stringify({ ...readSaved(), ...patch }));
   } catch {
     /* 저장이 막힌 브라우저에서는 다음에 기본값으로 시작할 뿐입니다 */
   }
 }
+const saveDuration = (duration) => save({ duration });
 
 /**
  * onChange(): 화면을 다시 그릴 때, onDone(): 시간이 다 됐을 때.
  * 실행 중에는 tick()을 주기적으로 불러 주세요 (끝났는지 확인하고 알립니다).
  */
-export function createTimer({ now = Date.now, duration = loadDuration(), onChange = () => {}, onDone = () => {} } = {}) {
+export function createTimer({ now = Date.now, duration = loadDuration(), auto = loadAuto(), onChange = () => {}, onDone = () => {} } = {}) {
   let endAt = null;
   let dur = duration;
+  let autoStart = auto;
 
   const remaining = () => (endAt === null ? dur : Math.max(0, Math.ceil((endAt - now()) / 1000)));
 
@@ -48,6 +60,15 @@ export function createTimer({ now = Date.now, duration = loadDuration(), onChang
       return endAt !== null;
     },
     remaining,
+
+    get auto() {
+      return autoStart;
+    },
+    setAuto(on) {
+      autoStart = !!on;
+      save({ auto: autoStart });
+      onChange();
+    },
 
     start() {
       endAt = now() + dur * 1000;
