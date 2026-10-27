@@ -302,8 +302,8 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .check { position: relative; }
 .check svg, .check .frac { grid-area: 1 / 1; position: relative; z-index: 1; }
 .check .frac { font-family: var(--font-num); font-size: 20px; line-height: 1; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
-.check.part { border-color: transparent; background: conic-gradient(var(--accent) var(--p, 0%), var(--line) 0); }
-.check.part::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--surface); }
+.check.part { border-color: transparent; background: conic-gradient(var(--accent) var(--p, 0%), var(--line) 0) border-box; }
+.check.part::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px solid transparent; background: var(--surface) padding-box; }
 .timer button.tlabel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 34px; height: 36px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 11px; line-height: 1.1; cursor: pointer; touch-action: manipulation; }
 .timer button.tlabel b { font-weight: 700; color: var(--muted); }
 .timer button.tlabel[aria-pressed="true"] b { color: var(--accent); }
