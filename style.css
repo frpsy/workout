@@ -337,6 +337,8 @@ html { background: var(--bg); }
 
 /* 오늘 화면 아래 빈 곳의 운동 팁: 탭 바 바로 위에 낮게 */
 .wrap { min-height: calc(100vh - 21px); min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 21px); }
-#tip { margin-top: auto; }
+#bottom { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
 .tip { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; background: transparent; color: var(--muted); font-size: 13px; line-height: 1.5; text-align: left; cursor: pointer; touch-action: manipulation; }
 .tip svg { flex: none; margin-top: 2px; color: var(--accent); }
+.weather { display: block; width: 100%; padding: 2px 4px; border: 0; background: transparent; color: var(--fg); font-size: 14px; font-weight: 700; text-align: center; cursor: pointer; touch-action: manipulation; font-variant-numeric: tabular-nums; }
+.weather[hidden] { display: none; }
