@@ -49,15 +49,12 @@ export function mountHistory(root, store) {
       </div>
     </details>`;
 
-  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   function onPick(ev) {
     const b = ev.target.closest('button.cell');
     if (!b || b.disabled) return;
     store.actions.select(b.dataset.date);
-    // 고칠 체크 행이 화면 위로 벗어나 있을 때만 그쪽으로 옮깁니다.
-    const rows = document.getElementById('rows');
-    if (rows && rows.getBoundingClientRect().top < 0) rows.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+    // 고칠 날을 골랐으면 오늘 탭으로 (탭이 없는 환경에서는 알릴 곳이 없어도 무방)
+    document.dispatchEvent(new window.CustomEvent('workout:goto-tab', { detail: 'today' }));
     const title = document.getElementById('dateLabel');
     if (title) title.focus({ preventScroll: true });
   }

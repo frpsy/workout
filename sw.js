@@ -37,6 +37,7 @@ const ASSETS = [
   './js/ui/history.js',
   './js/ui/plan.js',
   './js/ui/settings.js',
+  './js/ui/tabs.js',
   './js/ui/timer.js',
   './js/ui/today.js',
   './js/vendor/firebase.js',
