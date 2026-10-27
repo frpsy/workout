@@ -42,8 +42,10 @@ const ASSETS = [
   './js/ui/timer.js',
   './js/ui/tip.js',
   './js/ui/today.js',
+  './js/ui/weather.js',
   './js/vendor/firebase.js',
   './js/view.js',
+  './js/weather.js',
 ];
 
 self.addEventListener('install', (e) => {
