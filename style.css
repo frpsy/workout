@@ -334,3 +334,9 @@ html { touch-action: manipulation; }
 html { background: var(--bg); }
 .standalone body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 20; pointer-events: none; }
 .standalone body { padding-top: calc(env(safe-area-inset-top, 0px) + 21px); }
+
+/* 오늘 화면 아래 빈 곳의 운동 팁: 탭 바 바로 위에 낮게 */
+.wrap { min-height: calc(100vh - 21px); min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 21px); }
+#tip { margin-top: auto; }
+.tip { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; background: transparent; color: var(--muted); font-size: 13px; line-height: 1.5; text-align: left; cursor: pointer; touch-action: manipulation; }
+.tip svg { flex: none; margin-top: 2px; color: var(--accent); }
