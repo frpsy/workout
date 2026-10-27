@@ -333,4 +333,4 @@ html { touch-action: manipulation; }
 /* 홈 화면 앱: 상태 표시줄 뒤를 앱 배경색으로 덮어, 내용이 비쳐 뿌옇게 보이지 않게 함 */
 html { background: var(--bg); }
 .standalone body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 20; pointer-events: none; }
-.standalone body { padding-top: calc(env(safe-area-inset-top, 0px) + 18px); }
+.standalone body { padding-top: calc(env(safe-area-inset-top, 0px) + 21px); }
