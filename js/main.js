@@ -32,7 +32,7 @@ async function boot() {
 
   const el = (id) => document.getElementById(id);
   mountTabs(el('tabbar'), {
-    today: [el('today'), el('timer'), el('boot-status')],
+    today: [el('today'), el('timer')],
     record: [el('history'), el('plan-sec')],
     settings: [el('settings')],
   });

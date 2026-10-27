@@ -48,3 +48,16 @@ test('탭: 주소의 #settings로 열면 설정 탭, 이벤트로도 이동', ()
   assert.equal(tabs.current, 'today');
   assert.equal(el('a').hidden, false);
 });
+
+test('탭 전환이 "불러오는 중…" 문구를 다시 띄우지 않음(탭 대상에서 제외)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  const call = main.slice(main.indexOf('mountTabs('), main.indexOf('});', main.indexOf('mountTabs(')));
+  assert.ok(!call.includes('boot-status'));
+});
+
+test('홈 화면 앱: 화면이 상태 표시줄 밑으로 올라가 뿌옇게 보이지 않도록 viewport-fit=cover를 쓰지 않음', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.ok(!html.includes('viewport-fit=cover'));
+});
