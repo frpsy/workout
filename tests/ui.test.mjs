@@ -755,25 +755,27 @@ test('오늘: 운동을 모두 마쳤는데 시간을 재는 중이면 종료 �
   store.actions.flushAll();
 });
 
+// 효과음 테스트용 가짜 오디오: 소리 모듈이 만든 오디오를 계속 쓰므로 한 곳에 기록함
+const played = [];
+class FakeAudio {
+  constructor() {
+    this.currentTime = 0;
+    this.state = 'running';
+    this.destination = {};
+  }
+  resume() {}
+  createGain() {
+    return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect: () => ({ connect() {} }) };
+  }
+  createOscillator() {
+    const o = { frequency: {}, connect: (g) => g, start() { played.push(o.frequency.value); }, stop() {} };
+    return o;
+  }
+}
+
 test('효과음: 세트 체크·종목 완료·모두 완료·되돌림·운동 시작/종료에 소리가 나고, 끄면 조용함', () => {
   localStorage.removeItem('workout-check:sound');
-  const played = [];
-  class FakeCtx {
-    constructor() {
-      this.currentTime = 0;
-      this.state = 'running';
-      this.destination = {};
-    }
-    resume() {}
-    createGain() {
-      return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect: () => ({ connect() {} }) };
-    }
-    createOscillator() {
-      const o = { frequency: {}, connect: (g) => g, start() { played.push(o.frequency.value); }, stop() {} };
-      return o;
-    }
-  }
-  globalThis.AudioContext = FakeCtx;
+  globalThis.AudioContext = FakeAudio;
   try {
     const { store, root } = setup(today);
     const row = root.querySelector('.row');
@@ -827,4 +829,44 @@ test('효과음: 소리를 낼 수 없는 환경에서도 오류 없이 동작',
   playSound('done');
   playSound('set', 99);
   playSound('없는소리');
+});
+
+test('효과음: 휴식 타이머 시작·중지음, 끝나기 3초 전 카운트, 끝남 알림(자동 시작은 조용)', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  localStorage.removeItem('workout-check:sound');
+  localStorage.removeItem('workout-check:timer');
+  globalThis.AudioContext = FakeAudio;
+  try {
+    document.body.innerHTML = '<div id="timer"></div>';
+    const root = document.getElementById('timer');
+    mountTimer(root);
+    const go = root.querySelector('#tGo');
+    go.click();
+    assert.equal(played.length, 2, '시작음(두 음)');
+    played.length = 0;
+    mock.timers.tick(30_000); // 남은 30초
+    assert.equal(played.length, 0, '중간에는 소리가 없음');
+    mock.timers.tick(27_000); // 남은 3초
+    assert.equal(played.length, 1, '3초 전 카운트');
+    mock.timers.tick(1_000);
+    mock.timers.tick(1_000);
+    assert.equal(played.length, 3, '3, 2, 1');
+    mock.timers.tick(1_500); // 끝남
+    assert.equal(played.length, 6, '끝남 알림음 세 번');
+    played.length = 0;
+    go.click();
+    go.click(); // 시작 후 바로 중지
+    assert.equal(played.length, 4, '시작음 + 중지음');
+
+    // 세트 체크로 자동 시작될 때는 시작음 없이 조용히 시작
+    played.length = 0;
+    document.dispatchEvent(new Event('workout:set-checked'));
+    assert.equal(go.textContent, '중지');
+    assert.equal(played.length, 0);
+    go.click();
+  } finally {
+    delete globalThis.AudioContext;
+    localStorage.removeItem('workout-check:sound');
+  }
 });

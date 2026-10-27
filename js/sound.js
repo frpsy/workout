@@ -17,7 +17,10 @@ const SOUNDS = {
   undo: [[0, 330, 0.12, 'sine']],
   done: [[0, C5, 0.1, 'triangle'], [0.09, E5, 0.1, 'triangle'], [0.18, G5, 0.2, 'triangle']],
   all: [[0, C5, 0.11, 'triangle'], [0.1, E5, 0.11, 'triangle'], [0.2, G5, 0.11, 'triangle'], [0.3, C6, 0.45, 'triangle']],
-  rest: [[0, 880, 0.2, 'sine'], [0.28, 880, 0.2, 'sine'], [0.56, 880, 0.2, 'sine']],
+  rest: [[0, 880, 0.2, 'sine'], [0.28, 880, 0.2, 'sine'], [0.56, 1174.7, 0.45, 'sine']],
+  restStart: [[0, 587.33, 0.08, 'sine'], [0.09, 783.99, 0.14, 'sine']],
+  restStop: [[0, 783.99, 0.08, 'sine'], [0.09, 587.33, 0.14, 'sine']],
+  count: [[0, 1000, 0.08, 'sine']],
 };
 
 let ctx = null;

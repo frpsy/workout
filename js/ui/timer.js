@@ -20,6 +20,7 @@ export function mountTimer(root) {
   let lock = null; // 화면 켜짐 유지
   let interval = 0;
   let doneTimer = 0;
+  let lastCount = 0; // 마지막 3초 카운트 소리를 이미 낸 초
 
   const timer = createTimer({
     onChange: render,
@@ -70,6 +71,12 @@ export function mountTimer(root) {
 
   function render() {
     const running = timer.running;
+    // 끝나기 3초 전부터 1초마다 짧은 소리 (3, 2, 1)
+    const left = timer.remaining();
+    if (running && left >= 1 && left <= 3 && left !== lastCount) {
+      lastCount = left;
+      playSound('count');
+    } else if (!running || left > 3) lastCount = 0;
     const time = $('#tTime', root);
     time.textContent = fmt(timer.remaining());
     time.disabled = running; // 실행 중에는 프리셋을 바꾸지 않음
@@ -84,12 +91,13 @@ export function mountTimer(root) {
     go.classList.toggle('stop', running);
   }
 
-  function startRest() {
+  function startRest({ quiet = false } = {}) {
     unlockSound(); // 소리는 사용자가 누른 순간에만 준비할 수 있음
     clearTimeout(doneTimer);
     $('#timerBar', root).classList.remove('done');
     $('#tDone', root).textContent = '';
     timer.start();
+    if (!quiet) playSound('restStart'); // 세트 체크로 자동 시작할 때는 세트 소리와 겹치지 않게 조용히
     startTicking();
     takeLock();
   }
@@ -98,6 +106,7 @@ export function mountTimer(root) {
       stopTicking();
       releaseLock();
       timer.stop();
+      playSound('restStop');
       return;
     }
     startRest();
@@ -106,7 +115,7 @@ export function mountTimer(root) {
   // 오늘 화면에서 세트를 체크하면 알려 줌: 자동이 켜져 있고 쉬는 중이 아니면 휴식 시작
   const onSetChecked = () => {
     if (!root.isConnected) return document.removeEventListener('workout:set-checked', onSetChecked); // 화면에서 사라진 타이머는 정리
-    if (timer.auto && !timer.running) startRest();
+    if (timer.auto && !timer.running) startRest({ quiet: true });
   };
   document.addEventListener('workout:set-checked', onSetChecked);
   $('#tTime', root).addEventListener('click', () => timer.nextPreset()); // 30 → 60 → 90초
