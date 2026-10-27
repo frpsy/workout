@@ -319,7 +319,11 @@ export function mountToday(root, store) {
         if (!b || b.disabled) return;
         haptic();
         const i = Number(b.dataset.set);
-        actions.setProgress(ex.id, view().setsDone === i ? i - 1 : i);
+        const before = view().setsDone;
+        actions.setProgress(ex.id, before === i ? i - 1 : i);
+        // 세트를 새로 마쳤으면(되돌린 게 아니면) 휴식 타이머에 알림. 모든 운동을 끝냈으면 쉴 필요가 없음
+        const allDone = store.activeExercises().every((e) => store.view(store.state.selected, e).done);
+        if (view().setsDone > before && !allDone) document.dispatchEvent(new Event('workout:set-checked'));
       });
       r.check.addEventListener('click', () => {
         haptic();

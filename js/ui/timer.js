@@ -29,7 +29,7 @@ function beep(ctx) {
 export function mountTimer(root) {
   root.innerHTML = `
     <div class="timer" id="timerBar">
-      <span class="tlabel">휴식</span>
+      <button type="button" class="tlabel" id="tAuto" aria-pressed="true"><span>휴식</span><b id="tAutoText">자동</b></button>
       <button type="button" class="tstep" id="tMinus" aria-label="휴식 ${STEP_SEC}초 줄이기">−${STEP_SEC}</button>
       <button type="button" class="time" id="tTime">1:00</button>
       <button type="button" class="tstep" id="tPlus" aria-label="휴식 ${STEP_SEC}초 늘리기">+${STEP_SEC}</button>
@@ -96,18 +96,16 @@ export function mountTimer(root) {
     time.disabled = running; // 실행 중에는 프리셋을 바꾸지 않음
     time.setAttribute('aria-label', running ? `남은 시간 ${fmt(timer.remaining())}` : `휴식 ${fmt(timer.duration)} (누르면 30·60·90초로 바뀜)`);
     $('#timerBar', root).classList.toggle('running', running);
+    const auto = $('#tAuto', root);
+    auto.setAttribute('aria-pressed', String(timer.auto));
+    auto.setAttribute('aria-label', timer.auto ? '세트를 체크하면 휴식이 자동으로 시작됨 (누르면 끄기)' : '세트를 체크해도 휴식이 자동으로 시작되지 않음 (누르면 켜기)');
+    $('#tAutoText', root).textContent = timer.auto ? '자동' : '수동';
     const go = $('#tGo', root);
     go.textContent = running ? '중지' : '시작';
     go.classList.toggle('stop', running);
   }
 
-  $('#tGo', root).addEventListener('click', () => {
-    if (timer.running) {
-      stopTicking();
-      releaseLock();
-      timer.stop();
-      return;
-    }
+  function startRest() {
     // 소리는 사용자가 누른 순간에만 준비할 수 있음
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -122,7 +120,23 @@ export function mountTimer(root) {
     timer.start();
     startTicking();
     takeLock();
+  }
+  $('#tGo', root).addEventListener('click', () => {
+    if (timer.running) {
+      stopTicking();
+      releaseLock();
+      timer.stop();
+      return;
+    }
+    startRest();
   });
+  $('#tAuto', root).addEventListener('click', () => timer.setAuto(!timer.auto));
+  // 오늘 화면에서 세트를 체크하면 알려 줌: 자동이 켜져 있고 쉬는 중이 아니면 휴식 시작
+  const onSetChecked = () => {
+    if (!root.isConnected) return document.removeEventListener('workout:set-checked', onSetChecked); // 화면에서 사라진 타이머는 정리
+    if (timer.auto && !timer.running) startRest();
+  };
+  document.addEventListener('workout:set-checked', onSetChecked);
   $('#tTime', root).addEventListener('click', () => timer.nextPreset()); // 30 → 60 → 90초
   $('#tMinus', root).addEventListener('click', () => timer.adjust(-STEP_SEC));
   $('#tPlus', root).addEventListener('click', () => timer.adjust(STEP_SEC));
