@@ -58,7 +58,7 @@ button { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-us
   margin: 0 auto;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 10px 48px;
+  padding-block: 8px 48px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -84,7 +84,7 @@ h1 { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 700; }
 .tag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); line-height: 1.6; }
 
 /* 오늘 체크: 종목마다 (이름·목표 | 완료) / (개수 −5 −1 [ ] +1 +5 × 세트 − [ ] +) 두 줄. 3종목이 한 화면에 들어옴 */
-.rows { display: flex; flex-direction: column; gap: 5px; }
+.rows { display: flex; flex-direction: column; gap: 4px; }
 .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info check" "ctrl ctrl"; gap: 6px 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .row.done { background: var(--accent-soft); border-color: var(--accent); }
 .info { grid-area: info; min-width: 0; }
@@ -120,8 +120,9 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 }
 .empty { margin: 0; padding: 20px 16px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 14px; }
 
-.status { margin: 0; min-height: 14px; line-height: 14px; font-size: 12px; color: var(--muted); text-align: right; min-width: 0; }
-.statusrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.status { margin: 0; line-height: 14px; font-size: 12px; color: var(--muted); }
+.statusrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
+.statusrow .msg { min-width: 0; flex: 1; }
 .status.err { color: var(--err); }
 
 /* 공통 섹션 */
@@ -134,7 +135,7 @@ section { min-width: 0; }
 .cal-head { font-size: 11px; color: var(--muted); text-align: center; margin-bottom: 2px; }
 .cal-row + .cal-row { margin-top: 4px; }
 .wk { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.cell { min-width: 0; height: 38px; border: 1px solid transparent; border-radius: 10px; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; cursor: pointer; touch-action: manipulation; }
+.cell { min-width: 0; height: 36px; border: 1px solid transparent; border-radius: 10px; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; cursor: pointer; touch-action: manipulation; }
 .cell .dn { font-size: 13px; line-height: 1; font-variant-numeric: tabular-nums; }
 .cell .pips { display: flex; gap: 3px; }
 .cell .pips i { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
@@ -271,3 +272,13 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .levels button { min-width: 38px; height: 30px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
 .levels button:first-child { border-left: 0; }
 .levels button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+
+/* 화면 보기 3단계 */
+.views { display: flex; flex: none; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); }
+.views button { min-width: 38px; height: 24px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
+.views button:first-child { border-left: 0; }
+.views button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.row .hint { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted); display: none; }
+[data-view="detail"] .row .hint { display: block; }
+[data-view="compact"] .row .ctrl { display: none; }
+[data-view="compact"] .row { grid-template-areas: "info check"; }
