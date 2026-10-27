@@ -181,7 +181,7 @@ test('오늘: 모두 마치면 이어진 연속 일수를 보여 줌', () => {
   const yesterday = Object.fromEntries(Object.entries(fullDays(4)).filter(([d]) => d !== todayStr()));
   const t2 = setup(today, { days: yesterday });
   for (const b of t2.root.querySelectorAll('[data-f="check"]')) b.click();
-  assert.equal(t2.root.querySelector('#progText').textContent, '모두 완료 · 연속 4일');
+  assert.equal(t2.root.querySelector('#progText').textContent, '연속 4일');
   t2.store.actions.flushAll();
 });
 
@@ -441,4 +441,26 @@ test('기록: 자세히에 오늘·최근 7일 운동시간과 하루 평균을 
   none.root.querySelector('#moreBox').open = true;
   none.root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
   assert.match(none.root.querySelector('#workText').textContent, /▶ 시작/, '기록이 없으면 사용법 안내');
+});
+
+test('오늘: 난이도 쉬움·보통·어려움 버튼으로 그날 목표가 바뀜', (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const btns = [...root.querySelectorAll('#levels button')];
+  assert.deepEqual(btns.map((b) => b.textContent), ['쉬움', '보통', '어려움']);
+  const pressed = () => btns.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent);
+  const target = () => root.querySelector('.row [data-f="target"]').textContent;
+  assert.deepEqual(pressed(), ['보통']);
+  assert.equal(target(), '15');
+  btns[2].click();
+  assert.deepEqual(pressed(), ['어려움']);
+  assert.equal(target(), '18');
+  assert.equal(root.querySelector('.row [data-f="cnt"]').value, '18', '실제 입력칸도 새 목표로 시작');
+  btns[0].click();
+  assert.equal(target(), '12');
+  btns[1].click();
+  assert.equal(target(), '15');
+  assert.equal(root.querySelector('#weekLabel').textContent.includes('주차'), true, '주차 안내는 아래 줄로 옮겨 계속 보임');
+  store.actions.flushAll();
 });

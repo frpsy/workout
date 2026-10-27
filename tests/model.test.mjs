@@ -99,3 +99,14 @@ test('하루 총 운동시간(workSec): 읽고 저장하고 백업에도 포함,
   assert.equal(payload.days['2026-10-25'].workSec, 600, '운동시간만 있는 날도 백업에 들어감');
   assert.equal(parseImport(JSON.stringify(payload), '2026-10-01').days['2026-10-25'].workSec, 600);
 });
+
+test('난이도(level): easy·hard만 읽고 저장, 보통과 이상한 값은 두지 않음', async () => {
+  const { serializeDay } = await import('../js/model.js');
+  assert.equal(normalizeDay({ entries: {}, level: 'hard' }).level, 'hard');
+  assert.equal(normalizeDay({ entries: {}, level: 'easy' }).level, 'easy');
+  assert.equal(normalizeDay({ entries: {}, level: 'normal' }).level, undefined);
+  assert.equal(normalizeDay({ entries: {}, level: 'x' }).level, undefined);
+  assert.equal(serializeDay('2026-10-26', { entries: {}, level: 'hard' }).level, 'hard');
+  assert.equal('level' in serializeDay('2026-10-26', { entries: {}, level: 'normal' }), false);
+  assert.equal('level' in serializeDay('2026-10-26', { entries: {} }), false);
+});
