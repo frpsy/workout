@@ -288,7 +288,7 @@ export function mountToday(root, store) {
       el.innerHTML = `
         <div class="info">
           <h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>
-          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span></p>
+          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" role="group" aria-label="${n} 세트별 체크"></span></p>
         </div>
         <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}</button>
         <div class="ctrl">
@@ -308,11 +308,19 @@ export function mountToday(root, store) {
         <p class="hint" data-f="hint"></p>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };
-      for (const f of ['target', 'sets', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
+      for (const f of ['target', 'sets', 'pips', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
       const step = (d) => actions.setCount(ex.id, view().count + d);
       // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
       if (r.watch) r.watch.addEventListener('click', () => (watch && watch.id === ex.id ? stopWatch() : startWatch(ex.id)));
+      // 세트별 체크: 누른 세트까지 마친 것으로 하고, 이미 거기까지 마친 상태에서 다시 누르면 한 칸 되돌림
+      r.pips.addEventListener('click', (ev) => {
+        const b = ev.target.closest('button[data-set]');
+        if (!b || b.disabled) return;
+        haptic();
+        const i = Number(b.dataset.set);
+        actions.setProgress(ex.id, view().setsDone === i ? i - 1 : i);
+      });
       r.check.addEventListener('click', () => {
         haptic();
         actions.toggle(ex.id);
@@ -356,7 +364,22 @@ export function mountToday(root, store) {
       const v = store.view(selected, r.ex, res);
       if (v.done) done++;
       r.target.textContent = v.target;
-      r.sets.textContent = r.ex.sets > 1 ? `× ${r.ex.sets}` : '';
+      // 세트가 여러 개면 세트마다 체크 버튼(1·2·3), 하나면 기존처럼 완료 버튼만
+      const nSets = v.sets;
+      r.sets.hidden = nSets > 1;
+      r.sets.textContent = '';
+      const pipKey = `${nSets}`;
+      if (r.pips.dataset.n !== pipKey) {
+        r.pips.dataset.n = pipKey;
+        r.pips.innerHTML = nSets > 1 ? Array.from({ length: nSets }, (_, i) => `<button type="button" data-set="${i + 1}" aria-pressed="false" aria-label="${esc(r.ex.name)} ${i + 1}세트 체크">${i + 1}</button>`).join('') : '';
+      }
+      r.pips.hidden = nSets <= 1;
+      for (const b of r.pips.children) {
+        const on = Number(b.dataset.set) <= v.setsDone;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', String(on));
+        b.disabled = !state.ready;
+      }
       r.el.classList.toggle('done', v.done);
       r.check.setAttribute('aria-pressed', String(v.done));
       for (const b of [r.check, r.watch, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) if (b) b.disabled = !state.ready;

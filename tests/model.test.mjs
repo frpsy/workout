@@ -110,3 +110,10 @@ test('난이도(level): easy·hard만 읽고 저장, 보통과 이상한 값은 
   assert.equal('level' in serializeDay('2026-10-26', { entries: {}, level: 'normal' }), false);
   assert.equal('level' in serializeDay('2026-10-26', { entries: {} }), false);
 });
+
+test('세트별 체크(setsDone)는 아직 안 끝난 종목에만 저장·복원됨', () => {
+  const day = normalizeDay({ entries: { a: { done: false, setsDone: 2 }, b: { done: true, setsDone: 2 }, c: { done: false, setsDone: 99 } } });
+  assert.equal(day.entries.a.setsDone, 2);
+  assert.equal(day.entries.b.setsDone, undefined);
+  assert.equal(day.entries.c.setsDone, undefined);
+});

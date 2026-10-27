@@ -71,11 +71,12 @@ test('오늘: 체크 버튼을 누르면 완료 표시와 진행 문구가 바�
   store.actions.flushAll();
 });
 
-test('오늘: 목표가 "15 × 3"처럼 세트와 함께 보임', () => {
+test('오늘: 목표 옆에 세트별 체크 버튼(1·2·3)이 보임', () => {
   const { store, root } = setup(today);
   const row = root.querySelector('.row');
   assert.equal(row.querySelector('[data-f="target"]').textContent, '15');
-  assert.equal(row.querySelector('[data-f="sets"]').textContent, '× 3');
+  assert.equal(row.querySelector('[data-f="pips"]').children.length, 3);
+  assert.equal(row.querySelector('[data-f="pips"]').hidden, false);
   assert.equal(row.querySelector('[data-f="cnt"]').value, '15');
   assert.equal(row.querySelector('[data-f="setsIn"]').value, '3', '실제 세트도 기본은 목표 세트');
   store.actions.flushAll();
@@ -619,5 +620,52 @@ test('오늘: 중지해 둔 운동은 앱을 다시 열어도 멈춘 채로 보�
   assert.equal(root.querySelector('#wTime').textContent, '1:02');
   root.querySelector('#wBtn').click();
   assert.equal(store.state.days[todayStr()].workSec, 62);
+  store.actions.flushAll();
+});
+
+test('오늘: 세트별로 체크하면 마지막 세트에서 종목이 완료되고, 같은 세트를 다시 누르면 한 칸 되돌림', () => {
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  const pip = (i) => row.querySelector(`[data-set="${i}"]`);
+  const id = store.activeExercises()[0].id;
+  const entry = () => store.state.days[todayStr()] && store.state.days[todayStr()].entries[id];
+
+  pip(1).click();
+  assert.equal(entry().setsDone, 1);
+  assert.equal(entry().done, false, '아직 완료 아님');
+  assert.equal(pip(1).getAttribute('aria-pressed'), 'true');
+  assert.equal(pip(2).getAttribute('aria-pressed'), 'false');
+  pip(2).click();
+  assert.equal(entry().setsDone, 2);
+  pip(3).click();
+  assert.equal(entry().done, true, '마지막 세트까지 하면 완료');
+  assert.equal(entry().setsDone, undefined);
+  assert.equal(entry().sets, 3);
+  assert.ok(row.classList.contains('done'));
+  assert.equal(pip(3).getAttribute('aria-pressed'), 'true');
+
+  pip(3).click(); // 이미 3세트까지 마친 상태에서 다시 누르면 2세트로
+  assert.equal(entry().done, false);
+  assert.equal(entry().setsDone, 2);
+  assert.ok(!row.classList.contains('done'));
+  pip(2).click();
+  pip(1).click();
+  assert.equal(entry().setsDone, undefined, '0세트면 기록 없음');
+  store.actions.flushAll();
+});
+
+test('오늘: 큰 완료 버튼은 세트를 한꺼번에 모두 체크·해제', () => {
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  const id = store.activeExercises()[0].id;
+  row.querySelector('[data-set="1"]').click();
+  row.querySelector('[data-f="check"]').click();
+  const e = store.state.days[todayStr()].entries[id];
+  assert.equal(e.done, true);
+  assert.equal(e.setsDone, undefined);
+  assert.equal(row.querySelector('[data-set="3"]').getAttribute('aria-pressed'), 'true');
+  row.querySelector('[data-f="check"]').click();
+  assert.equal(store.state.days[todayStr()].entries[id].done, false);
+  assert.equal(row.querySelector('[data-set="1"]').getAttribute('aria-pressed'), 'false');
   store.actions.flushAll();
 });

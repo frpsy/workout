@@ -92,6 +92,7 @@ export function normalizeDay(raw) {
     if (inRange(v.count, LIMITS.count)) e.count = Math.round(v.count);
     if (inRange(v.target, LIMITS.count)) e.target = Math.round(v.target);
     if (inRange(v.sets, LIMITS.sets)) e.sets = Math.round(v.sets);
+    if (!e.done && inRange(v.setsDone, LIMITS.sets)) e.setsDone = Math.round(v.setsDone); // 세트별로 체크한 개수(아직 다 안 마친 날)
     entries[id] = e;
   }
   return { entries, ...(workSec ? { workSec } : {}), ...(level ? { level } : {}) };
