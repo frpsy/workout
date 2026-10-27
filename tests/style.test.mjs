@@ -20,3 +20,8 @@ test('화면 보기·난이도·효과음 버튼은 손가락으로 누르기 �
   assert.match(css, /\.views button \{ min-width: 44px; height: 30px;/);
   assert.match(css, /\.levels button \{ min-width: 44px; height: 32px;/);
 });
+
+test('홈 화면 앱: 상태 표시줄 뒤를 배경색으로 덮고 html 배경도 지정', () => {
+  assert.match(css, /\.standalone body::before \{[^}]*height: env\(safe-area-inset-top/);
+  assert.match(css, /html \{ background: var\(--bg\); \}/);
+});
