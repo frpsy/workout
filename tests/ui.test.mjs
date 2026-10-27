@@ -569,7 +569,7 @@ test('오늘: 운동 중지·재개 버튼은 시간을 멈췄다 이어서 잼'
   store.actions.flushAll();
 });
 
-test('오늘: 운동 취소는 바로 기록 없이 버려지고, 기록된 운동시간은 초기화할 수 있음', (t) => {
+test('오늘: 운동 취소는 바로 기록 없이 버려지고, 기록된 운동시간은 바로 초기화할 수 있음', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
   const { store, root } = setup(today);
@@ -591,13 +591,7 @@ test('오늘: 운동 취소는 바로 기록 없이 버려지고, 기록된 운�
   $$('#wBtn').click(); // 종료 → 1분 30초 기록
   assert.equal(store.state.days[todayStr()].workSec, 90);
   assert.equal($$('#wReset').hidden, false);
-  $$('#wReset').click();
-  assert.equal($$('#wReset').textContent, '정말 초기화?', '처음 누르면 확인을 요구');
-  assert.equal(store.state.days[todayStr()].workSec, 90, '아직 지워지지 않음');
-  mock.timers.tick(3_500);
-  assert.equal($$('#wReset').textContent, '초기화', '몇 초 지나면 확인이 풀림');
-  $$('#wReset').click();
-  $$('#wReset').click(); // 확인
+  $$('#wReset').click(); // 확인 없이 바로 지움
   assert.equal(store.state.days[todayStr()].workSec, undefined, '운동시간이 지워짐');
   assert.equal($$('#wTime').textContent, '');
   assert.equal($$('#wReset').hidden, true);
