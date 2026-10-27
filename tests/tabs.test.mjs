@@ -61,7 +61,7 @@ test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
   assert.ok(html.includes('viewport-fit=cover'));
-  assert.match(css, /\.standalone body \{ padding-top: calc\(env\(safe-area-inset-top, 0px\) \+ 8px\); \}/);
-  assert.match(css, /\.tabbar \{[^}]*padding-bottom: max\(env\(safe-area-inset-bottom, 0px\), 6px\)/);
-  assert.match(css, /\.wrap \{ padding-bottom: calc\(60px \+ max\(env\(safe-area-inset-bottom/);
+  assert.match(css, /\.standalone body \{ padding-top: calc\(env\(safe-area-inset-top, 0px\) \+ 18px\); \}/);
+  assert.match(css, /\.tabbar \{[^}]*padding-bottom: calc\(env\(safe-area-inset-bottom, 0px\) \+ 10px\)/);
+  assert.match(css, /\.wrap \{ padding-bottom: calc\(70px \+ env\(safe-area-inset-bottom/);
 });
