@@ -129,7 +129,7 @@ export function mountHistory(root, store) {
     }
     $('#workText', root).innerHTML = week
       ? `운동시간 오늘 <b>${secOf(today) ? fmtKo(secOf(today)) : '없음'}</b> · 최근 7일 <b>${fmtKo(week)}</b> (하루 평균 ${fmtKo(Math.round(week / active))})`
-      : '운동시간은 위쪽 ▶ 시작·■ 종료로 잴 수 있습니다.';
+      : '운동시간은 위쪽 ▶ 운동 시작·■ 종료로 잴 수 있습니다.';
 
     /* 연속·달성률 (모든 운동을 마친 날 기준) */
     const opts = { rest, startDate: config.startDate };
