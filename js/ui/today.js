@@ -126,8 +126,6 @@ export function mountToday(root, store) {
   const session = createSession();
   let workTick = 0;
 
-  let resetTimer = 0;
-  const RESET_CONFIRM_MS = 3000; // 기록된 운동시간 초기화는 한 번 더 눌러야 하는 시간
 
   function renderWork() {
     const state = store.state;
@@ -153,11 +151,6 @@ export function mountToday(root, store) {
     pauseBtn.setAttribute('aria-label', paused ? '운동 시간 이어서 재기' : '운동 시간 잠시 멈추기');
     // 재지 않는 동안, 선택한 날에 기록된 운동시간이 있으면 초기화 버튼이 보임
     resetBtn.hidden = running || !total;
-    if (resetBtn.hidden) {
-      clearTimeout(resetTimer);
-      resetBtn.textContent = '초기화';
-      resetBtn.classList.remove('confirm');
-    }
     root.querySelector('.headline').classList.toggle('working', running);
   }
   function ticking(on) {
@@ -195,19 +188,8 @@ export function mountToday(root, store) {
     session.cancel();
     renderWork();
   });
-  // 초기화: 선택한 날의 기록된 운동시간을 지움. 기록이 사라지므로 한 번 더 눌러야 함
+  // 초기화: 선택한 날의 기록된 운동시간을 바로 지움
   $('#wReset', root).addEventListener('click', () => {
-    const btn = $('#wReset', root);
-    if (!btn.classList.contains('confirm')) {
-      btn.classList.add('confirm');
-      btn.textContent = '정말 초기화?';
-      clearTimeout(resetTimer);
-      resetTimer = setTimeout(() => {
-        btn.classList.remove('confirm');
-        btn.textContent = '초기화';
-      }, RESET_CONFIRM_MS);
-      return;
-    }
     haptic();
     actions.clearWorkSec(store.state.selected);
     renderWork();
