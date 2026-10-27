@@ -538,3 +538,84 @@ test('상태 줄: 저장 문구가 있으면 주차 안내 자리에 보이고, 
   assert.equal(week.hidden, true, '문구가 있는 동안은 주차 안내를 숨김');
   store.actions.flushAll();
 });
+
+test('오늘: 운동 중지·재개 버튼은 시간을 멈췄다 이어서 잼', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const $$ = (id) => root.querySelector(id);
+  assert.equal($$('#wPause').hidden, true, '시작 전에는 중지·취소 버튼이 없음');
+  assert.equal($$('#wCancel').hidden, true);
+  $$('#wBtn').click();
+  assert.equal($$('#wPause').hidden, false);
+  assert.equal($$('#wCancel').hidden, false);
+  assert.equal($$('#wPause').textContent, '중지');
+  assert.equal(root.querySelector('.headline').classList.contains('working'), true);
+  mock.timers.tick(10_000);
+  assert.equal($$('#wTime').textContent, '0:10');
+  $$('#wPause').click();
+  assert.equal($$('#wPause').textContent, '재개');
+  assert.equal($$('#wTime').classList.contains('paused'), true);
+  mock.timers.tick(60_000);
+  assert.equal($$('#wTime').textContent, '0:10', '중지 중에는 흐르지 않음');
+  $$('#wPause').click();
+  assert.equal($$('#wPause').textContent, '중지');
+  mock.timers.tick(5_000);
+  assert.equal($$('#wTime').textContent, '0:15', '재개하면 이어서 흐름');
+  $$('#wBtn').click(); // 종료
+  assert.equal(store.state.days[todayStr()].workSec, 15, '중지해 둔 시간은 빼고 기록');
+  assert.equal($$('#wPause').hidden, true);
+  assert.equal(root.querySelector('.headline').classList.contains('working'), false);
+  store.actions.flushAll();
+});
+
+test('오늘: 운동 취소는 한 번 더 눌러야 하고, 기록 없이 버려지며 확인은 몇 초 뒤 풀림', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const $$ = (id) => root.querySelector(id);
+  $$('#wBtn').click();
+  mock.timers.tick(20_000);
+  $$('#wCancel').click();
+  assert.equal($$('#wCancel').textContent, '정말 취소?', '처음 누르면 확인을 요구');
+  assert.equal($$('#wBtn').textContent, '■ 종료', '아직 취소되지 않음');
+  mock.timers.tick(3_500);
+  assert.equal($$('#wCancel').textContent, '취소', '몇 초 지나면 확인이 풀림');
+  assert.equal(store.state.days[todayStr()], undefined, '아직 아무것도 기록되지 않음');
+
+  $$('#wCancel').click();
+  $$('#wCancel').click(); // 확인
+  assert.equal($$('#wBtn').textContent, '▶ 시작');
+  assert.equal($$('#wTime').textContent, '', '취소하면 기록 없음');
+  assert.equal(store.state.days[todayStr()] && store.state.days[todayStr()].workSec, undefined, '운동시간이 기록되지 않음');
+  assert.equal(localStorage.getItem('workout-check:session'), null, '저장된 시작 기록도 지움');
+  mock.timers.tick(10_000);
+  assert.equal($$('#wTime').textContent, '', '취소 뒤에는 시간이 더 흐르지 않음');
+  assert.equal($$('#wCancel').hidden, true);
+  assert.equal($$('#wCancel').textContent, '취소', '다음 시작을 위해 확인 상태가 초기화됨');
+
+  $$('#wBtn').click(); // 다시 시작 가능
+  mock.timers.tick(3_000);
+  assert.equal($$('#wTime').textContent, '0:03');
+  $$('#wBtn').click();
+  assert.equal(store.state.days[todayStr()].workSec, 3);
+  store.actions.flushAll();
+});
+
+test('오늘: 중지해 둔 운동은 앱을 다시 열어도 멈춘 채로 보임', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const now = Date.now();
+  localStorage.setItem('workout-check:session', JSON.stringify({ startAt: now - 120_000, date: todayStr(), pausedAt: now - 60_000, pausedMs: 0 }));
+  const { store, root } = setup(today);
+  assert.equal(root.querySelector('#wTime').textContent, '1:00', '중지한 시점까지의 시간');
+  assert.equal(root.querySelector('#wPause').textContent, '재개');
+  mock.timers.tick(30_000);
+  assert.equal(root.querySelector('#wTime').textContent, '1:00', '멈춘 채로 있음');
+  root.querySelector('#wPause').click();
+  mock.timers.tick(2_000);
+  assert.equal(root.querySelector('#wTime').textContent, '1:02');
+  root.querySelector('#wBtn').click();
+  assert.equal(store.state.days[todayStr()].workSec, 62);
+  store.actions.flushAll();
+});
