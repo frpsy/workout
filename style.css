@@ -242,7 +242,8 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 /* 한 줄 휴식 타이머 */
 .timer { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 8px 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .timer .tlabel { font-size: 12px; color: var(--muted); }
-.timer .time { flex: 1; min-width: 0; text-align: center; font-family: var(--font-num); font-size: 30px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.timer .time { flex: 1; min-width: 0; height: 36px; padding: 0; border: 0; background: transparent; color: var(--fg); text-align: center; font-family: var(--font-num); font-size: 30px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; touch-action: manipulation; text-decoration: underline dotted var(--line); text-underline-offset: 6px; }
+.timer .time:disabled { opacity: 1; cursor: default; text-decoration: none; }
 .timer.running .time { color: var(--accent); }
 .timer .tstep { width: 44px; height: 36px; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; font-variant-numeric: tabular-nums; }
 .timer .tgo { min-width: 64px; height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
