@@ -7,6 +7,7 @@ import { mountPlan } from './ui/plan.js';
 import { mountSettings } from './ui/settings.js';
 import { mountTimer } from './ui/timer.js';
 import { mountTabs } from './ui/tabs.js';
+import { mountTip } from './ui/tip.js';
 import { mountToday } from './ui/today.js';
 
 async function requestPersistentStorage() {
@@ -21,6 +22,7 @@ async function boot() {
   const adapter = await createStorage();
   const store = createStore(adapter);
 
+  mountTip(document.getElementById('tip'));
   mountTimer(document.getElementById('timer')); // 기록과 무관해 상태 구독 없이 스스로 갱신
 
   const renders = [
@@ -32,7 +34,7 @@ async function boot() {
 
   const el = (id) => document.getElementById(id);
   mountTabs(el('tabbar'), {
-    today: [el('today'), el('timer')],
+    today: [el('today'), el('timer'), el('tip')],
     record: [el('history'), el('plan-sec')],
     settings: [el('settings')],
   });
