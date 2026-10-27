@@ -155,6 +155,27 @@ export function mountToday(root, store) {
   let workTick = 0;
 
 
+  // 운동 시간을 재는 동안(중지 중이 아닐 때) 화면이 꺼지지 않게 요청
+  let screenLock = null;
+  let lockBusy = false;
+  async function holdScreen(on) {
+    try {
+      if (on && !screenLock && !lockBusy && navigator.wakeLock) {
+        lockBusy = true;
+        screenLock = await navigator.wakeLock.request('screen');
+        screenLock.addEventListener('release', () => (screenLock = null));
+      } else if (!on && screenLock) {
+        const l = screenLock;
+        screenLock = null;
+        await l.release();
+      }
+    } catch {
+      /* 허용되지 않음: 화면이 꺼질 수 있을 뿐입니다 */
+    } finally {
+      lockBusy = false;
+    }
+  }
+
   function renderWork() {
     const state = store.state;
     const running = session.running;
@@ -183,6 +204,7 @@ export function mountToday(root, store) {
     // 재지 않는 동안, 선택한 날에 기록된 운동시간이 있으면 초기화 버튼이 보임
     resetBtn.hidden = running || !total;
     root.querySelector('.headline').classList.toggle('working', running);
+    holdScreen(running && !paused);
   }
   function ticking(on) {
     clearInterval(workTick);

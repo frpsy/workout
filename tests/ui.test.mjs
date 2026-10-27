@@ -870,3 +870,33 @@ test('효과음: 휴식 타이머 시작·중지음, 끝나기 3초 전 카운�
     localStorage.removeItem('workout-check:sound');
   }
 });
+
+test('오늘: 운동 시간을 재는 동안 화면 켜짐을 요청하고, 중지·종료하면 풀어 줌', async () => {
+  const calls = { request: 0, release: 0 };
+  Object.defineProperty(globalThis, 'navigator', {
+    value: {
+      wakeLock: {
+        request: async () => {
+          calls.request++;
+          return { release: async () => calls.release++, addEventListener() {} };
+        },
+      },
+    },
+    configurable: true,
+  });
+  const { store, root } = setup(today);
+  const tick = () => new Promise((r) => setTimeout(r, 5));
+  root.querySelector('#wBtn').click();
+  await tick();
+  assert.equal(calls.request, 1, '시작하면 화면 켜짐 요청');
+  root.querySelector('#wPause').click(); // 중지
+  await tick();
+  assert.equal(calls.release, 1, '중지하면 풀어 줌');
+  root.querySelector('#wPause').click(); // 재개
+  await tick();
+  assert.equal(calls.request, 2);
+  root.querySelector('#wBtn').click(); // 종료
+  await tick();
+  assert.equal(calls.release, 2);
+  store.actions.flushAll();
+});

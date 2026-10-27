@@ -24,11 +24,25 @@
   <div id="today"></div>
   <div id="timer"></div>
   <p class="status" id="boot-status" role="status">불러오는 중…</p>
-  <div id="history" class="stack"></div>
-  <div id="plan-sec"></div>
-  <div id="settings" class="stack"></div>
+  <div id="history" class="stack" hidden></div>
+  <div id="plan-sec" hidden></div>
+  <div id="settings" class="stack" hidden></div>
   <noscript><p>이 페이지는 자바스크립트가 켜져 있어야 동작합니다.</p></noscript>
 </main>
+<nav class="tabbar" id="tabbar" aria-label="화면 선택">
+  <button type="button" data-tab="today" aria-selected="true" aria-current="page">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>
+    <span>오늘</span>
+  </button>
+  <button type="button" data-tab="record" aria-selected="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
+    <span>기록</span>
+  </button>
+  <button type="button" data-tab="settings" aria-selected="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+    <span>설정</span>
+  </button>
+</nav>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

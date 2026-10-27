@@ -6,6 +6,7 @@ import { mountHistory } from './ui/history.js';
 import { mountPlan } from './ui/plan.js';
 import { mountSettings } from './ui/settings.js';
 import { mountTimer } from './ui/timer.js';
+import { mountTabs } from './ui/tabs.js';
 import { mountToday } from './ui/today.js';
 
 async function requestPersistentStorage() {
@@ -28,6 +29,13 @@ async function boot() {
     mountPlan(document.getElementById('plan-sec'), store),
     mountSettings(document.getElementById('settings'), store),
   ];
+
+  const el = (id) => document.getElementById(id);
+  mountTabs(el('tabbar'), {
+    today: [el('today'), el('timer'), el('boot-status')],
+    record: [el('history'), el('plan-sec')],
+    settings: [el('settings')],
+  });
 
   let frame = 0;
   store.subscribe((state) => {
