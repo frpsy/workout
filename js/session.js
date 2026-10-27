@@ -38,34 +38,73 @@ export function fmtKo(sec) {
   return `${sec}초`;
 }
 
+/**
+ * 상태: 없음 → 재는 중 ⇄ 중지됨 → (종료: 기록 / 취소: 버림)
+ * 저장되는 값: startAt(시작 시각), date(기록할 날), pausedAt(중지한 시각, 없으면 null), pausedMs(중지해 둔 시간 합계)
+ */
 export function createSession({ now = Date.now } = {}) {
-  let cur = null; // { startAt, date }
+  let cur = null;
   const saved = read();
-  if (saved && Number.isFinite(saved.startAt) && typeof saved.date === 'string' && now() - saved.startAt >= 0 && now() - saved.startAt < MAX_RESUME_MS) cur = saved;
-  else if (saved) write(null);
+  if (saved && Number.isFinite(saved.startAt) && typeof saved.date === 'string' && now() - saved.startAt >= 0 && now() - saved.startAt < MAX_RESUME_MS) {
+    cur = {
+      startAt: saved.startAt,
+      date: saved.date,
+      pausedAt: Number.isFinite(saved.pausedAt) ? saved.pausedAt : null,
+      pausedMs: Number.isFinite(saved.pausedMs) && saved.pausedMs > 0 ? saved.pausedMs : 0,
+    };
+  } else if (saved) write(null);
 
-  const elapsed = () => (cur ? Math.max(0, Math.floor((now() - cur.startAt) / 1000)) : 0);
+  // 잰 시간(ms): 중지해 둔 동안은 흐르지 않음
+  const activeMs = () => (cur ? Math.max(0, (cur.pausedAt ?? now()) - cur.startAt - cur.pausedMs) : 0);
+  const elapsed = () => Math.floor(activeMs() / 1000);
 
   return {
+    /** 시작했고 아직 끝내거나 취소하지 않음 (중지 중 포함) */
     get running() {
       return cur !== null;
+    },
+    get paused() {
+      return cur !== null && cur.pausedAt !== null;
     },
     elapsed,
 
     /** date: 이 운동을 기록할 날(시작한 날) */
     start(date) {
       if (cur) return;
-      cur = { startAt: now(), date };
+      cur = { startAt: now(), date, pausedAt: null, pausedMs: 0 };
       write(cur);
     },
 
-    /** 멈추고 { date, sec }를 돌려줌 (시작한 적이 없으면 null). 1초 미만은 1초로 */
+    /** 잠시 멈춤: 멈춰 둔 동안은 시간이 흐르지 않음 */
+    pause() {
+      if (!cur || cur.pausedAt !== null) return;
+      cur.pausedAt = now();
+      write(cur);
+    },
+
+    /** 멈춘 데서 이어서 잼 */
+    resume() {
+      if (!cur || cur.pausedAt === null) return;
+      cur.pausedMs += now() - cur.pausedAt;
+      cur.pausedAt = null;
+      write(cur);
+    },
+
+    /** 끝내고 { date, sec }를 돌려줌 (시작한 적이 없으면 null). 중지해 둔 시간은 빼고, 1초 미만은 1초로 */
     stop() {
       if (!cur) return null;
-      const out = { date: cur.date, sec: Math.max(1, Math.round((now() - cur.startAt) / 1000)) };
+      const out = { date: cur.date, sec: Math.max(1, Math.round(activeMs() / 1000)) };
       cur = null;
       write(null);
       return out;
+    },
+
+    /** 기록하지 않고 버림 */
+    cancel() {
+      if (!cur) return false;
+      cur = null;
+      write(null);
+      return true;
     },
   };
 }

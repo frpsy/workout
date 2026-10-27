@@ -58,7 +58,9 @@ export function mountToday(root, store) {
         <h1 id="dateLabel" tabindex="-1"></h1>
         <div class="work">
           <span class="wtime" id="wTime" aria-live="off"></span>
+          <button type="button" class="wsec" id="wPause" hidden>중지</button>
           <button type="button" class="wbtn" id="wBtn">▶ 시작</button>
+          <button type="button" class="wsec wcancel" id="wCancel" hidden>취소</button>
         </div>
       </div>
       <div class="prog">
@@ -123,11 +125,17 @@ export function mountToday(root, store) {
   const session = createSession();
   let workTick = 0;
 
+  let cancelTimer = 0;
+  const CANCEL_CONFIRM_MS = 3000; // 취소를 한 번 더 눌러야 하는 시간
+
   function renderWork() {
     const state = store.state;
     const running = session.running;
+    const paused = session.paused;
     const wTime = $('#wTime', root);
     const btn = $('#wBtn', root);
+    const pauseBtn = $('#wPause', root);
+    const cancelBtn = $('#wCancel', root);
     if (running) {
       wTime.textContent = fmtClock(session.elapsed());
     } else {
@@ -135,10 +143,22 @@ export function mountToday(root, store) {
       wTime.textContent = total ? `총 ${fmtKo(total)}` : '';
     }
     wTime.classList.toggle('running', running);
+    wTime.classList.toggle('paused', paused);
     btn.textContent = running ? '■ 종료' : '▶ 시작';
     btn.classList.toggle('stop', running);
     btn.disabled = !state.ready;
     btn.setAttribute('aria-label', running ? '운동 종료하고 총 운동시간 기록' : '운동 시작 (시간이 흐릅니다)');
+    // 재는 동안에만 중지·취소가 보임. 재는 중에는 날짜 대신 시간을 크게 보여 줌
+    pauseBtn.hidden = !running;
+    cancelBtn.hidden = !running;
+    pauseBtn.textContent = paused ? '재개' : '중지';
+    pauseBtn.setAttribute('aria-label', paused ? '운동 시간 이어서 재기' : '운동 시간 잠시 멈추기');
+    if (!running) {
+      clearTimeout(cancelTimer);
+      cancelBtn.textContent = '취소';
+      cancelBtn.classList.remove('confirm');
+    }
+    root.querySelector('.headline').classList.toggle('working', running);
   }
   function ticking(on) {
     clearInterval(workTick);
@@ -156,11 +176,41 @@ export function mountToday(root, store) {
     }
     renderWork();
   });
+  // 중지: 시간이 멈추고(기록은 안 함), 재개하면 이어서 흐름
+  $('#wPause', root).addEventListener('click', () => {
+    haptic();
+    if (session.paused) {
+      session.resume();
+      ticking(true);
+    } else {
+      session.pause();
+      ticking(false);
+    }
+    renderWork();
+  });
+  // 취소: 기록하지 않고 버림. 실수로 누르지 않도록 한 번 더 눌러야 함
+  $('#wCancel', root).addEventListener('click', () => {
+    const btn = $('#wCancel', root);
+    if (!btn.classList.contains('confirm')) {
+      btn.classList.add('confirm');
+      btn.textContent = '정말 취소?';
+      clearTimeout(cancelTimer);
+      cancelTimer = setTimeout(() => {
+        btn.classList.remove('confirm');
+        btn.textContent = '취소';
+      }, CANCEL_CONFIRM_MS);
+      return;
+    }
+    haptic();
+    ticking(false);
+    session.cancel();
+    renderWork();
+  });
   // 화면을 다시 켰을 때 흐른 시간을 바로 보여 줌
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) renderWork();
   });
-  if (session.running) ticking(true); // 새로고침·재실행 뒤에도 이어서 잼
+  if (session.running && !session.paused) ticking(true); // 새로고침·재실행 뒤에도 이어서 잼 (중지해 둔 것은 멈춘 채로)
 
   /** 오래 백업하지 않았으면 안내 (이 브라우저에만 저장하는 경우) */
   function updateBackupNote(state) {
