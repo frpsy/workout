@@ -669,3 +669,19 @@ test('오늘: 큰 완료 버튼은 세트를 한꺼번에 모두 체크·해제'
   assert.equal(row.querySelector('[data-set="1"]').getAttribute('aria-pressed'), 'false');
   store.actions.flushAll();
 });
+
+test('오늘: 세트를 일부만 마치면 완료 버튼이 진행(2/3)을 보여 줌', () => {
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  const check = row.querySelector('[data-f="check"]');
+  assert.ok(!check.classList.contains('part'));
+  row.querySelector('[data-set="2"]').click();
+  assert.ok(check.classList.contains('part'));
+  assert.equal(row.querySelector('[data-f="frac"]').textContent, '2/3');
+  assert.equal(check.style.getPropertyValue('--p'), '67%');
+  assert.match(check.getAttribute('aria-label'), /2\/3세트/);
+  row.querySelector('[data-set="3"]').click(); // 모두 마침
+  assert.ok(!check.classList.contains('part'));
+  assert.equal(row.querySelector('[data-f="frac"]').textContent, '');
+  store.actions.flushAll();
+});

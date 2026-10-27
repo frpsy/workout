@@ -296,6 +296,11 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 @media (max-width: 400px) { .work { gap: 5px; } .wbtn { min-width: 64px; padding: 0 8px; } }
 @media (max-width: 340px) { .work { gap: 4px; } .wbtn { min-width: 0; padding: 0 6px; font-size: 13px; } .wsec { min-width: 0; padding: 0 6px; } .wtime { font-size: 12px; } .headline h1 { flex: 0 1 auto; font-size: 15px; } }
 .goal .sets[hidden], .setpips[hidden] { display: none; }
-.setpips { display: inline-flex; gap: 4px; margin-left: 2px; align-self: center; }
-.setpips button { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); font-family: var(--font-num); font-size: 14px; font-weight: 700; line-height: 1; cursor: pointer; touch-action: manipulation; }
+.setpips { display: inline-flex; gap: 6px; margin: -2px 0 -2px 4px; align-self: center; }
+.setpips button { width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); font-family: var(--font-num); font-size: 14px; font-weight: 700; line-height: 1; cursor: pointer; touch-action: manipulation; }
 .setpips button.on { background: var(--accent); color: var(--on-accent); }
+.check { position: relative; }
+.check svg, .check .frac { grid-area: 1 / 1; position: relative; z-index: 1; }
+.check .frac { font-family: var(--font-num); font-size: 20px; line-height: 1; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.check.part { border-color: transparent; background: conic-gradient(var(--accent) var(--p, 0%), var(--line) 0); }
+.check.part::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--surface); }
