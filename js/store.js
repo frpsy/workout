@@ -1,6 +1,6 @@
 // 앱 상태와 동작. 화면은 subscribe로 상태를 받아 그리기만 합니다.
 
-import { LIMITS } from './config.js';
+import { LEVELS, LIMITS, UNITS } from './config.js';
 import { isDateStr, todayStr } from './dates.js';
 import { normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
 import { createTargetResolver } from './progression.js';
@@ -127,12 +127,18 @@ export function createStore(adapter) {
   function view(date, ex, res = resolver()) {
     const e = state.days[date] && state.days[date].entries[ex.id];
     const done = !!(e && e.done);
-    const target = done && Number.isFinite(e.target) ? e.target : res.targetForDate(ex, date);
+    // 그날 난이도(쉬움 0.8 / 보통 1 / 어려움 1.2)를 곱함. 단위(개 1, 초 5)에 맞춰 반올림, 최소 한 단위
+    const level = (state.days[date] && state.days[date].level) || 'normal';
+    const factor = (LEVELS[level] || LEVELS.normal).factor;
+    const inc = (UNITS[ex.unit] || UNITS.reps).inc;
+    const base = res.targetForDate(ex, date);
+    const planned = factor === 1 ? base : Math.max(inc, Math.round((base * factor) / inc) * inc);
+    const target = done && Number.isFinite(e.target) ? e.target : planned;
     const count = e && Number.isFinite(e.count) ? e.count : target;
     // 직접 고친 세트 수가 있으면 그 값, 완료했는데 기록에 없으면 1(예전 기록), 아직이면 지금 설정
     const hasSets = !!(e && Number.isFinite(e.sets));
     const sets = hasSets ? e.sets : done ? 1 : ex.sets;
-    return { done, target, count, sets, setsKnown: hasSets || !done };
+    return { done, target, count, sets, setsKnown: hasSets || !done, level };
   }
 
   function ensureEntry(date, id) {
@@ -174,6 +180,20 @@ export function createStore(adapter) {
       const entry = ensureEntry(state.selected, id);
       entry.count = Math.max(LIMITS.count[0], Math.min(LIMITS.count[1], Math.round(n)));
       scheduleSave(state.selected);
+      state.daysRev++;
+      emit();
+    },
+
+    /** 그날 난이도(easy/normal/hard). 아직 완료하지 않은 종목의 목표가 바뀜 */
+    setLevel(level) {
+      if (!state.ready || !LEVELS[level]) return;
+      const date = state.selected;
+      if (!state.days[date]) state.days[date] = { entries: {} };
+      const day = state.days[date];
+      if ((day.level || 'normal') === level) return;
+      if (level === 'normal') delete day.level;
+      else day.level = level;
+      scheduleSave(date);
       state.daysRev++;
       emit();
     },

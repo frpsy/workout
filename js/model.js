@@ -1,11 +1,11 @@
 // 저장 형식 정규화와 이전 버전(v1) 데이터 변환.
 // 저장소에서 읽은 값은 모두 여기를 거쳐 앱 상태가 됩니다.
 
-import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LIMITS, SCHEMA_VERSION, UNITS } from './config.js';
+import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LEVELS, LIMITS, SCHEMA_VERSION, UNITS } from './config.js';
 import { isDateStr } from './dates.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-const RESERVED = new Set(['date', 'v', 'entries', 'workSec']);
+const RESERVED = new Set(['date', 'v', 'entries', 'workSec', 'level']);
 const MAX_WORK_SEC = 86400; // 하루 총 운동시간 상한(24시간)
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -83,6 +83,8 @@ export function normalizeDay(raw) {
   const entries = {};
   if (!isObj(raw)) return { entries };
   const workSec = inRange(raw.workSec, [1, MAX_WORK_SEC]) ? Math.round(raw.workSec) : 0;
+  // 보통은 기본값이라 저장하지 않음
+  const level = raw.level === 'easy' || raw.level === 'hard' ? raw.level : undefined;
   const src = isObj(raw.entries) ? raw.entries : raw;
   for (const [id, v] of Object.entries(src)) {
     if (RESERVED.has(id) || !ID_RE.test(id) || !isObj(v)) continue;
@@ -92,12 +94,12 @@ export function normalizeDay(raw) {
     if (inRange(v.sets, LIMITS.sets)) e.sets = Math.round(v.sets);
     entries[id] = e;
   }
-  return workSec ? { entries, workSec } : { entries };
+  return { entries, ...(workSec ? { workSec } : {}), ...(level ? { level } : {}) };
 }
 
 export function serializeDay(date, day) {
   // workSec: 그날 총 운동시간(초). 없으면 필드도 두지 않음
-  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(day.workSec ? { workSec: day.workSec } : {}) };
+  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}) };
 }
 
 export function serializeConfig(config) {

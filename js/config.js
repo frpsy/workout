@@ -8,6 +8,14 @@ export const UNITS = {
   sec: { label: '초', inc: 5, big: 15, timed: true }, // timed: 행에 시작/종료 버튼으로 시간을 재서 기록
 };
 
+/** 그날 난이도 3단계: 목표 개수(초)에 곱하는 비율. 쉬움·어려움은 그날 기록에만 남음 */
+export const LEVELS = {
+  easy: { label: '쉬움', factor: 0.8 },
+  normal: { label: '보통', factor: 1 },
+  hard: { label: '어려움', factor: 1.2 },
+};
+export const LEVEL_ORDER = ['easy', 'normal', 'hard'];
+
 /** 목표는 '세트당 개수 × 세트 수' (예: 15 × 3). 기본 3세트 */
 export const DEFAULT_SETS = 3;
 

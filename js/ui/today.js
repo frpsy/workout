@@ -1,6 +1,6 @@
 // 머리말(날짜·진행)과 오늘의 운동 체크 행
 
-import { UNITS } from '../config.js';
+import { LEVEL_ORDER, LEVELS, UNITS } from '../config.js';
 import { backupDue, readBackupMeta, SNOOZE_DAYS, writeBackupMeta } from '../backup.js';
 import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
@@ -61,7 +61,9 @@ export function mountToday(root, store) {
         </div>
       </div>
       <div class="prog">
-        <p class="eyebrow" id="weekLabel"></p>
+        <div class="levels" id="levels" role="group" aria-label="오늘 난이도">
+          ${LEVEL_ORDER.map((k) => `<button type="button" data-level="${k}" aria-pressed="false">${LEVELS[k].label}</button>`).join('')}
+        </div>
         <div class="segs" id="segs"></div>
         <span class="progtext" id="progText"></span>
       </div>
@@ -79,9 +81,16 @@ export function mountToday(root, store) {
       </div>
     </header>
     <section aria-label="운동 체크" class="rows" id="rows"></section>
-    <p class="status" id="status" role="status" aria-live="polite"></p>`;
+    <div class="statusrow">
+      <p class="eyebrow" id="weekLabel"></p>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </div>`;
 
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
+  $('#levels', root).addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-level]');
+    if (b && !b.disabled) actions.setLevel(b.dataset.level);
+  });
 
   /* ---------- 운동 스톱워치: 시작하면 시간이 흐르고, 종료하면 총 운동시간에 기록 ---------- */
 
@@ -288,7 +297,8 @@ export function mountToday(root, store) {
     const pt = $('#progText', root);
     // 모두 마치면 이어진 연속 일수를 보여 줌 (그날의 완료 처리가 반영된 값)
     const streak = all && selected === today ? currentStreak(state.days, today, exs, new Set(config.restDays || [])) : 0;
-    pt.textContent = all ? (streak > 1 ? `모두 완료 · 연속 ${streak}일` : '모두 완료') : `${done}/${exs.length} 완료`;
+    pt.textContent = all ? (streak > 1 ? `연속 ${streak}일` : '모두 완료') : `${done}/${exs.length} 완료`;
+    pt.title = all && streak > 1 ? `모두 완료 · 연속 ${streak}일` : '';
     pt.classList.toggle('all', all);
 
     const recNote = $('#recNote', root);
@@ -299,12 +309,19 @@ export function mountToday(root, store) {
     $('#back', root).hidden = !off;
     if (off) $('#backText', root).textContent = `${labelMD(selected)} 기록을 고치는 중입니다`;
 
+    // 오늘 난이도 3단계
+    const level = (state.days[selected] && state.days[selected].level) || 'normal';
+    for (const b of $('#levels', root).children) {
+      b.setAttribute('aria-pressed', String(b.dataset.level === level));
+      b.disabled = !state.ready;
+    }
+
     updateBackupNote(state);
     renderWork();
 
     const st = $('#status', root);
     // 저장 문구가 없을 때는 꾹 누르기 사용법을 알려 줌
-    st.textContent = state.status.text || '− + 를 꾹 누르면 크게 바뀝니다 (개수 5씩)';
+    st.textContent = state.status.text || '꾹 누르면 5씩';
     st.classList.toggle('err', state.status.error);
   };
 }

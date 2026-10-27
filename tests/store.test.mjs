@@ -152,3 +152,32 @@ test('총 운동시간: 같은 날 여러 번 더해지고 저장되며 체크 �
   await tick();
   assert.equal(ad.saved.days.at(-1)[1].workSec, 86400, '저장 문서에 들어감');
 });
+
+test('난이도 3단계: 쉬움 0.8 · 보통 1 · 어려움 1.2배로 그날 목표가 바뀌고, 완료한 종목은 그때 목표를 유지', (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const store = createStore(fakeAdapter());
+  const push = store.state.config.exercises.find((e) => e.id === 'push'); // 목표 15
+  const plank = { id: 'plank', name: '플랭크', unit: 'sec', base: 30, step: 5, sets: 3, active: true };
+  const d = todayStr();
+  assert.equal(store.view(d, push).level, 'normal');
+  assert.equal(store.view(d, push).target, 15);
+  store.actions.setLevel('easy');
+  assert.equal(store.view(d, push).target, 12, '15 × 0.8');
+  assert.equal(store.view(d, plank).target, 25, '초 단위는 5초 단위로 맞춤 (30 × 0.8 = 24 → 25)');
+  store.actions.setLevel('hard');
+  assert.equal(store.view(d, push).target, 18, '15 × 1.2');
+  assert.equal(store.view(d, plank).target, 35, '36 → 35');
+  store.actions.toggle('push'); // 어려움 목표 18로 완료
+  store.actions.setLevel('easy');
+  assert.equal(store.view(d, push).target, 18, '완료한 종목은 그때 목표 그대로');
+  assert.equal(store.view(d, store.state.config.exercises.find((e) => e.id === 'pull')).target >= 1, true, '최소 1');
+  const rev = store.state.daysRev;
+  store.actions.setLevel('easy');
+  assert.equal(store.state.daysRev, rev, '같은 난이도를 다시 눌러도 변화 없음');
+  store.actions.setLevel('normal');
+  assert.equal('level' in store.state.days[d], false, '보통은 저장하지 않음');
+  store.actions.setLevel('엄청어려움');
+  assert.equal(store.view(d, push).level, 'normal', '알 수 없는 난이도는 무시');
+  store.actions.flushAll();
+});
