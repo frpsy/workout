@@ -209,6 +209,16 @@ export function createStore(adapter) {
       emit();
     },
 
+    /** 그날 기록된 총 운동시간을 지움 */
+    clearWorkSec(date) {
+      const day = state.days[date];
+      if (!state.ready || !day || !day.workSec) return;
+      delete day.workSec;
+      scheduleSave(date);
+      state.daysRev++;
+      emit();
+    },
+
     /** 그날 한 세트 수를 직접 고침 */
     setSets(id, n) {
       if (!state.ready) return;

@@ -287,8 +287,12 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 /* 운동 스톱워치: 중지(재개)·취소 */
 .wsec { flex: none; min-width: 44px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
 .wcancel { color: var(--muted); }
-.wcancel.confirm { background: var(--err); border-color: var(--err); color: #fff; }
 .wtime.paused { color: var(--muted); animation: none; opacity: 0.8; }
 .headline.working h1 { display: none; }
 .headline.working .work { flex: 1; justify-content: space-between; }
 .headline.working .wtime { margin-right: auto; }
+.wreset { min-width: 0; padding: 0 8px; font-size: 12px; }
+.wreset.confirm { background: var(--err); border-color: var(--err); color: #fff; }
+.headline h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 400px) { .work { gap: 5px; } .wbtn { min-width: 64px; padding: 0 8px; } }
+@media (max-width: 340px) { .work { gap: 4px; } .wbtn { min-width: 0; padding: 0 6px; font-size: 13px; } .wsec { min-width: 0; padding: 0 6px; } .wtime { font-size: 12px; } .headline h1 { flex: 0 1 auto; font-size: 15px; } }
