@@ -38,7 +38,7 @@
 
 /* 단독 실행(GitHub Pages)일 때만 기본 리셋과 안전 영역 */
 .standalone { -webkit-text-size-adjust: 100%; }
-.standalone body { margin: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.standalone body { margin: 0; }
 [hidden] { display: none !important; }
 
 * { box-sizing: border-box; }
@@ -325,12 +325,12 @@ html { touch-action: manipulation; }
 }
 
 /* 아래 탭 (오늘 / 기록 / 설정) */
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; justify-content: center; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; justify-content: center; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px); }
 .tabbar button { flex: 1; max-width: 186px; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
 .tabbar button[aria-selected="true"] { color: var(--accent); }
-.wrap { padding-bottom: 68px; }
+.wrap { padding-bottom: calc(60px + max(env(safe-area-inset-bottom, 0px), 6px)); }
 
 /* 홈 화면 앱: 상태 표시줄 뒤를 앱 배경색으로 덮어, 내용이 비쳐 뿌옇게 보이지 않게 함 */
 html { background: var(--bg); }
 .standalone body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 20; pointer-events: none; }
-.standalone body { padding-top: calc(env(safe-area-inset-top, 0px) + 4px); }
+.standalone body { padding-top: calc(env(safe-area-inset-top, 0px) + 8px); }

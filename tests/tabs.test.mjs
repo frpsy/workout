@@ -56,8 +56,12 @@ test('탭 전환이 "불러오는 중…" 문구를 다시 띄우지 않음(탭 
   assert.ok(!call.includes('boot-status'));
 });
 
-test('홈 화면 앱: 화면이 상태 표시줄 밑으로 올라가 뿌옇게 보이지 않도록 viewport-fit=cover를 쓰지 않음', async () => {
+test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래 안전 영역만큼 여백을 직접 둠', async () => {
   const { readFileSync } = await import('node:fs');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.ok(!html.includes('viewport-fit=cover'));
+  const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
+  assert.ok(html.includes('viewport-fit=cover'));
+  assert.match(css, /\.standalone body \{ padding-top: calc\(env\(safe-area-inset-top, 0px\) \+ 8px\); \}/);
+  assert.match(css, /\.tabbar \{[^}]*padding-bottom: max\(env\(safe-area-inset-bottom, 0px\), 6px\)/);
+  assert.match(css, /\.wrap \{ padding-bottom: calc\(60px \+ max\(env\(safe-area-inset-bottom/);
 });
