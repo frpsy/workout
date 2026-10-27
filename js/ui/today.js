@@ -6,6 +6,7 @@ import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { createSession, fmtClock, fmtKo } from '../session.js';
 import { currentStreak } from '../stats.js';
+import { loadView, saveView, VIEW_LABEL, VIEW_ORDER } from '../view.js';
 import { $, esc, haptic } from './dom.js';
 
 const CHECK_SVG =
@@ -82,11 +83,36 @@ export function mountToday(root, store) {
     </header>
     <section aria-label="운동 체크" class="rows" id="rows"></section>
     <div class="statusrow">
-      <p class="eyebrow" id="weekLabel"></p>
-      <p class="status" id="status" role="status" aria-live="polite"></p>
+      <div class="msg">
+        <p class="eyebrow" id="weekLabel"></p>
+        <p class="status" id="status" role="status" aria-live="polite" hidden></p>
+      </div>
+      <div class="views" id="views" role="group" aria-label="화면 보기">
+        ${VIEW_ORDER.map((k) => `<button type="button" data-view="${k}" aria-pressed="false">${VIEW_LABEL[k]}</button>`).join('')}
+      </div>
     </div>`;
 
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
+
+  /* ---------- 화면 보기 3단계: 요약 / 기본 / 상세 ---------- */
+
+  let view = loadView();
+  function applyView(next, { user = false } = {}) {
+    view = next;
+    document.documentElement.dataset.view = view;
+    for (const b of $('#views', root).children) b.setAttribute('aria-pressed', String(b.dataset.view === view));
+    // 상세는 자세히·앞으로 4주를 펼쳐서 보여 줌 (직접 고른 때와 처음 열 때)
+    if (view === 'detail') for (const id of ['moreBox', 'planBox']) {
+      const box = document.getElementById(id);
+      if (box) box.open = true;
+    }
+    if (user) saveView(view);
+    if (rows.size) render(store.state); // 안내 줄(상세)을 바로 반영
+  }
+  $('#views', root).addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-view]');
+    if (b && b.dataset.view !== view) applyView(b.dataset.view, { user: true });
+  });
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
     if (b && !b.disabled) actions.setLevel(b.dataset.level);
@@ -193,6 +219,23 @@ export function mountToday(root, store) {
     actions.setCount(id, sec);
   }
 
+  /** 상세 보기의 다음 주 목표 안내 문구 */
+  function hintFor(ex, res, state) {
+    const { config, today } = state;
+    const w = Math.max(0, weekIndex(state.selected, config.startDate));
+    const unit = UNITS[ex.unit].label;
+    const next = res.targetForWeek(ex, w + 1);
+    const sets = ex.sets > 1 ? ` × ${ex.sets}` : '';
+    const nextRec = isRecoveryWeek(w + 1, config.plan) ? ' (회복주)' : '';
+    if (config.plan.mode === 'adaptive' && weekIndex(today, config.startDate) === w) {
+      const doneDays = res.ctx.counts(ex.id).get(w) || 0;
+      const need = Math.max(0, config.plan.passDays - doneDays);
+      const more = !isRecoveryWeek(w, config.plan) && need > 0 ? ` · ${need}일 더 하면` : '';
+      return `이번 주 ${doneDays}일${more} · 다음 주 ${next}${unit}${sets}${nextRec}`;
+    }
+    return `다음 주 ${next}${unit}${sets}${nextRec}`;
+  }
+
   function buildRows(exs) {
     const box = $('#rows', root);
     if (watch) stopWatch(); // 목록이 바뀌기 전에 재던 시간은 기록하고 끝냄
@@ -223,10 +266,11 @@ export function mountToday(root, store) {
             <input data-f="setsIn" type="number" inputmode="numeric" min="1" max="10" aria-label="${n} 실제 세트 수">
             <button type="button" data-f="setsPlus" aria-label="${n} 세트 늘리기">+</button>
           </div>
-        </div>`;
+        </div>
+        <p class="hint" data-f="hint"></p>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };
-      for (const f of ['target', 'sets', 'delta', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
+      for (const f of ['target', 'sets', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
       const step = (d) => actions.setCount(ex.id, view().count + d);
       // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
@@ -249,7 +293,7 @@ export function mountToday(root, store) {
     if (!exs.length) box.innerHTML = '<p class="empty">사용 중인 운동이 없습니다. 아래 운동 설정에서 추가해 주세요.</p>';
   }
 
-  return function render(state) {
+  function render(state) {
     const exs = store.activeExercises();
     const key = exs.map((e) => `${e.id}:${e.name}:${e.unit}`).join('|');
     if (key !== rowsKey) {
@@ -288,6 +332,7 @@ export function mountToday(root, store) {
       if (setDiff) parts.push(`세트 ${setDiff > 0 ? '+' : ''}${setDiff}`);
       r.delta.textContent = parts.join(' · ');
       r.delta.classList.toggle('over', diff > 0 || setDiff > 0);
+      r.hint.textContent = view === 'detail' ? hintFor(r.ex, res, state) : '';
     }
 
     const segs = $('#segs', root);
@@ -319,9 +364,14 @@ export function mountToday(root, store) {
     updateBackupNote(state);
     renderWork();
 
+    // 저장 문구(오류 포함)가 있으면 주차 안내 자리에 보여 줌
     const st = $('#status', root);
-    // 저장 문구가 없을 때는 꾹 누르기 사용법을 알려 줌
-    st.textContent = state.status.text || '꾹 누르면 5씩';
+    st.textContent = state.status.text;
+    st.hidden = !state.status.text;
+    $('#weekLabel', root).hidden = !!state.status.text;
     st.classList.toggle('err', state.status.error);
-  };
+  }
+
+  applyView(view);
+  return render;
 }
