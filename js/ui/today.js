@@ -61,6 +61,7 @@ export function mountToday(root, store) {
           <button type="button" class="wsec" id="wPause" hidden>중지</button>
           <button type="button" class="wbtn" id="wBtn">▶ 시작</button>
           <button type="button" class="wsec wcancel" id="wCancel" hidden>취소</button>
+          <button type="button" class="wsec wcancel wreset" id="wReset" hidden>초기화</button>
         </div>
       </div>
       <div class="prog">
@@ -125,8 +126,8 @@ export function mountToday(root, store) {
   const session = createSession();
   let workTick = 0;
 
-  let cancelTimer = 0;
-  const CANCEL_CONFIRM_MS = 3000; // 취소를 한 번 더 눌러야 하는 시간
+  let resetTimer = 0;
+  const RESET_CONFIRM_MS = 3000; // 기록된 운동시간 초기화는 한 번 더 눌러야 하는 시간
 
   function renderWork() {
     const state = store.state;
@@ -136,12 +137,9 @@ export function mountToday(root, store) {
     const btn = $('#wBtn', root);
     const pauseBtn = $('#wPause', root);
     const cancelBtn = $('#wCancel', root);
-    if (running) {
-      wTime.textContent = fmtClock(session.elapsed());
-    } else {
-      const total = (state.days[state.selected] && state.days[state.selected].workSec) || 0;
-      wTime.textContent = total ? `총 ${fmtKo(total)}` : '';
-    }
+    const resetBtn = $('#wReset', root);
+    const total = (state.days[state.selected] && state.days[state.selected].workSec) || 0;
+    wTime.textContent = running ? fmtClock(session.elapsed()) : total ? `총 ${fmtKo(total)}` : '';
     wTime.classList.toggle('running', running);
     wTime.classList.toggle('paused', paused);
     btn.textContent = running ? '■ 종료' : '▶ 시작';
@@ -153,10 +151,12 @@ export function mountToday(root, store) {
     cancelBtn.hidden = !running;
     pauseBtn.textContent = paused ? '재개' : '중지';
     pauseBtn.setAttribute('aria-label', paused ? '운동 시간 이어서 재기' : '운동 시간 잠시 멈추기');
-    if (!running) {
-      clearTimeout(cancelTimer);
-      cancelBtn.textContent = '취소';
-      cancelBtn.classList.remove('confirm');
+    // 재지 않는 동안, 선택한 날에 기록된 운동시간이 있으면 초기화 버튼이 보임
+    resetBtn.hidden = running || !total;
+    if (resetBtn.hidden) {
+      clearTimeout(resetTimer);
+      resetBtn.textContent = '초기화';
+      resetBtn.classList.remove('confirm');
     }
     root.querySelector('.headline').classList.toggle('working', running);
   }
@@ -188,22 +188,28 @@ export function mountToday(root, store) {
     }
     renderWork();
   });
-  // 취소: 기록하지 않고 버림. 실수로 누르지 않도록 한 번 더 눌러야 함
+  // 취소: 기록하지 않고 바로 버림
   $('#wCancel', root).addEventListener('click', () => {
-    const btn = $('#wCancel', root);
-    if (!btn.classList.contains('confirm')) {
-      btn.classList.add('confirm');
-      btn.textContent = '정말 취소?';
-      clearTimeout(cancelTimer);
-      cancelTimer = setTimeout(() => {
-        btn.classList.remove('confirm');
-        btn.textContent = '취소';
-      }, CANCEL_CONFIRM_MS);
-      return;
-    }
     haptic();
     ticking(false);
     session.cancel();
+    renderWork();
+  });
+  // 초기화: 선택한 날의 기록된 운동시간을 지움. 기록이 사라지므로 한 번 더 눌러야 함
+  $('#wReset', root).addEventListener('click', () => {
+    const btn = $('#wReset', root);
+    if (!btn.classList.contains('confirm')) {
+      btn.classList.add('confirm');
+      btn.textContent = '정말 초기화?';
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        btn.classList.remove('confirm');
+        btn.textContent = '초기화';
+      }, RESET_CONFIRM_MS);
+      return;
+    }
+    haptic();
+    actions.clearWorkSec(store.state.selected);
     renderWork();
   });
   // 화면을 다시 켰을 때 흐른 시간을 바로 보여 줌
