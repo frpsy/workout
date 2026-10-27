@@ -295,3 +295,7 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .headline h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 400px) { .work { gap: 5px; } .wbtn { min-width: 64px; padding: 0 8px; } }
 @media (max-width: 340px) { .work { gap: 4px; } .wbtn { min-width: 0; padding: 0 6px; font-size: 13px; } .wsec { min-width: 0; padding: 0 6px; } .wtime { font-size: 12px; } .headline h1 { flex: 0 1 auto; font-size: 15px; } }
+.goal .sets[hidden], .setpips[hidden] { display: none; }
+.setpips { display: inline-flex; gap: 4px; margin-left: 2px; align-self: center; }
+.setpips button { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); font-family: var(--font-num); font-size: 14px; font-weight: 700; line-height: 1; cursor: pointer; touch-action: manipulation; }
+.setpips button.on { background: var(--accent); color: var(--on-accent); }

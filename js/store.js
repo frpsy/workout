@@ -138,7 +138,9 @@ export function createStore(adapter) {
     // 직접 고친 세트 수가 있으면 그 값, 완료했는데 기록에 없으면 1(예전 기록), 아직이면 지금 설정
     const hasSets = !!(e && Number.isFinite(e.sets));
     const sets = hasSets ? e.sets : done ? 1 : ex.sets;
-    return { done, target, count, sets, setsKnown: hasSets || !done, level };
+    // 세트별 체크: 완료한 종목은 전부, 아니면 체크한 세트 수(세트 수보다 많을 수 없음)
+    const setsDone = done ? sets : Math.min(sets, (e && e.setsDone) || 0);
+    return { done, target, count, sets, setsDone, setsKnown: hasSets || !done, level };
   }
 
   function ensureEntry(date, id) {
@@ -158,6 +160,7 @@ export function createStore(adapter) {
       const date = state.selected;
       const v = view(date, ex);
       const entry = ensureEntry(date, id);
+      delete entry.setsDone;
       if (v.done) {
         entry.done = false;
         delete entry.target;
@@ -167,6 +170,35 @@ export function createStore(adapter) {
         entry.count = v.count;
         entry.target = v.target;
         entry.sets = v.sets;
+      }
+      scheduleSave(date);
+      state.daysRev++;
+      emit();
+    },
+
+    /** 세트를 n개까지 마쳤다고 체크(0~세트 수). 모두 마치면 종목 완료, 아니면 진행 중 */
+    setProgress(id, n) {
+      if (!state.ready || !Number.isFinite(n)) return;
+      const ex = state.config.exercises.find((e) => e.id === id);
+      if (!ex) return;
+      const date = state.selected;
+      const v = view(date, ex);
+      const k = Math.max(0, Math.min(v.sets, Math.round(n)));
+      const entry = ensureEntry(date, id);
+      if (k >= v.sets) {
+        entry.done = true;
+        entry.count = v.count;
+        entry.target = v.target;
+        entry.sets = v.sets;
+        delete entry.setsDone;
+      } else {
+        if (entry.done) {
+          entry.done = false;
+          delete entry.target;
+          delete entry.sets;
+        }
+        if (k > 0) entry.setsDone = k;
+        else delete entry.setsDone;
       }
       scheduleSave(date);
       state.daysRev++;
