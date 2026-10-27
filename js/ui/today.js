@@ -290,7 +290,7 @@ export function mountToday(root, store) {
           <h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>
           <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" role="group" aria-label="${n} 세트별 체크"></span></p>
         </div>
-        <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}</button>
+        <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span></button>
         <div class="ctrl">
           ${unit.timed ? `<button type="button" class="watch" data-f="watch" aria-label="${n} 시간 재기 시작">시작</button>` : ''}
           <div class="stepper reps" role="group" aria-label="${n} 세트당 ${u}">
@@ -308,7 +308,7 @@ export function mountToday(root, store) {
         <p class="hint" data-f="hint"></p>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };
-      for (const f of ['target', 'sets', 'pips', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
+      for (const f of ['target', 'sets', 'pips', 'frac', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
       const step = (d) => actions.setCount(ex.id, view().count + d);
       // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
@@ -382,6 +382,12 @@ export function mountToday(root, store) {
       }
       r.el.classList.toggle('done', v.done);
       r.check.setAttribute('aria-pressed', String(v.done));
+      // 세트를 일부만 마쳤으면 완료 버튼 테두리가 진행 정도(2/3)를 보여 줌
+      const part = !v.done && v.setsDone > 0;
+      r.check.classList.toggle('part', part);
+      r.check.style.setProperty('--p', `${Math.round((v.setsDone / v.sets) * 100)}%`);
+      r.frac.textContent = part ? `${v.setsDone}/${v.sets}` : '';
+      r.check.setAttribute('aria-label', part ? `${r.ex.name} ${v.setsDone}/${v.sets}세트 마침, 눌러서 모두 완료` : `${r.ex.name} 완료`);
       for (const b of [r.check, r.watch, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) if (b) b.disabled = !state.ready;
       if (document.activeElement !== r.cnt) r.cnt.value = watch && watch.id === r.ex.id ? elapsed() : v.count;
       if (document.activeElement !== r.setsIn) r.setsIn.value = v.sets;
