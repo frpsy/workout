@@ -754,3 +754,77 @@ test('오늘: 운동을 모두 마쳤는데 시간을 재는 중이면 종료 �
   assert.ok(!btn.classList.contains('ready'));
   store.actions.flushAll();
 });
+
+test('효과음: 세트 체크·종목 완료·모두 완료·되돌림·운동 시작/종료에 소리가 나고, 끄면 조용함', () => {
+  localStorage.removeItem('workout-check:sound');
+  const played = [];
+  class FakeCtx {
+    constructor() {
+      this.currentTime = 0;
+      this.state = 'running';
+      this.destination = {};
+    }
+    resume() {}
+    createGain() {
+      return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect: () => ({ connect() {} }) };
+    }
+    createOscillator() {
+      const o = { frequency: {}, connect: (g) => g, start() { played.push(o.frequency.value); }, stop() {} };
+      return o;
+    }
+  }
+  globalThis.AudioContext = FakeCtx;
+  try {
+    const { store, root } = setup(today);
+    const row = root.querySelector('.row');
+    const snd = root.querySelector('#sndBtn');
+    assert.equal(snd.getAttribute('aria-pressed'), 'true', '기본은 켜짐');
+
+    played.length = 0;
+    row.querySelector('[data-set="1"]').click();
+    assert.equal(played.length, 1, '세트 체크: 짧은 소리 한 번');
+    const first = played[0];
+    row.querySelector('[data-set="2"]').click();
+    assert.ok(played[1] > first, '다음 세트는 음이 올라감');
+
+    played.length = 0;
+    row.querySelector('[data-set="3"]').click(); // 종목 완료
+    assert.equal(played.length, 3, '종목 완료: 세 음');
+    played.length = 0;
+    row.querySelector('[data-set="3"]').click(); // 되돌림
+    assert.equal(played.length, 1, '되돌림: 낮은 소리 한 번');
+
+    played.length = 0;
+    const rows = [...root.querySelectorAll('.row')];
+    row.querySelector('[data-f="check"]').click();
+    for (const r of rows.slice(1, -1)) r.querySelector('[data-f="check"]').click();
+    played.length = 0;
+    rows.at(-1).querySelector('[data-f="check"]').click(); // 마지막 종목 → 모두 완료
+    assert.equal(played.length, 4, '모두 완료: 네 음 팡파르');
+
+    played.length = 0;
+    root.querySelector('#wBtn').click();
+    assert.equal(played.length, 2, '운동 시작음');
+    root.querySelector('#wBtn').click();
+    assert.equal(played.length, 4, '운동 종료음');
+
+    snd.click(); // 끄기
+    assert.equal(snd.getAttribute('aria-pressed'), 'false');
+    assert.equal(localStorage.getItem('workout-check:sound'), 'off', '이 브라우저에 기억');
+    played.length = 0;
+    row.querySelector('[data-set="1"]').click();
+    assert.equal(played.length, 0, '끄면 소리가 나지 않음');
+    store.actions.flushAll();
+  } finally {
+    delete globalThis.AudioContext;
+    localStorage.removeItem('workout-check:sound');
+  }
+});
+
+test('효과음: 소리를 낼 수 없는 환경에서도 오류 없이 동작', async () => {
+  delete globalThis.AudioContext;
+  const { playSound } = await import('../js/sound.js');
+  playSound('done');
+  playSound('set', 99);
+  playSound('없는소리');
+});

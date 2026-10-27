@@ -312,3 +312,5 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
   .wbtn.ready { animation: ready-pulse 1.4s ease-in-out infinite; }
 }
 @keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
+.snd { flex: none; display: grid; place-items: center; width: 30px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--accent); cursor: pointer; touch-action: manipulation; }
+.snd[aria-pressed="false"] { color: var(--muted); }

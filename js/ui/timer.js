@@ -1,30 +1,10 @@
 // 한 줄 휴식 타이머: 휴식 [−15] 1:00 [+15] [시작]
 
 import { createTimer, fmt, STEP_SEC } from '../timer.js';
+import { playSound, unlockSound } from '../sound.js';
 import { $, haptic } from './dom.js';
 
 const TICK_MS = 250;
-
-/** 끝났을 때 짧은 알림음 세 번 (사용자가 시작을 누를 때 미리 준비해 두어야 소리가 남) */
-function beep(ctx) {
-  if (!ctx) return;
-  try {
-    for (let i = 0; i < 3; i++) {
-      const t = ctx.currentTime + i * 0.28;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + 0.22);
-    }
-  } catch {
-    /* 소리를 낼 수 없는 환경 */
-  }
-}
 
 export function mountTimer(root) {
   root.innerHTML = `
@@ -37,7 +17,6 @@ export function mountTimer(root) {
       <span class="sr" id="tDone" role="status"></span>
     </div>`;
 
-  let ctx = null; // 오디오 (시작을 누를 때 만듦)
   let lock = null; // 화면 켜짐 유지
   let interval = 0;
   let doneTimer = 0;
@@ -53,7 +32,7 @@ export function mountTimer(root) {
       } catch {
         /* 지원하지 않는 기기 */
       }
-      beep(ctx);
+      playSound('rest');
       const bar = $('#timerBar', root);
       bar.classList.add('done');
       $('#tDone', root).textContent = '휴식이 끝났습니다';
@@ -106,14 +85,7 @@ export function mountTimer(root) {
   }
 
   function startRest() {
-    // 소리는 사용자가 누른 순간에만 준비할 수 있음
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC && !ctx) ctx = new AC();
-      if (ctx && ctx.state === 'suspended') ctx.resume();
-    } catch {
-      ctx = null;
-    }
+    unlockSound(); // 소리는 사용자가 누른 순간에만 준비할 수 있음
     clearTimeout(doneTimer);
     $('#timerBar', root).classList.remove('done');
     $('#tDone', root).textContent = '';
