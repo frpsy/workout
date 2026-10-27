@@ -323,10 +323,23 @@ test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림',
   root.querySelector('#tMinus').click();
   root.querySelector('#tMinus').click();
   assert.equal(time(), '0:45');
-  assert.equal(JSON.parse(localStorage.getItem('workout-check:timer')).duration, 45, '마지막 시간 기억');
+  const saved = () => JSON.parse(localStorage.getItem('workout-check:timer')).duration;
+  assert.equal(saved(), 45, '마지막 시간 기억');
+
+  const preset = root.querySelector('#tTime');
+  preset.click(); // 프리셋 3단계: 45 → 60 → 90 → 30
+  assert.equal(time(), '1:00');
+  preset.click();
+  assert.equal(time(), '1:30');
+  preset.click();
+  assert.equal(time(), '0:30');
+  assert.equal(saved(), 30, '프리셋으로 고른 값도 기억');
+  root.querySelector('#tPlus').click();
+  assert.equal(time(), '0:45', '이어서 ±15 조절도 가능');
 
   root.querySelector('#tGo').click();
   assert.equal(root.querySelector('#tGo').textContent, '중지');
+  assert.equal(preset.disabled, true, '실행 중에는 프리셋 버튼이 잠김');
   mock.timers.tick(10_000);
   assert.equal(time(), '0:35');
   root.querySelector('#tGo').click(); // 중지

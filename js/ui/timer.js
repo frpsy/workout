@@ -31,7 +31,7 @@ export function mountTimer(root) {
     <div class="timer" id="timerBar">
       <span class="tlabel">휴식</span>
       <button type="button" class="tstep" id="tMinus" aria-label="휴식 ${STEP_SEC}초 줄이기">−${STEP_SEC}</button>
-      <span class="time" id="tTime" role="timer" aria-live="off">1:00</span>
+      <button type="button" class="time" id="tTime">1:00</button>
       <button type="button" class="tstep" id="tPlus" aria-label="휴식 ${STEP_SEC}초 늘리기">+${STEP_SEC}</button>
       <button type="button" class="tgo" id="tGo">시작</button>
       <span class="sr" id="tDone" role="status"></span>
@@ -91,7 +91,10 @@ export function mountTimer(root) {
 
   function render() {
     const running = timer.running;
-    $('#tTime', root).textContent = fmt(timer.remaining());
+    const time = $('#tTime', root);
+    time.textContent = fmt(timer.remaining());
+    time.disabled = running; // 실행 중에는 프리셋을 바꾸지 않음
+    time.setAttribute('aria-label', running ? `남은 시간 ${fmt(timer.remaining())}` : `휴식 ${fmt(timer.duration)} (누르면 30·60·90초로 바뀜)`);
     $('#timerBar', root).classList.toggle('running', running);
     const go = $('#tGo', root);
     go.textContent = running ? '중지' : '시작';
@@ -120,6 +123,7 @@ export function mountTimer(root) {
     startTicking();
     takeLock();
   });
+  $('#tTime', root).addEventListener('click', () => timer.nextPreset()); // 30 → 60 → 90초
   $('#tMinus', root).addEventListener('click', () => timer.adjust(-STEP_SEC));
   $('#tPlus', root).addEventListener('click', () => timer.adjust(STEP_SEC));
 

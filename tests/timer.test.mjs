@@ -77,3 +77,27 @@ test('±15초 조절: 범위 안에서만 바뀌고 실행 중이면 남은 시�
   max.timer.adjust(15);
   assert.equal(max.timer.duration, 600, '최대 10분');
 });
+
+test('프리셋 3단계: 30 → 60 → 90 → 30, 프리셋이 아닌 값에서는 그보다 큰 첫 프리셋, 실행 중에는 그대로', async () => {
+  const { PRESETS } = await import('../js/timer.js');
+  assert.deepEqual(PRESETS, [30, 60, 90]);
+  const { timer } = make({ duration: 30 });
+  timer.nextPreset();
+  assert.equal(timer.duration, 60);
+  timer.nextPreset();
+  assert.equal(timer.duration, 90);
+  timer.nextPreset();
+  assert.equal(timer.duration, 30, '90 다음은 처음으로');
+
+  const odd = make({ duration: 45 });
+  odd.timer.nextPreset();
+  assert.equal(odd.timer.duration, 60, '45 → 그보다 큰 첫 프리셋');
+  const big = make({ duration: 120 });
+  big.timer.nextPreset();
+  assert.equal(big.timer.duration, 30, '90보다 크면 처음으로');
+
+  const run = make({ duration: 60 });
+  run.timer.start();
+  run.timer.nextPreset();
+  assert.equal(run.timer.duration, 60, '실행 중에는 바뀌지 않음');
+});

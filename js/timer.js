@@ -4,6 +4,7 @@ export const MIN_SEC = 15;
 export const MAX_SEC = 600;
 export const STEP_SEC = 15;
 export const DEFAULT_SEC = 60;
+export const PRESETS = [30, 60, 90]; // 시간 숫자를 누르면 차례로 바뀌는 3단계
 
 const KEY = 'workout-check:timer';
 
@@ -55,6 +56,15 @@ export function createTimer({ now = Date.now, duration = loadDuration(), onChang
 
     stop() {
       endAt = null;
+      onChange();
+    },
+
+    /** 프리셋 3단계(30·60·90초)로 바로 바꿈: 지금 값이 프리셋이면 다음 것, 아니면 그보다 큰 첫 프리셋(없으면 처음). 실행 중에는 바꾸지 않음 */
+    nextPreset() {
+      if (endAt !== null) return;
+      const i = PRESETS.indexOf(dur);
+      dur = i >= 0 ? PRESETS[(i + 1) % PRESETS.length] : (PRESETS.find((p) => p > dur) ?? PRESETS[0]);
+      saveDuration(dur);
       onChange();
     },
 
