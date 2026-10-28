@@ -8,14 +8,18 @@ export const STEPS = [
   { id: 'ready', limit: 96, label: '화면을 그리는 중…' },
 ];
 const SLOW_MS = 8000; // 이만큼 걸리면 안내 문구를 덧붙임
+const MIN_SHOW_MS = 1400; // 너무 빨리 지나가 막대가 안 보이지 않도록 이만큼은 보여 줌
+const FILL_PAUSE_MS = 450; // 100%로 찬 모습을 잠깐 보여 준 뒤 사라짐
 
-export function createProgress(root, { setInterval: si = setInterval, clearInterval: ci = clearInterval, setTimeout: st = setTimeout } = {}) {
+export function createProgress(root, { setInterval: si = setInterval, clearInterval: ci = clearInterval, setTimeout: st = setTimeout, now = Date.now } = {}) {
+  const startedAt = now();
   const bar = root.querySelector('#splashBar');
   const text = root.querySelector('#splashText');
   const track = root.querySelector('#splashTrack');
   let cur = 0;
   let limit = STEPS[0].limit;
   let finished = false;
+  let finishing = false;
 
   const paint = () => {
     const v = Math.max(0, Math.min(100, cur));
@@ -45,16 +49,22 @@ export function createProgress(root, { setInterval: si = setInterval, clearInter
     get value() {
       return cur;
     },
+    /** 준비가 끝남. 너무 빨리 끝났으면 최소 시간까지 기다렸다가 100%로 채우고 잠깐 보여 준 뒤 사라짐 */
     done() {
-      if (finished) return;
-      finished = true;
-      ci(timer);
-      clearTimeout(slow);
-      cur = 100;
-      paint();
-      text.textContent = '준비됐어요';
-      root.classList.add('leaving'); // CSS가 서서히 사라지게 함
-      st(() => root.remove(), 450);
+      if (finished || finishing) return;
+      finishing = true;
+      st(() => {
+        finished = true;
+        ci(timer);
+        clearTimeout(slow);
+        cur = 100;
+        paint();
+        text.textContent = '준비됐어요';
+        st(() => {
+          root.classList.add('leaving'); // CSS가 서서히 사라지게 함
+          st(() => root.remove(), 450);
+        }, FILL_PAUSE_MS);
+      }, Math.max(0, MIN_SHOW_MS - (now() - startedAt)));
     },
     /** 시작하지 못했을 때: 막대를 멈추고 안내와 다시 시도 버튼을 보여 줌 */
     fail(message) {

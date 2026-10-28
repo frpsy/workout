@@ -117,3 +117,9 @@ test('세트별 체크(setsDone)는 아직 안 끝난 종목에만 저장·복�
   assert.equal(day.entries.b.setsDone, undefined);
   assert.equal(day.entries.c.setsDone, undefined);
 });
+
+test('예전 기본 이름 "푸쉬업"은 표기법에 맞는 "푸시업"으로 보임(다른 이름은 그대로)', () => {
+  const cfg = normalizeConfig({ exercises: [{ id: 'push', name: '푸쉬업', unit: 'reps', base: 15, step: 2 }, { id: 'x', name: '내 운동', unit: 'reps', base: 5, step: 1 }] }, '2026-01-01');
+  assert.deepEqual(cfg.exercises.map((e) => e.name), ['푸시업', '내 운동']);
+  assert.equal(normalizeConfig(null, '2026-01-01').exercises[0].name, '푸시업', '기본 이름도 푸시업');
+});

@@ -19,9 +19,11 @@ export function defaultConfig(startDate) {
 export function normalizeExercise(raw) {
   if (!isObj(raw) || typeof raw.id !== 'string' || !ID_RE.test(raw.id) || RESERVED.has(raw.id)) return null;
   const name = typeof raw.name === 'string' ? raw.name.trim().slice(0, LIMITS.nameLength) : '';
+  // 예전 기본 이름의 맞춤법을 바로잡음(외래어 표기법: push-up → 푸시업). 저장돼 있던 설정도 열 때 새 이름으로 보임
+  const fixed = name === '푸쉬업' ? '푸시업' : name;
   return {
     id: raw.id,
-    name: name || '운동',
+    name: fixed || '운동',
     unit: Object.prototype.hasOwnProperty.call(UNITS, raw.unit) ? raw.unit : 'reps',
     base: inRange(raw.base, LIMITS.base) ? Math.round(raw.base) : 10,
     step: inRange(raw.step, LIMITS.step) ? raw.step : 1,
