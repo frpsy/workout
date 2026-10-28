@@ -1,5 +1,6 @@
 // 시작점: 저장소를 고르고, 상태를 만들고, 화면 조각을 붙입니다.
 
+import { createProgress } from './boot-progress.js';
 import { createStorage } from './storage/index.js';
 import { createStore } from './store.js';
 import { mountHistory } from './ui/history.js';
@@ -19,8 +20,12 @@ async function requestPersistentStorage() {
   }
 }
 
+const splash = document.getElementById('splash');
+const progress = splash ? createProgress(splash) : null;
+
 async function boot() {
-  const adapter = await createStorage();
+  const adapter = await createStorage({ onStep: (id) => progress && progress.step(id) });
+  if (progress) progress.step('data');
   const store = createStore(adapter);
 
   mountTip(document.getElementById('tip'));
@@ -44,7 +49,11 @@ async function boot() {
   let frame = 0;
   store.subscribe((state) => {
     cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(() => renders.forEach((r) => r(state)));
+    frame = requestAnimationFrame(() => {
+      renders.forEach((r) => r(state));
+      if (state.ready && progress) progress.done(); // 처음 그린 뒤 막대를 채우고 시작 화면을 걷음
+    });
+    if (state.ready && progress) progress.step('ready');
   });
 
   // 자정 넘김·오래 열어 둔 화면 대비
@@ -56,26 +65,12 @@ async function boot() {
   setInterval(() => store.actions.refreshToday(), 60_000);
 
   document.documentElement.dataset.storage = adapter.kind;
-  const bootStatus = document.getElementById('boot-status');
-  if (bootStatus) bootStatus.hidden = true;
 
   // 브라우저가 저장 공간이 부족할 때 기록을 임의로 지우지 않도록 영구 저장을 요청합니다.
   if (adapter.kind === 'local') requestPersistentStorage();
 }
 
 boot().catch((err) => {
-  const st = document.getElementById('boot-status');
-  if (st) {
-    st.hidden = false;
-    st.classList.add('err');
-    st.textContent = '화면을 띄우지 못했습니다. 새로고침해 주세요.';
-  }
+  if (progress) progress.fail('화면을 띄우지 못했습니다. 새로고침해 주세요.');
   console.error(err);
 });
-
-// 홈 화면에 추가했을 때 오프라인에서도 열리도록 (GitHub Pages 등 단독 실행에서만 동작)
-if ('serviceWorker' in navigator && document.documentElement.classList.contains('standalone')) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
-}

@@ -13,7 +13,7 @@ const PROBE_WAIT = 6000; // 이보다 오래 걸리면 오프라인으로 보고
  * @param readLocal     () => { config, days } | null  (계정이 비어 있을 때 옮길 기록)
  * @param load          () => Promise<{ connect }>  (테스트에서 바꿔 끼움)
  */
-export async function createFirebaseStorage({ config, createLocal, readLocal, load = () => import('../vendor/firebase.js') }) {
+export async function createFirebaseStorage({ config, createLocal, readLocal, load = () => import('../vendor/firebase.js'), onStep = () => {} }) {
   let fb;
   try {
     fb = (await load()).connect(config);
@@ -21,6 +21,7 @@ export async function createFirebaseStorage({ config, createLocal, readLocal, lo
     return null;
   }
 
+  onStep('auth');
   let user;
   try {
     user = await fb.authReady(AUTH_WAIT);
@@ -52,6 +53,7 @@ export async function createFirebaseStorage({ config, createLocal, readLocal, lo
   };
 
   const db = fb.db(user.uid);
+  onStep('data');
   // 앱이 쓰는 두 가지(설정 문서, 날짜별 기록 목록)를 먼저 읽어 봅니다.
   // Firestore를 만들지 않았거나 규칙이 막으면 기록을 불러오지 못해 화면이 멈추므로,
   // 이 경우에는 브라우저 저장으로 열고 이유를 알립니다.

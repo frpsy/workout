@@ -342,3 +342,19 @@ html { background: var(--bg); }
 .tip svg { flex: none; margin-top: 2px; color: var(--accent); }
 .weather { display: block; width: 100%; padding: 2px 4px; border: 0; background: transparent; color: var(--fg); font-size: 14px; font-weight: 700; text-align: center; cursor: pointer; touch-action: manipulation; font-variant-numeric: tabular-nums; }
 .weather[hidden] { display: none; }
+
+/* 시작 화면: 아이콘 + 진행 막대. 준비되면 서서히 사라지며 앱으로 전환 */
+.splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; background: var(--bg); transition: opacity 0.4s ease, transform 0.4s ease; }
+.splash.leaving { opacity: 0; transform: scale(1.02); pointer-events: none; }
+.splash-icon { border-radius: 19px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
+.splash-title { margin: 4px 0 8px; font-size: 18px; font-weight: 700; color: var(--fg); }
+.splash-track { width: min(220px, 60vw); height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.splash-track i { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--accent); transition: width 0.3s ease-out; }
+.splash-text { margin: 0; max-width: 280px; min-height: 2.8em; font-size: 13px; line-height: 1.4; color: var(--muted); text-align: center; }
+.splash-retry { display: none; margin-top: 4px; padding: 8px 18px; border: 1px solid var(--accent); border-radius: 10px; background: transparent; color: var(--accent); font-weight: 700; cursor: pointer; }
+.splash.failed .splash-retry { display: block; }
+.splash.failed .splash-track i { background: var(--err); }
+@media (prefers-reduced-motion: reduce) { .splash, .splash-track i { transition: none; } }
+.wrap, .tabbar { animation: app-in 0.35s ease-out both; }
+@keyframes app-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .wrap, .tabbar { animation: none; } }
