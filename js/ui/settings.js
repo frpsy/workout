@@ -51,7 +51,7 @@ export function mountSettings(root, store) {
         <fieldset class="field">
           <legend>쉬는 요일</legend>
           <div class="restdays" id="restDays">
-            ${[1, 2, 3, 4, 5, 6, 0].map((d) => `<label class="radio"><input type="checkbox" value="${d}"> ${DOW[d]}</label>`).join('')}
+            ${[1, 2, 3, 4, 5, 6, 0].map((d) => `<label class="daychip"><input type="checkbox" value="${d}"><span>${DOW[d]}</span></label>`).join('')}
           </div>
           <p class="sub">쉬는 요일에 기록이 없어도 연속 기록이 끊기지 않습니다.</p>
         </fieldset>
@@ -84,7 +84,8 @@ export function mountSettings(root, store) {
         <label class="sub-h" for="bakText">가져오기</label>
         <textarea id="bakText" rows="4" placeholder="복사해 둔 백업을 붙여 넣거나 파일을 고르세요"></textarea>
         <div class="btnrow">
-          <input type="file" id="bakFile" accept="application/json,.json,text/plain">
+          <label class="btn ghost filepick" for="bakFile">파일 선택</label>
+          <input type="file" id="bakFile" class="vh" accept="application/json,.json,text/plain">
           <button type="button" class="btn ghost" id="readBak">가져오기</button>
         </div>
         <div class="confirm" id="impConfirm" hidden>

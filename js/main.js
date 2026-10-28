@@ -42,8 +42,8 @@ async function boot() {
   const el = (id) => document.getElementById(id);
   mountTabs(el('tabbar'), {
     today: [el('today'), el('timer'), el('bottom')],
-    record: [el('history'), el('plan-sec')],
-    settings: [el('settings')],
+    record: [el('recordTitle'), el('history'), el('plan-sec')],
+    settings: [el('settingsTitle'), el('settings')],
   });
 
   let frame = 0;
