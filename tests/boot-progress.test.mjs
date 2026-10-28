@@ -51,17 +51,17 @@ test('진행 막대: 너무 빨리 끝나도 최소 시간은 보여 주고, 100
   const before = timeouts.length;
   p.done();
   const [finish, wait] = timeouts[before];
-  assert.equal(wait, 1100, '최소 1.4초까지 남은 시간만큼 기다림');
+  assert.equal(wait, 600, '최소 0.9초까지 남은 시간만큼 기다림');
   assert.equal(root.querySelector('#splashBar').style.width, '0%', '아직 채우지 않음');
   p.done(); // 두 번 불러도 한 번만 예약
   assert.equal(timeouts.length, before + 1);
-  at(1400);
+  at(900);
   finish();
   assert.equal(root.querySelector('#splashBar').style.width, '100%');
   assert.equal(root.querySelector('#splashTrack').getAttribute('aria-valuenow'), '100');
   assert.ok(!root.classList.contains('leaving'), '찬 모습을 잠깐 보여 줌');
   const [leave, pause] = timeouts[timeouts.length - 1];
-  assert.equal(pause, 450);
+  assert.equal(pause, 250);
   leave();
   assert.ok(root.classList.contains('leaving'));
   timeouts[timeouts.length - 1][0](); // 서서히 사라진 뒤 제거
