@@ -8,8 +8,8 @@ export const STEPS = [
   { id: 'ready', limit: 96, label: '화면을 그리는 중…' },
 ];
 const SLOW_MS = 8000; // 이만큼 걸리면 안내 문구를 덧붙임
-const MIN_SHOW_MS = 1400; // 너무 빨리 지나가 막대가 안 보이지 않도록 이만큼은 보여 줌
-const FILL_PAUSE_MS = 450; // 100%로 찬 모습을 잠깐 보여 준 뒤 사라짐
+const MIN_SHOW_MS = 900; // 너무 빨리 지나가 막대가 안 보이지 않도록 이만큼은 보여 줌
+const FILL_PAUSE_MS = 250; // 100%로 찬 모습을 잠깐 보여 준 뒤 사라짐
 
 export function createProgress(root, { setInterval: si = setInterval, clearInterval: ci = clearInterval, setTimeout: st = setTimeout, now = Date.now } = {}) {
   const startedAt = now();
