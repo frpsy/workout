@@ -25,3 +25,15 @@ test('홈 화면 앱: 상태 표시줄 뒤를 배경색으로 덮고 html 배경
   assert.match(css, /\.standalone body::before \{[^}]*height: env\(safe-area-inset-top/);
   assert.match(css, /html \{ background: var\(--bg\); \}/);
 });
+
+test('앱 이름: 페이지 제목·홈 화면 이름·설치 이름이 모두 Rep Streak', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const manifest = JSON.parse(readFileSync(new URL('../manifest.webmanifest', import.meta.url), 'utf8'));
+  assert.match(html, /<title>Rep Streak<\/title>/);
+  assert.match(html, /apple-mobile-web-app-title" content="Rep Streak"/);
+  assert.match(html, /class="splash-title">Rep Streak</);
+  assert.equal(manifest.name, 'Rep Streak');
+  assert.equal(manifest.short_name, 'Rep Streak');
+  assert.ok(manifest.short_name.length <= 12, '홈 화면 아이콘 아래에 잘리지 않을 길이');
+});
