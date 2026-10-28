@@ -28,8 +28,10 @@ export function mountSettings(root, store) {
 
         <fieldset class="field">
           <legend>목표 늘리는 방식</legend>
-          <label class="radio"><input type="radio" name="mode" value="linear" id="modeLinear"> 매주 늘리기</label>
-          <label class="radio"><input type="radio" name="mode" value="adaptive" id="modeAdaptive"> 해낸 주만 늘리기</label>
+          <div class="modes">
+            <label class="radio"><input type="radio" name="mode" value="linear" id="modeLinear"> 매주 늘리기</label>
+            <label class="radio"><input type="radio" name="mode" value="adaptive" id="modeAdaptive"> 해낸 주만 늘리기</label>
+          </div>
           <div class="inline" id="passRow">
             <label for="passDays">한 주에</label>
             <select id="passDays">${[3, 4, 5, 6, 7].map((n) => `<option value="${n}">${n}일</option>`).join('')}</select>

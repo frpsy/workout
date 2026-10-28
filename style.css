@@ -371,5 +371,22 @@ html { background: var(--bg); }
 @media (prefers-reduced-motion: reduce) { .wrap, .tabbar { animation: none; } }
 @media (max-width: 360px) { .exrow2 label { flex-direction: column; align-items: stretch; gap: 2px; } }
 /* 설정: 저장하지 않은 변경이 있으면 저장 줄을 탭 막대 바로 위에 붙임 */
-.savebar.dirty { position: sticky; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 2; margin: 0 -16px; padding: 10px 16px; background: var(--bg); border-top: 1px solid var(--line); }
+.savebar.dirty { position: sticky; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 2; margin: 0 -14px; padding: 10px 14px; background: var(--surface); border-top: 1px solid var(--line); }
 .dirty-note { font-size: 13px; color: var(--muted); }
+
+/* 기록·설정 탭: 내용 묶음을 카드로 */
+#moreBox { border-top: 0; padding-top: 0; }
+#moreBox > summary { display: none; } /* 기록 탭에서는 늘 펼쳐 보여 줌: 화면 제목과 겹치는 접기 제목은 숨김 */
+#moreBox .set-body { margin-top: 0; gap: 12px; }
+#moreBox .set-body > section, #settings details.block, #plan-sec details.block { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+#moreBox .totals { margin-top: 0; }
+#settings details.block, #plan-sec details.block { padding: 4px 14px; }
+#settings details.block > summary { font-size: 16px; }
+#settings .exitem { background: var(--bg); }
+/* 목표 늘리는 방식: 두 선택지를 나란히 */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.modes .radio { position: relative; justify-content: center; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 14px; }
+.modes .radio input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.modes .radio:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.modes .radio:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.daychip, .modes .radio { -webkit-tap-highlight-color: transparent; }

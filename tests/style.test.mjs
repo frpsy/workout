@@ -54,3 +54,9 @@ test('설정: 쉬는 요일은 한 줄 7칸, 파일 고르기는 한글 버튼, 
   assert.match(css, /textarea::placeholder \{ font-family: var\(--font-body\); \}/);
   assert.match(css, /@media \(max-width: 360px\) \{ \.exrow2 label \{ flex-direction: column;/);
 });
+
+test('디자인: 기록·설정 내용은 카드로 묶고, 기록 탭의 중복 접기 제목은 숨김, 목표 방식은 나란한 두 칸', () => {
+  assert.match(css, /#moreBox > summary \{ display: none; \}/);
+  assert.match(css, /#moreBox \.set-body > section, #settings details\.block, #plan-sec details\.block \{ background: var\(--surface\);/);
+  assert.match(css, /\.modes \{ display: grid; grid-template-columns: 1fr 1fr;/);
+});
