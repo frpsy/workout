@@ -4,6 +4,7 @@ import { createProgress } from './boot-progress.js';
 import { createStorage } from './storage/index.js';
 import { createStore } from './store.js';
 import { mountHistory } from './ui/history.js';
+import { mountJournal } from './ui/journal.js';
 import { mountPlan } from './ui/plan.js';
 import { mountSettings } from './ui/settings.js';
 import { mountTimer } from './ui/timer.js';
@@ -34,6 +35,7 @@ async function boot() {
 
   const renders = [
     mountToday(document.getElementById('today'), store),
+    mountJournal(document.getElementById('journal'), store),
     mountHistory(document.getElementById('history'), store),
     mountPlan(document.getElementById('plan-sec'), store),
     mountSettings(document.getElementById('settings'), store),
@@ -41,7 +43,7 @@ async function boot() {
 
   const el = (id) => document.getElementById(id);
   mountTabs(el('tabbar'), {
-    today: [el('today'), el('timer'), el('bottom')],
+    today: [el('today'), el('journal'), el('timer'), el('bottom')],
     record: [el('recordTitle'), el('history'), el('plan-sec')],
     settings: [el('settingsTitle'), el('settings')],
   });

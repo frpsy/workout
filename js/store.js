@@ -2,7 +2,7 @@
 
 import { LEVELS, LIMITS, UNITS } from './config.js';
 import { isDateStr, todayStr } from './dates.js';
-import { normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
+import { NOTE_MAX, normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
 import { createTargetResolver } from './progression.js';
 
 const SAVE_DELAY = 350;
@@ -236,6 +236,19 @@ export function createStore(adapter) {
       if (!state.days[date]) state.days[date] = { entries: {} };
       const day = state.days[date];
       day.workSec = Math.min(86400, (day.workSec || 0) + Math.round(sec));
+      scheduleSave(date);
+      state.daysRev++;
+      emit();
+    },
+
+    /** 운동을 마친 뒤 남기는 소감(feel)과 감사한 일(thanks). 입력하는 대로 저장(잠깐 모아서) */
+    setNote(date, { feel = '', thanks = '' } = {}) {
+      if (!state.ready || !isDateStr(date) || date > state.today) return;
+      if (!state.days[date]) state.days[date] = { entries: {} };
+      const day = state.days[date];
+      const cut = (v) => String(v).slice(0, NOTE_MAX);
+      if (String(feel).trim() || String(thanks).trim()) day.note = { feel: cut(feel), thanks: cut(thanks) };
+      else delete day.note;
       scheduleSave(date);
       state.daysRev++;
       emit();

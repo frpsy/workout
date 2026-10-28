@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { addDays, todayStr } from '../js/dates.js';
 
-let createStore, mountToday, mountHistory, mountSettings, mountTimer;
+let createStore, mountToday, mountHistory, mountSettings, mountTimer, mountJournal;
 
 before(async () => {
   const dom = new JSDOM('<!doctype html><body></body>', { url: 'http://localhost/' });
@@ -17,6 +17,7 @@ before(async () => {
   ({ mountHistory } = await import('../js/ui/history.js'));
   ({ mountSettings } = await import('../js/ui/settings.js'));
   ({ mountTimer } = await import('../js/ui/timer.js'));
+  ({ mountJournal } = await import('../js/ui/journal.js'));
 });
 
 const tick = () => new Promise((r) => setImmediate(r));
@@ -1006,4 +1007,61 @@ test('오늘: 운동 시간을 재는 동안 화면 켜짐을 요청하고, 중�
   await tick();
   assert.equal(calls.release, 2);
   store.actions.flushAll();
+});
+
+test('마무리: 모두 마친 날에만 소감·감사한 일 칸이 보이고, 쓰는 대로 저장되며 완료하면 접혀 보임', () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="journal"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('journal');
+  store.subscribe(mountJournal(root, store));
+  const box = root.querySelector('#jBox');
+  assert.equal(box.hidden, true, '아직 다 마치지 않음');
+
+  for (const id of ['push', 'pull', 'squat']) store.actions.toggle(id);
+  assert.equal(box.hidden, false, '모두 마치면 보임');
+  assert.equal(root.querySelector('#jForm').hidden, false);
+
+  const feel = root.querySelector('#jFeel');
+  const thanks = root.querySelector('#jThanks');
+  feel.value = '오늘은 가볍게 끝냈다';
+  feel.dispatchEvent(new Event('input', { bubbles: true }));
+  thanks.value = '맑은 날씨';
+  thanks.dispatchEvent(new Event('input', { bubbles: true }));
+  assert.deepEqual(store.state.days[todayStr()].note, { feel: '오늘은 가볍게 끝냈다', thanks: '맑은 날씨' });
+  assert.equal(root.querySelector('#jForm').hidden, false, '쓰는 동안은 접지 않음');
+
+  root.querySelector('#jDone').click();
+  assert.equal(root.querySelector('#jForm').hidden, true);
+  assert.equal(root.querySelector('#jView').hidden, false);
+  assert.match(root.querySelector('#jList').textContent, /소감오늘은 가볍게 끝냈다/);
+  assert.match(root.querySelector('#jList').textContent, /감사맑은 날씨/);
+
+  root.querySelector('#jEdit').click();
+  assert.equal(root.querySelector('#jForm').hidden, false, '고치기를 누르면 다시 씀');
+  assert.equal(feel.value, '오늘은 가볍게 끝냈다');
+
+  // 완료를 되돌려도 써 둔 내용은 보임
+  root.querySelector('#jDone').click();
+  store.actions.toggle('push');
+  assert.equal(box.hidden, false);
+  store.actions.flushAll();
+});
+
+test('마무리: 글자는 그대로 보여 주고(HTML로 해석하지 않음) 기록 탭에 최근 것부터 나옴', () => {
+  const t0 = todayStr();
+  const t1 = addDays(t0, -1);
+  const days = fullDays(2);
+  days[t0] = { ...days[t0], note: { feel: '<b>굵게</b>', thanks: '물 한 잔' } };
+  days[t1] = { ...days[t1], note: { feel: '', thanks: '친구 전화' } };
+  const { root } = setup(history, { days });
+  root.querySelector('#moreBox').open = true;
+  root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
+  assert.equal(root.querySelector('#notesSec').hidden, false);
+  const items = [...root.querySelectorAll('#notes li')];
+  assert.equal(items.length, 2);
+  assert.match(items[0].textContent, /<b>굵게<\/b>/, '태그를 글자로 보여 줌');
+  assert.equal(items[0].querySelector('b.note-x'), null);
+  assert.match(items[0].textContent, /감사 물 한 잔/);
+  assert.match(items[1].textContent, /친구 전화/);
 });

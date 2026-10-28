@@ -390,3 +390,26 @@ html { background: var(--bg); }
 .modes .radio:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 .modes .radio:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .daychip, .modes .radio { -webkit-tap-highlight-color: transparent; }
+
+/* 오늘의 마무리: 운동 소감·감사한 일 */
+.journal { margin-top: 10px; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 14px; background: var(--surface); }
+.journal .sec { margin-bottom: 8px; }
+.journal #jForm { display: flex; flex-direction: column; gap: 6px; }
+.journal #jForm[hidden], .journal #jView[hidden] { display: none; }
+.jlabel { font-size: 13px; color: var(--muted); }
+.journal textarea, .journal input { width: 100%; font-family: var(--font-body); }
+.journal textarea { min-height: 64px; }
+.journal .btnrow { margin-top: 4px; }
+.journal .btn { height: 40px; padding: 0 18px; }
+.jsaved { margin: 0; }
+.jview { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.jview div { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; }
+.jview dt { font-size: 12px; color: var(--accent); font-weight: 700; padding-top: 2px; }
+.jview dd { margin: 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+#jView { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.notes li { display: flex; flex-direction: column; gap: 2px; padding-left: 10px; border-left: 3px solid var(--accent-soft); }
+.note-date { font-size: 12px; color: var(--muted); }
+.note-feel, .note-thanks { margin: 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.note-thanks b { font-size: 12px; color: var(--accent); margin-right: 4px; }
+#jEdit { flex: none; white-space: nowrap; }
