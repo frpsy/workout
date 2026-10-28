@@ -18,8 +18,10 @@ import { FIREBASE_CONFIG } from '../firebase-config.js';
 import { createFirebaseStorage } from './firebase.js';
 import { createLocalAdapter, readLocalData } from './local.js';
 
-/** claude.ai 뷰어가 주입하는 window.claude를 잠깐 기다립니다. */
+/** claude.ai 뷰어가 주입하는 window.claude를 잠깐 기다립니다. 뷰어 안(iframe)이 아니면 기다리지 않음 */
 function waitForClaude(ms) {
+  const embedded = typeof window !== 'undefined' && window.parent !== window;
+  if (!embedded && !(typeof window !== 'undefined' && window.claude)) return Promise.resolve(null);
   return new Promise((resolve) => {
     const started = Date.now();
     (function poll() {
@@ -31,7 +33,8 @@ function waitForClaude(ms) {
   });
 }
 
-export async function createStorage() {
+/** onStep('auth' | 'data'): 시작 화면 진행 막대용 알림 */
+export async function createStorage({ onStep = () => {} } = {}) {
   const claude = await waitForClaude(800);
   if (claude) {
     try {
@@ -42,7 +45,7 @@ export async function createStorage() {
     }
   }
   if (FIREBASE_CONFIG) {
-    const fb = await createFirebaseStorage({ config: FIREBASE_CONFIG, createLocal: createLocalAdapter, readLocal: readLocalData });
+    const fb = await createFirebaseStorage({ config: FIREBASE_CONFIG, createLocal: createLocalAdapter, readLocal: readLocalData, onStep });
     if (fb) return fb;
   }
   return createLocalAdapter();

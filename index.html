@@ -19,6 +19,13 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="splash" id="splash" role="status" aria-live="polite">
+  <img src="icons/icon-192.png" width="84" height="84" alt="" class="splash-icon">
+  <p class="splash-title">운동 체크</p>
+  <div class="splash-track" id="splashTrack" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="splashBar"></i></div>
+  <p class="splash-text" id="splashText">앱을 준비하는 중…</p>
+  <button type="button" class="splash-retry" id="splashRetry" onclick="location.reload()">다시 시도</button>
+</div>
 <main class="wrap">
   <div id="today"></div>
   <div id="timer"></div>
@@ -26,7 +33,6 @@
     <div id="weather"></div>
     <div id="tip"></div>
   </div>
-  <p class="status" id="boot-status" role="status">불러오는 중…</p>
   <div id="history" class="stack" hidden></div>
   <div id="plan-sec" hidden></div>
   <div id="settings" class="stack" hidden></div>
