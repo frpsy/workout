@@ -37,3 +37,20 @@ test('앱 이름: 페이지 제목·홈 화면 이름·설치 이름이 모두 R
   assert.equal(manifest.short_name, 'Rep Streak');
   assert.ok(manifest.short_name.length <= 12, '홈 화면 아이콘 아래에 잘리지 않을 길이');
 });
+
+test('기록·설정 탭: 화면 제목이 있고 해당 탭에서만 보임', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  assert.match(html, /<h1 class="page-title" id="recordTitle" hidden>기록<\/h1>/);
+  assert.match(html, /<h1 class="page-title" id="settingsTitle" hidden>설정<\/h1>/);
+  assert.match(main, /record: \[el\('recordTitle'\)/);
+  assert.match(main, /settings: \[el\('settingsTitle'\)/);
+});
+
+test('설정: 쉬는 요일은 한 줄 7칸, 파일 고르기는 한글 버튼, 좁은 화면에서 입력칸이 잘리지 않음', () => {
+  assert.match(css, /\.restdays \{ display: grid; grid-template-columns: repeat\(7, minmax\(0, 1fr\)\);/);
+  assert.match(css, /\.daychip input:checked \+ span/);
+  assert.match(css, /textarea::placeholder \{ font-family: var\(--font-body\); \}/);
+  assert.match(css, /@media \(max-width: 360px\) \{ \.exrow2 label \{ flex-direction: column;/);
+});

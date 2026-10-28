@@ -256,6 +256,10 @@ test('설정: 추천 운동을 추가하고 쉬는 요일을 골라 저장', asy
   assert.equal(cfg.exercises[3].since, todayStr());
   assert.equal(cfg.exercises[3].sets, 3);
   assert.deepEqual(cfg.restDays, [0]);
+  assert.equal(root.querySelectorAll('#restDays label.daychip').length, 7, '요일 7칸');
+  const pick = root.querySelector('label.filepick');
+  assert.equal(pick.getAttribute('for'), 'bakFile', '파일 선택 버튼이 숨긴 파일 입력과 연결');
+  assert.equal(pick.textContent, '파일 선택');
 });
 
 test('설정: 이름을 비운 채 저장하면 오류 문구를 보이고 저장하지 않음', async () => {

@@ -186,7 +186,6 @@ input[type="date"], input[type="number"], input:not([type]), select, textarea {
   min-width: 0; height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 0 10px; font-size: 16px;
 }
 textarea { height: auto; padding: 10px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 16px; resize: vertical; width: 100%; }
-input[type="file"] { font-size: 13px; max-width: 100%; min-width: 0; flex: 1; }
 .sub-h { margin: 4px 0 0; font-size: 14px; font-weight: 700; }
 
 .exlist { display: flex; flex-direction: column; gap: 10px; }
@@ -218,8 +217,20 @@ input[type="file"] { font-size: 13px; max-width: 100%; min-width: 0; flex: 1; }
 /* 달력: 쉬는 요일, 목표 주차 시작 */
 .cell.rest:not(.sel) { background: transparent; border-color: var(--line); border-style: dashed; }
 .cell.wkstart { box-shadow: inset 3px 0 0 var(--accent); }
-.restdays { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-.restdays .radio { min-height: 40px; }
+.restdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.daychip { position: relative; display: flex; }
+.daychip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.daychip span { flex: 1; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; background: var(--surface); }
+.daychip input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
+.daychip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 화면 제목 (기록·설정 탭) */
+.page-title { margin: 6px 0 2px; }
+.page-title + .stack > details.block:first-child { border-top: 0; }
+/* 파일 고르기: 기본 'Choose File' 대신 버튼 모양 */
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.filepick { display: inline-flex; align-items: center; }
+.filepick:has(+ input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+textarea::placeholder { font-family: var(--font-body); }
 .backup-note { flex-wrap: nowrap; }
 .backup-note > span:first-child { min-width: 0; }
 .backup-note .link { padding: 8px 8px; }
@@ -358,3 +369,4 @@ html { background: var(--bg); }
 .wrap, .tabbar { animation: app-in 0.35s ease-out both; }
 @keyframes app-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .wrap, .tabbar { animation: none; } }
+@media (max-width: 360px) { .exrow2 label { flex-direction: column; align-items: stretch; gap: 2px; } }
