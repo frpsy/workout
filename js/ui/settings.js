@@ -4,6 +4,7 @@ import { DEFAULT_SETS, LIMITS, PRESETS, UNITS } from '../config.js';
 import { writeBackupMeta } from '../backup.js';
 import { DOW, todayStr } from '../dates.js';
 import { exportPayload, newExerciseId, parseImport, validateConfig } from '../model.js';
+import { canPlayInSilentMode, isSilentModeOn, playSound, setSilentMode } from '../sound.js';
 import { $, copyText, esc } from './dom.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -18,6 +19,14 @@ export function mountSettings(root, store) {
   let pendingImport = null;
 
   root.innerHTML = `
+    <details class="block" id="soundBox">
+      <summary>효과음</summary>
+      <div class="set-body">
+        <label class="radio"><input type="checkbox" id="silentMode"> 아이폰 무음 모드에서도 효과음 내기</label>
+        <p class="sub" id="silentHelp"></p>
+      </div>
+    </details>
+
     <details class="block" id="setBox">
       <summary>운동·목표 설정</summary>
       <div class="set-body">
@@ -104,6 +113,18 @@ export function mountSettings(root, store) {
     </details>`;
 
   const el = (id) => $('#' + id, root);
+
+  /* ---------- 효과음: 이 기기에만 저장, 바꾸면 바로 적용 ---------- */
+  const silentOk = canPlayInSilentMode();
+  el('silentMode').checked = silentOk && isSilentModeOn();
+  el('silentMode').disabled = !silentOk;
+  el('silentHelp').textContent = silentOk
+    ? '켜면 벨소리를 꺼 둔 상태에서도 소리가 납니다. 다른 앱에서 듣던 음악이 멈출 수 있습니다. 소리 크기는 기기 음량을 따릅니다.'
+    : '이 브라우저에서는 지원하지 않습니다. 소리가 안 나면 벨소리(무음) 스위치와 기기 음량을 확인해 주세요.';
+  el('silentMode').addEventListener('change', (e) => {
+    setSilentMode(e.target.checked);
+    playSound('set'); // 바로 들어 보기 (효과음이 꺼져 있으면 조용)
+  });
 
   /* ---------- 설정 초안 ---------- */
 

@@ -858,6 +858,78 @@ test('효과음: 세트 체크·종목 완료·모두 완료·되돌림·운동 
   }
 });
 
+test('효과음: 앱을 내렸다 올려 오디오가 interrupted로 멈춰 있어도 다시 깨워 소리를 냄', async () => {
+  const { playSound, setSilentMode } = await import('../js/sound.js');
+  localStorage.removeItem('workout-check:sound');
+  let resumed = 0;
+  globalThis.AudioContext = class extends FakeAudio {
+    constructor() {
+      super();
+      this.state = 'interrupted';
+    }
+    resume() {
+      resumed++;
+    }
+  };
+  try {
+    setSilentMode(false); // 이전 테스트에서 만든 오디오를 닫고 새로 만들게 함
+    played.length = 0;
+    playSound('done');
+    assert.equal(resumed, 1, 'interrupted도 resume');
+    assert.equal(played.length, 3);
+  } finally {
+    delete globalThis.AudioContext;
+    localStorage.removeItem('workout-check:sound-silent');
+    played.length = 0;
+  }
+});
+
+test('효과음: 무음 모드에서도 소리 내기를 켜면 오디오 세션을 playback으로, 끄면 auto로 (설정 화면에서 바로 적용)', async () => {
+  const { canPlayInSilentMode, isSilentModeOn, playSound, setSilentMode } = await import('../js/sound.js');
+  const prev = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  localStorage.removeItem('workout-check:sound-silent');
+  try {
+    // 지원하지 않는 브라우저: 설정 칸을 끄고 안내만
+    Object.defineProperty(globalThis, 'navigator', { value: {}, configurable: true });
+    assert.equal(canPlayInSilentMode(), false);
+    let ad = adapter();
+    document.body.innerHTML = '<div id="settings"></div>';
+    let root = document.getElementById('settings');
+    mountSettings(root, createStore(ad));
+    assert.equal(root.querySelector('#silentMode').disabled, true);
+    assert.match(root.querySelector('#silentHelp').textContent, /지원하지 않습니다/);
+
+    // 지원하는 브라우저
+    const session = { type: 'auto' };
+    Object.defineProperty(globalThis, 'navigator', { value: { audioSession: session }, configurable: true });
+    globalThis.AudioContext = FakeAudio;
+    ad = adapter();
+    document.body.innerHTML = '<div id="settings"></div>';
+    root = document.getElementById('settings');
+    const store = createStore(ad);
+    store.subscribe(mountSettings(root, store));
+    const box = root.querySelector('#silentMode');
+    assert.equal(box.disabled, false);
+    assert.equal(box.checked, false, '기본은 꺼짐');
+    box.checked = true;
+    played.length = 0;
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    assert.equal(isSilentModeOn(), true, '이 기기에 기억');
+    assert.equal(session.type, 'playback');
+    assert.equal(played.length, 1, '바로 들어 보기');
+    setSilentMode(false);
+    assert.equal(session.type, 'auto');
+    playSound('done');
+    assert.equal(session.type, 'auto', '새 오디오를 만들 때도 설정을 따름');
+  } finally {
+    if (prev) Object.defineProperty(globalThis, 'navigator', prev);
+    else delete globalThis.navigator;
+    delete globalThis.AudioContext;
+    localStorage.removeItem('workout-check:sound-silent');
+    played.length = 0;
+  }
+});
+
 test('효과음: 소리를 낼 수 없는 환경에서도 오류 없이 동작', async () => {
   delete globalThis.AudioContext;
   const { playSound } = await import('../js/sound.js');
