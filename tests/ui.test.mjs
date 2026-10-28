@@ -1065,3 +1065,45 @@ test('마무리: 글자는 그대로 보여 주고(HTML로 해석하지 않음) 
   assert.match(items[0].textContent, /감사 물 한 잔/);
   assert.match(items[1].textContent, /친구 전화/);
 });
+
+test('마무리: 아무것도 안 썼으면 나중에로 한 줄로 접고, 접힌 내용을 누르거나 연필로 다시 씀, 지난 날은 그날 제목', () => {
+  const ad = adapter({ days: fullDays(2) });
+  document.body.innerHTML = '<div id="journal"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('journal');
+  store.subscribe(mountJournal(root, store));
+  const box = root.querySelector('#jBox');
+  const q = (id) => root.querySelector(id);
+  assert.equal(box.dataset.mode, 'form', '마치면 바로 쓸 수 있게 열림');
+  assert.equal(q('#jTitle').textContent, '오늘의 마무리');
+  assert.equal(q('#jDone').hidden, true, '빈 채로는 완료 대신');
+  assert.equal(q('#jLater').hidden, false, '나중에만');
+
+  q('#jLater').click();
+  assert.equal(box.dataset.mode, 'closed');
+  assert.equal(q('#jOpen').hidden, false);
+  assert.match(q('#jOpen').textContent, /오늘의 마무리 쓰기/);
+  q('#jOpen').click();
+  assert.equal(box.dataset.mode, 'form');
+
+  q('#jThanks').value = '따뜻한 차';
+  q('#jThanks').dispatchEvent(new Event('input', { bubbles: true }));
+  assert.equal(q('#jDone').hidden, false);
+  assert.equal(q('#jLater').hidden, true);
+  assert.match(q('#jSaved').textContent, /자동 저장/);
+  q('#jDone').click();
+  assert.equal(box.dataset.mode, 'view');
+  assert.equal(q('#jEdit').hidden, false, '연필 버튼');
+  q('#jView').click();
+  assert.equal(box.dataset.mode, 'form', '접힌 내용을 누르면 고침');
+  q('#jDone').click();
+  q('#jView').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  assert.equal(box.dataset.mode, 'form', '키보드로도');
+
+  store.actions.select(addDays(todayStr(), -1));
+  assert.match(q('#jTitle').textContent, /^\d+월 \d+일의 마무리$/);
+  q('#jFeel').value = 'x'.repeat(180);
+  q('#jFeel').dispatchEvent(new Event('input', { bubbles: true }));
+  assert.equal(q('#jFeelN').textContent, '20자 남음', '거의 다 썼을 때 남은 글자 수');
+  store.actions.flushAll();
+});
