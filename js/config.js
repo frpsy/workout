@@ -20,7 +20,7 @@ export const LEVEL_ORDER = ['easy', 'normal', 'hard'];
 export const DEFAULT_SETS = 3;
 
 export const DEFAULT_EXERCISES = [
-  { id: 'push', name: '푸쉬업', unit: 'reps', base: 15, step: 2, sets: DEFAULT_SETS, active: true },
+  { id: 'push', name: '푸시업', unit: 'reps', base: 15, step: 2, sets: DEFAULT_SETS, active: true },
   { id: 'pull', name: '풀업', unit: 'reps', base: 3, step: 0.5, sets: DEFAULT_SETS, active: true },
   { id: 'squat', name: '스쿼트', unit: 'reps', base: 30, step: 5, sets: DEFAULT_SETS, active: true },
 ];

@@ -26,7 +26,7 @@ test('회복주는 4주마다', () => {
   assert.equal(isRecoveryWeek(3, plan({ recoveryEvery: 0 })), false);
 });
 
-test('매주 늘리기: 푸쉬업 15→17→19→회복17→23', () => {
+test('매주 늘리기: 푸시업 15→17→19→회복17→23', () => {
   const r = createTargetResolver({ startDate: START, plan: plan() }, {}, START);
   assert.deepEqual([0, 1, 2, 3, 4].map((w) => r.targetForWeek(push, w)), [15, 17, 19, 17, 23]);
 });

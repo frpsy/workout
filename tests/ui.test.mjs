@@ -220,7 +220,7 @@ test('기록: 최근 2주만 바로 보이고 자세히는 펼쳐야 그려짐(�
   assert.match(root.querySelector('#summary').textContent, /현재 연속5일/);
   const per = root.querySelectorAll('#perEx li');
   assert.equal(per.length, 3, '종목마다 한 줄');
-  assert.match(per[0].textContent, /푸쉬업.*연속 5일 · 최고 5일/);
+  assert.match(per[0].textContent, /푸시업.*연속 5일 · 최고 5일/);
   assert.equal(root.textContent.includes('하루 최고'), false, '누적 개수·하루 최고는 더 이상 보이지 않음');
   const restCells = root.querySelectorAll('button.cell.rest').length;
   assert.ok(restCells >= 8 && restCells <= 10, `쉬는 날 칸 수 ${restCells}`);
@@ -360,7 +360,7 @@ test('오늘: 초 단위 운동은 시작·종료로 시간을 재서 그 세트
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
   const plank = { id: 'plank', name: '플랭크', unit: 'sec', base: 30, step: 5, sets: 3, active: true };
-  const push = { id: 'push', name: '푸쉬업', unit: 'reps', base: 15, step: 2, sets: 3, active: true };
+  const push = { id: 'push', name: '푸시업', unit: 'reps', base: 15, step: 2, sets: 3, active: true };
   const { store, root } = setup(today, { config: { startDate: todayStr(), exercises: [plank, push] } });
   const [rowPlank, rowPush] = root.querySelectorAll('.row');
   assert.equal(rowPush.querySelector('[data-f="watch"]'), null, '개수 운동에는 시간 재기 버튼이 없음');
