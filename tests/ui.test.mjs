@@ -1100,6 +1100,10 @@ test('마무리: 아무것도 안 썼으면 나중에로 한 줄로 접고, 접�
   q('#jView').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   assert.equal(box.dataset.mode, 'form', '키보드로도');
 
+  assert.equal(q('#jFeel').tagName, 'INPUT', '소감도 한 줄 입력');
+  q('#jFeel').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  assert.equal(document.activeElement, q('#jThanks'), '소감에서 Enter는 감사한 일로');
+
   store.actions.select(addDays(todayStr(), -1));
   assert.match(q('#jTitle').textContent, /^\d+월 \d+일의 마무리$/);
   q('#jFeel').value = 'x'.repeat(180);

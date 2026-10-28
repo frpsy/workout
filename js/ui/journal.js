@@ -18,7 +18,7 @@ export function mountJournal(root, store) {
       </div>
       <div id="jForm">
         <label class="jlabel" for="jFeel"><span>운동 소감</span><span class="jcount" id="jFeelN"></span></label>
-        <textarea id="jFeel" rows="2" maxlength="${NOTE_MAX}" placeholder="오늘 운동은 어땠나요?"></textarea>
+        <input id="jFeel" maxlength="${NOTE_MAX}" placeholder="오늘 운동은 어땠나요?" autocomplete="off" enterkeyhint="next">
         <label class="jlabel" for="jThanks"><span>감사한 일 한 가지</span><span class="jcount" id="jThanksN"></span></label>
         <input id="jThanks" maxlength="${NOTE_MAX}" placeholder="오늘 감사했던 일 하나" autocomplete="off" enterkeyhint="done">
         <div class="jfoot">
@@ -61,6 +61,13 @@ export function mountJournal(root, store) {
   feel.addEventListener('input', save);
   thanks.addEventListener('input', save);
   for (const el of [feel, thanks]) el.addEventListener('focus', () => (editing = true));
+  // 둘 다 한 줄: 소감에서 Enter는 감사한 일로, 감사한 일에서 Enter는 완료
+  feel.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing) {
+      e.preventDefault();
+      thanks.focus();
+    }
+  });
   thanks.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.isComposing) $('#jDone', root).click(); // 한글 조합 중 Enter는 무시
   });

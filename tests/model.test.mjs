@@ -135,3 +135,8 @@ test('운동 소감·감사한 일: 읽을 때 정리(공백·길이·형식), �
   const back = parseImport(JSON.stringify(out), '2026-10-01');
   assert.deepEqual(back.days['2026-10-02'].note, { feel: '피곤했지만 해냈다' });
 });
+
+test('운동 소감·감사한 일: 줄바꿈·여러 칸 공백은 한 줄로 합침', () => {
+  const day = normalizeDay({ v: 2, entries: {}, note: { feel: '첫 줄\n둘째  줄\r\n', thanks: '\t감사 ' } });
+  assert.deepEqual(day.note, { feel: '첫 줄 둘째 줄', thanks: '감사' });
+});
