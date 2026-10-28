@@ -210,6 +210,7 @@ test('기록: 최근 2주만 바로 보이고 자세히는 펼쳐야 그려짐(�
   const rest = [0, 6];
   const { root, render, store } = setup(history, { days: fullDays(5), config: { startDate: addDays(todayStr(), -40), restDays: rest } });
   assert.equal(root.querySelectorAll('#calRecent button.cell').length, 14);
+  assert.match(root.querySelector('.cal-hint').textContent, /날짜를 누르면 그날 기록을 고칠 수 있습니다/, '최근 달력 바로 아래 안내');
   assert.equal(root.querySelector('#summary').innerHTML, '', '접혀 있는 동안은 계산하지 않음');
   assert.equal(root.querySelector('#calOlder').innerHTML, '');
   root.querySelector('#moreBox').open = true;
@@ -274,6 +275,36 @@ test('설정: 이름을 비운 채 저장하면 오류 문구를 보이고 저�
   await tick();
   assert.equal(root.querySelector('#setErr').hidden, false);
   assert.equal(ad.saved.config.length, 0);
+});
+
+test('설정: 바꾸고 저장하지 않으면 저장 줄이 아래에 붙고 안내가 보이며, 저장·되돌리기 하면 사라짐', async () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  const bar = root.querySelector('#saveBar');
+  const note = root.querySelector('#dirtyNote');
+  assert.equal(bar.classList.contains('dirty'), false);
+  assert.equal(note.hidden, true);
+
+  const mon = root.querySelector('#restDays input[value="1"]');
+  mon.checked = true;
+  mon.dispatchEvent(new Event('change', { bubbles: true }));
+  assert.equal(bar.classList.contains('dirty'), true);
+  assert.equal(note.hidden, false);
+
+  root.querySelector('#resetCfg').click();
+  assert.equal(bar.classList.contains('dirty'), false, '되돌리면 사라짐');
+  assert.equal(note.hidden, true);
+
+  mon.checked = true;
+  mon.dispatchEvent(new Event('change', { bubbles: true }));
+  root.querySelector('#saveCfg').click();
+  await tick();
+  assert.deepEqual(ad.saved.config.at(-1).restDays, [1]);
+  assert.equal(bar.classList.contains('dirty'), false, '저장하면 사라짐');
+  assert.equal(note.hidden, true);
 });
 
 test('설정: 백업 복사를 하면 마지막 백업일이 남아 안내가 사라짐', async () => {
