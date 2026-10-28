@@ -1,6 +1,6 @@
 {
-  "name": "일일 운동 체크",
-  "short_name": "운동 체크",
+  "name": "Rep Streak",
+  "short_name": "Rep Streak",
   "description": "매일 운동을 체크하고 주마다 목표를 늘려 가는 기록장",
   "lang": "ko",
   "start_url": "./",
