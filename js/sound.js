@@ -2,6 +2,7 @@
 // 소리는 사용자가 누른 순간에만 낼 수 있으므로, 누르는 동작 안에서 play()를 부르세요.
 
 const KEY = 'workout-check:sound';
+const SILENT_KEY = 'workout-check:sound-silent'; // 아이폰 무음 모드에서도 소리 내기
 
 // 도(C5)부터의 음계(Hz)
 const C5 = 523.25;
@@ -41,13 +42,58 @@ export function setSoundOn(on) {
   }
 }
 
+/** 무음 모드에서도 소리를 낼 수 있는 브라우저인지 (Audio Session API: iOS Safari 등) */
+export function canPlayInSilentMode() {
+  return !!(globalThis.navigator && navigator.audioSession && 'type' in navigator.audioSession);
+}
+
+export function isSilentModeOn() {
+  try {
+    return localStorage.getItem(SILENT_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+
+/** 오디오 세션 종류를 정함: 'playback'이면 아이폰 무음 스위치를 켜도 소리가 남(다른 앱 음악은 멈출 수 있음) */
+function applySession() {
+  if (!canPlayInSilentMode()) return;
+  try {
+    navigator.audioSession.type = isSilentModeOn() ? 'playback' : 'auto';
+  } catch {
+    /* 바꿀 수 없는 환경 */
+  }
+}
+
+export function setSilentMode(on) {
+  try {
+    localStorage.setItem(SILENT_KEY, on ? 'on' : 'off');
+  } catch {
+    /* 저장이 막힌 브라우저 */
+  }
+  applySession();
+  // 이미 만든 오디오는 이전 세션 종류로 열려 있으니 닫고, 다음에 누를 때 새로 만듦
+  if (ctx) {
+    try {
+      ctx.close();
+    } catch {
+      /* 무시 */
+    }
+    ctx = null;
+  }
+}
+
 /** 오디오를 준비. 사용자가 누르는 동작 안에서 불러야 소리가 남 (iOS 등) */
 export function unlockSound() {
   try {
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!AC) return null;
-    if (!ctx) ctx = new AC();
-    if (ctx.state === 'suspended') ctx.resume();
+    if (!ctx) {
+      applySession();
+      ctx = new AC();
+    }
+    // iOS는 앱을 내렸다 올리면 'interrupted'로 멈춰 있어 'suspended'만 보면 소리가 나지 않음
+    if (ctx.state !== 'running') ctx.resume();
     return ctx;
   } catch {
     ctx = null;
