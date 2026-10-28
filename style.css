@@ -403,8 +403,7 @@ html { background: var(--bg); }
 .journal [hidden] { display: none !important; }
 .jlabel { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .jcount { font-size: 12px; font-variant-numeric: tabular-nums; }
-.journal textarea, .journal input { width: 100%; font-family: var(--font-body); }
-.journal textarea { min-height: 64px; }
+.journal input { width: 100%; font-family: var(--font-body); }
 .jfoot { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .jsaved { flex: 1; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
 .jsaved svg { color: var(--accent); }
@@ -415,10 +414,10 @@ html { background: var(--bg); }
 .jview dl { margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .jview dl div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; }
 .jview dt { font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 8px; }
-.jview dd { margin: 0; font-size: 15px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.jview dd { margin: 0; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
 .jopen { width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: transparent; color: var(--accent); font-weight: 700; font-size: 14px; cursor: pointer; }
 .notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .notes li { display: flex; flex-direction: column; gap: 2px; padding-left: 10px; border-left: 3px solid var(--accent-soft); }
 .note-date { font-size: 12px; color: var(--muted); }
-.note-feel, .note-thanks { margin: 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.note-feel, .note-thanks { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
 .note-thanks b { font-size: 12px; color: var(--accent); margin-right: 4px; }

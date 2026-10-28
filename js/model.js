@@ -84,7 +84,7 @@ export function normalizeConfig(raw, fallbackStart) {
 /** 운동 소감(feel)·감사한 일(thanks). 둘 다 비면 null */
 export function normalizeNote(raw) {
   if (!isObj(raw)) return null;
-  const pick = (v) => (typeof v === 'string' ? v.trim().slice(0, NOTE_MAX) : '');
+  const pick = (v) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, NOTE_MAX) : ''); // 한 줄로
   const note = {};
   const feel = pick(raw.feel);
   const thanks = pick(raw.thanks);
