@@ -5,8 +5,9 @@ import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LEVELS, LIMITS, SCHEMA_V
 import { isDateStr } from './dates.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-const RESERVED = new Set(['date', 'v', 'entries', 'workSec', 'level']);
+const RESERVED = new Set(['date', 'v', 'entries', 'workSec', 'level', 'note']);
 const MAX_WORK_SEC = 86400; // 하루 총 운동시간 상한(24시간)
+export const NOTE_MAX = 200; // 운동 소감·감사한 일 글자 수 상한
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const inRange = (v, [lo, hi]) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -80,6 +81,23 @@ export function normalizeConfig(raw, fallbackStart) {
   };
 }
 
+/** 운동 소감(feel)·감사한 일(thanks). 둘 다 비면 null */
+export function normalizeNote(raw) {
+  if (!isObj(raw)) return null;
+  const pick = (v) => (typeof v === 'string' ? v.trim().slice(0, NOTE_MAX) : '');
+  const note = {};
+  const feel = pick(raw.feel);
+  const thanks = pick(raw.thanks);
+  if (feel) note.feel = feel;
+  if (thanks) note.thanks = thanks;
+  return feel || thanks ? note : null;
+}
+
+/** 저장할 만한 내용이 있는 날인지 (기록·운동시간·소감) */
+export function hasDayContent(day) {
+  return !!day && (Object.keys(day.entries || {}).length > 0 || !!day.workSec || !!normalizeNote(day.note));
+}
+
 /** v1은 운동 기록이 문서 최상위에, v2는 entries 안에 있습니다. */
 export function normalizeDay(raw) {
   const entries = {};
@@ -97,12 +115,14 @@ export function normalizeDay(raw) {
     if (!e.done && inRange(v.setsDone, LIMITS.sets)) e.setsDone = Math.round(v.setsDone); // 세트별로 체크한 개수(아직 다 안 마친 날)
     entries[id] = e;
   }
-  return { entries, ...(workSec ? { workSec } : {}), ...(level ? { level } : {}) };
+  const note = normalizeNote(raw.note);
+  return { entries, ...(workSec ? { workSec } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeDay(date, day) {
-  // workSec: 그날 총 운동시간(초). 없으면 필드도 두지 않음
-  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}) };
+  // workSec: 그날 총 운동시간(초), note: 운동 소감·감사한 일. 없으면 필드도 두지 않음
+  const note = normalizeNote(day.note);
+  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeConfig(config) {
@@ -138,7 +158,7 @@ export function validateConfig(cfg) {
 
 export function exportPayload(config, days) {
   const out = {};
-  for (const [d, day] of Object.entries(days)) if (Object.keys(day.entries).length || day.workSec) out[d] = serializeDay(d, day);
+  for (const [d, day] of Object.entries(days)) if (hasDayContent(day)) out[d] = serializeDay(d, day);
   return { app: 'workout-check', v: SCHEMA_VERSION, exportedAt: new Date().toISOString(), config: serializeConfig(config), days: out };
 }
 
@@ -156,7 +176,7 @@ export function parseImport(text, fallbackStart) {
   for (const [d, v] of Object.entries(raw.days)) {
     if (!isDateStr(d)) continue;
     const day = normalizeDay(v);
-    if (Object.keys(day.entries).length || day.workSec) days[d] = day;
+    if (hasDayContent(day)) days[d] = day;
   }
   return { config, days };
 }

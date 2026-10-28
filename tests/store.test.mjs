@@ -181,3 +181,22 @@ test('난이도 3단계: 쉬움 0.8 · 보통 1 · 어려움 1.2배로 그날 �
   assert.equal(store.view(d, push).level, 'normal', '알 수 없는 난이도는 무시');
   store.actions.flushAll();
 });
+
+test('운동 소감·감사한 일: 쓰는 대로 저장하고, 둘 다 지우면 필드도 없앰', async (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const ad = fakeAdapter();
+  const store = createStore(ad);
+  const d = todayStr();
+  store.actions.setNote(d, { feel: '  상쾌했다 ', thanks: '가족과 저녁' });
+  mock.timers.tick(400);
+  await tick();
+  assert.deepEqual(ad.saved.days.at(-1)[1].note, { feel: '상쾌했다', thanks: '가족과 저녁' }, '앞뒤 공백은 저장할 때 정리');
+  store.actions.setNote(d, { feel: '', thanks: '  ' });
+  mock.timers.tick(400);
+  await tick();
+  assert.equal('note' in ad.saved.days.at(-1)[1], false);
+  assert.equal(store.state.days[d].note, undefined);
+  store.actions.setNote('2999-01-01', { feel: '미래' });
+  assert.equal(store.state.days['2999-01-01'], undefined, '앞날에는 쓰지 않음');
+});

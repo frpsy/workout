@@ -123,3 +123,15 @@ test('예전 기본 이름 "푸쉬업"은 표기법에 맞는 "푸시업"으로 
   assert.deepEqual(cfg.exercises.map((e) => e.name), ['푸시업', '내 운동']);
   assert.equal(normalizeConfig(null, '2026-01-01').exercises[0].name, '푸시업', '기본 이름도 푸시업');
 });
+
+test('운동 소감·감사한 일: 읽을 때 정리(공백·길이·형식), 소감만 있는 날도 백업에 포함', () => {
+  const day = normalizeDay({ v: 2, entries: {}, note: { feel: '  좋았다 ', thanks: 'x'.repeat(300), extra: 1 } });
+  assert.deepEqual(day.note, { feel: '좋았다', thanks: 'x'.repeat(200) });
+  assert.equal(normalizeDay({ v: 2, entries: {}, note: { feel: ' ', thanks: 3 } }).note, undefined, '빈 내용·잘못된 형식은 버림');
+  assert.equal(normalizeDay({ v: 2, entries: {}, note: 'text' }).note, undefined);
+  const cfg = normalizeConfig(null, '2026-10-01');
+  const out = exportPayload(cfg, { '2026-10-02': { entries: {}, note: { feel: '피곤했지만 해냈다', thanks: '' } } });
+  assert.deepEqual(out.days['2026-10-02'].note, { feel: '피곤했지만 해냈다' });
+  const back = parseImport(JSON.stringify(out), '2026-10-01');
+  assert.deepEqual(back.days['2026-10-02'].note, { feel: '피곤했지만 해냈다' });
+});

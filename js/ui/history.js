@@ -9,6 +9,7 @@ import { $, esc } from './dom.js';
 const WEEKS = 5; // 달력 전체 주 수: 최근 2주는 바로, 앞의 3주는 자세히 안에
 const RECENT = 2;
 const MAX_PIPS = 6;
+const NOTES_SHOWN = 10; // 마무리 기록은 최근 10개까지
 const STROKES = ['M3 4H21', 'M12 4V20', 'M12 12H18', 'M7 9V16', 'M3 20H21'];
 
 function glyph(on) {
@@ -36,6 +37,10 @@ export function mountHistory(root, store) {
           <div class="glyphs" id="glyphs" role="img"></div>
           <p class="tallytext" id="tallyText"></p>
           <p class="tallytext" id="workText"></p>
+        </section>
+        <section id="notesSec" hidden>
+          <h2 class="sec">마무리 기록</h2>
+          <ul class="notes" id="notes"></ul>
         </section>
         <section>
           <h2 class="sec">종목별 꾸준함</h2>
@@ -127,6 +132,27 @@ export function mountHistory(root, store) {
     $('#workText', root).innerHTML = week
       ? `운동시간 오늘 <b>${secOf(today) ? fmtKo(secOf(today)) : '없음'}</b> · 최근 7일 <b>${fmtKo(week)}</b> (하루 평균 ${fmtKo(Math.round(week / active))})`
       : '운동시간은 오늘 탭의 ▶ 운동 시작·■ 종료로 잴 수 있습니다.';
+
+    /* 마무리 기록: 운동 소감·감사한 일 (최근 것부터) */
+    const notes = Object.keys(days)
+      .filter((d) => d <= today && days[d].note && ((days[d].note.feel || '').trim() || (days[d].note.thanks || '').trim()))
+      .sort()
+      .reverse()
+      .slice(0, NOTES_SHOWN);
+    $('#notesSec', root).hidden = !notes.length;
+    $('#notes', root).innerHTML = notes
+      .map((d) => {
+        const n = days[d].note;
+        const feel = (n.feel || '').trim();
+        const thanks = (n.thanks || '').trim();
+        return (
+          `<li><span class="note-date">${labelMD(d)}</span>` +
+          (feel ? `<p class="note-feel">${esc(feel)}</p>` : '') +
+          (thanks ? `<p class="note-thanks"><b>감사</b> ${esc(thanks)}</p>` : '') +
+          '</li>'
+        );
+      })
+      .join('');
 
     /* 연속·달성률 (모든 운동을 마친 날 기준) */
     const opts = { rest, startDate: config.startDate };
