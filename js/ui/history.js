@@ -25,6 +25,7 @@ export function mountHistory(root, store) {
   root.innerHTML = `
     <section aria-label="최근 2주">
       <div id="calRecent" class="cal"></div>
+      <p class="sub cal-hint">날짜를 누르면 그날 기록을 고칠 수 있습니다.</p>
     </section>
     <details class="block" id="moreBox">
       <summary>기록 자세히</summary>
@@ -95,7 +96,6 @@ export function mountHistory(root, store) {
     const { exs, rest } = ctx;
     const offGrid = parse(config.startDate).getDay() !== 1; // 목표 주차는 시작일 기준 7일 단위
     const help = [
-      '날짜를 누르면 그날 기록을 고칠 수 있습니다.',
       ctx.ids.length <= MAX_PIPS ? `점은 ${exs.map((e) => e.name).join(', ')} 순서입니다.` : '',
       offGrid ? '왼쪽에 초록 선이 있는 날은 새 목표 주차가 시작되는 날입니다.' : '',
       rest.size ? '흐린 날은 쉬는 요일입니다.' : '',
@@ -126,7 +126,7 @@ export function mountHistory(root, store) {
     }
     $('#workText', root).innerHTML = week
       ? `운동시간 오늘 <b>${secOf(today) ? fmtKo(secOf(today)) : '없음'}</b> · 최근 7일 <b>${fmtKo(week)}</b> (하루 평균 ${fmtKo(Math.round(week / active))})`
-      : '운동시간은 위쪽 ▶ 운동 시작·■ 종료로 잴 수 있습니다.';
+      : '운동시간은 오늘 탭의 ▶ 운동 시작·■ 종료로 잴 수 있습니다.';
 
     /* 연속·달성률 (모든 운동을 마친 날 기준) */
     const opts = { rest, startDate: config.startDate };

@@ -370,3 +370,6 @@ html { background: var(--bg); }
 @keyframes app-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .wrap, .tabbar { animation: none; } }
 @media (max-width: 360px) { .exrow2 label { flex-direction: column; align-items: stretch; gap: 2px; } }
+/* 설정: 저장하지 않은 변경이 있으면 저장 줄을 탭 막대 바로 위에 붙임 */
+.savebar.dirty { position: sticky; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 2; margin: 0 -16px; padding: 10px 16px; background: var(--bg); border-top: 1px solid var(--line); }
+.dirty-note { font-size: 13px; color: var(--muted); }

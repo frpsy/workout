@@ -61,9 +61,10 @@ export function mountSettings(root, store) {
         <div class="presets" id="presets"></div>
 
         <p class="errors" id="setErr" role="alert" hidden></p>
-        <div class="btnrow">
+        <div class="btnrow savebar" id="saveBar">
           <button type="button" class="btn" id="saveCfg">저장</button>
           <button type="button" class="btn ghost" id="resetCfg">되돌리기</button>
+          <span class="dirty-note" id="dirtyNote" hidden>저장하지 않은 변경이 있습니다</span>
         </div>
         <p class="sub">목표는 세트당 개수 × 세트 수입니다(예: 15 × 3). 오늘 화면의 − + 는 한 번 누르면 1씩, 꾹 누르면 5씩 바뀝니다. 풀업처럼 0.5를 넣으면 2주에 1개씩 늘어납니다. 이미 완료한 날의 목표와 세트는 바뀌지 않습니다.</p>
       </div>
@@ -104,14 +105,21 @@ export function mountSettings(root, store) {
 
   /* ---------- 설정 초안 ---------- */
 
+  /** 바꾼 뒤 저장하지 않았으면 저장 버튼 줄을 화면 아래에 붙여 두고 안내 문구를 보여 줌 */
+  function setDirty(v) {
+    dirty = v;
+    el('saveBar').classList.toggle('dirty', v);
+    el('dirtyNote').hidden = !v;
+  }
+
   function loadDraft() {
     draft = clone(store.state.config);
-    dirty = false;
+    setDirty(false);
     renderDraft();
   }
 
   function markDirty() {
-    dirty = true;
+    setDirty(true);
     el('setErr').hidden = true;
   }
 
@@ -269,7 +277,7 @@ export function mountSettings(root, store) {
     box.hidden = true;
     try {
       await actions.saveConfig(clone(draft));
-      dirty = false;
+      setDirty(false);
     } catch {
       /* 상태 줄에 표시됨 */
     }
