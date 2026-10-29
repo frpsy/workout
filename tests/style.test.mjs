@@ -12,12 +12,13 @@ test('입력 칸 글자는 16px 이상(iOS가 포커스할 때 화면을 확대�
 test('더블탭 확대 지연을 없애고(touch-action) 작은 버튼의 눌리는 영역을 넓힘', () => {
   assert.match(css, /html \{ touch-action: manipulation;/);
   assert.match(css, /\.setpips button::after/);
-  assert.match(css, /\.levels button::after, \.views button::after, \.snd::after \{ content: ''; position: absolute; inset: -6px 0; \}/, '보이는 크기는 작게, 누르는 영역은 44px');
+  assert.match(css, /\.levels button::after, \.views button::after \{ content: ''; position: absolute; inset: -7px 0; \}/, '보이는 크기는 작게, 누르는 영역은 44px');
 });
 
 test('화면 보기·난이도·효과음 버튼은 손가락으로 누르기 충분한 크기', () => {
-  assert.match(css, /\.views button \{ position: relative; min-width: 44px; height: 32px;/);
-  assert.match(css, /\.levels button \{ position: relative; min-width: 44px; height: 32px;/);
+  assert.match(css, /\.levels button, \.views button \{ position: relative; min-width: 44px; height: 30px;/);
+  assert.match(css, /\.levels, \.views \{ display: flex; flex: none; gap: 2px; padding: 2px;/, '겉 높이 34px(30 + 위아래 2)');
+  assert.match(css, /\.levels button\[aria-pressed="true"\], \.views button\[aria-pressed="true"\] \{ background: var\(--seg-on\);/, '고른 칸만 떠오름(이중 테두리 없음)');
   assert.match(css, /\.snd \{ position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 34px;/);
   assert.doesNotMatch(css, /\.(levels|views) \{[^}]*overflow: hidden/, '틀이 넘침을 자르면 누르는 영역이 32px로 줄어듦');
 });

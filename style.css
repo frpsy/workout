@@ -21,6 +21,7 @@
   --ctrl-line: #7F8F87; /* 입력칸·스위치 테두리: 배경과 3:1 이상(3.07~3.28) */
   --accent-fill: #1F7A5C; /* 넓게 칠하는 초록(버튼·완료) */
   --knob: #FFFFFF;
+  --seg-on: #FFFFFF; /* 난이도·보기에서 고른 칸 */
   --r-ctrl: 10px; /* 버튼·입력칸 모서리 */
   --r-card: 14px; /* 카드 모서리 */
   --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235C6B65' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -32,7 +33,7 @@
     --bg: #0F1613; --surface: #16201C; --fg: #E5EEE9; --muted: #93A69D; --line: #28372F;
     --accent: #4DC49A; --accent-soft: #17382C; --on-accent: #081A12;
     --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
-    --ctrl-line: #64776D; --accent-fill: #3BA57F; --knob: #E5EEE9;
+    --ctrl-line: #64776D; --accent-fill: #3BA57F; --knob: #E5EEE9; --seg-on: #34453C;
     --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2393A69D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     color-scheme: dark;
   }
@@ -41,7 +42,7 @@
   --bg: #0F1613; --surface: #16201C; --fg: #E5EEE9; --muted: #93A69D; --line: #28372F;
   --accent: #4DC49A; --accent-soft: #17382C; --on-accent: #081A12;
   --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
-  --ctrl-line: #64776D; --accent-fill: #3BA57F; --knob: #E5EEE9;
+  --ctrl-line: #64776D; --accent-fill: #3BA57F; --knob: #E5EEE9; --seg-on: #34453C;
   --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2393A69D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
@@ -281,18 +282,14 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .wbtn.stop { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
 
 /* 오늘 난이도 3단계 */
-.levels { display: flex; flex: none; border: 1px solid var(--ctrl-line); border-radius: var(--r-ctrl); background: var(--bg); }
-.levels button { position: relative; min-width: 44px; height: 32px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
-.levels button:first-child { border-left: 0; }
-.levels button[aria-pressed="true"], .views button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+/* 난이도·보기: 옅은 바탕 위에서 고른 칸만 떠오르는 모양(아이폰 기본 선택 버튼과 같은 방식). 겉 높이 34px 유지 */
+.levels, .views { display: flex; flex: none; gap: 2px; padding: 2px; border-radius: var(--r-ctrl); background: var(--line); }
+.levels button, .views button { position: relative; min-width: 44px; height: 30px; padding: 0 9px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+.levels button[aria-pressed="true"], .views button[aria-pressed="true"] { background: var(--seg-on); color: var(--accent); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14); }
+@media (prefers-reduced-motion: no-preference) { .levels button, .views button { transition: background-color 0.15s, color 0.15s, box-shadow 0.15s; } }
 /* 감싸는 틀이 넘침을 자르지 않으므로(누르는 영역 44px 유지) 양 끝 버튼만 모서리를 둥글게 */
-.levels button:first-child, .views button:first-child { border-radius: 9px 0 0 9px; }
-.levels button:last-child, .views button:last-child { border-radius: 0 9px 9px 0; }
 
 /* 화면 보기 3단계 */
-.views { display: flex; flex: none; border: 1px solid var(--ctrl-line); border-radius: var(--r-ctrl); background: var(--bg); }
-.views button { position: relative; min-width: 44px; height: 32px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
-.views button:first-child { border-left: 0; }
 .row .hint { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted); display: none; }
 [data-view="detail"] .row .hint { display: block; }
 [data-view="compact"] .row .ctrl { display: none; }
@@ -333,7 +330,8 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 html { touch-action: manipulation; background: var(--bg); }
 .setpips button { position: relative; }
 .setpips button::after { content: ''; position: absolute; inset: -4px -3px; }
-.levels button::after, .views button::after, .snd::after { content: ''; position: absolute; inset: -6px 0; }
+.levels button::after, .views button::after { content: ''; position: absolute; inset: -7px 0; } /* 누르는 영역 44px */
+.snd::after { content: ''; position: absolute; inset: -6px 0; }
 .wbtn::after, .wsec::after { content: ''; position: absolute; inset: -4px 0; }
 .timer .tstep::after, .timer .tgo::after, .timer button.tlabel::after { content: ''; position: absolute; inset: -5px 0; } /* 보이는 크기는 작게, 누르는 영역은 44px */
 @media (prefers-reduced-motion: no-preference) {
