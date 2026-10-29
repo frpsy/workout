@@ -75,9 +75,9 @@ export function mountSettings(root, store) {
 
     <section class="sgroup">
       <h2 class="sgh">운동</h2>
+      <p class="sub">목표 = 세트당 개수 × 세트 수 · 매주 +0.5는 2주마다 1개</p>
       <div id="exList" class="exlist"></div>
       <div class="presets" id="presets"></div>
-      <p class="sub">목표 = 세트당 개수 × 세트 수. 매주 +0.5는 2주마다 1개씩 늘어납니다.</p>
       <p class="errors" id="setErr" role="alert" hidden></p>
       <div class="btnrow savebar" id="saveBar">
         <button type="button" class="btn" id="saveCfg">저장</button>

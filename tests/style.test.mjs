@@ -65,7 +65,7 @@ test('디자인: 기록 내용은 카드로 묶고 중복 접기 제목은 숨�
 });
 
 test('키가 작은 폰(높이 700px 이하): 줄 간격을 줄이고 팁은 감추며, 마무리 칸은 탭 막대에 가려지지 않게 스크롤 여백을 둠', () => {
-  assert.match(css, /@media \(max-height: 700px\) \{\s*\.row \{ padding: 7px 12px;[^}]*\}\s*\.rows \{ gap: 4px; \}\s*\.tip \{ display: none; \}/);
+  assert.match(css, /@media \(max-height: 700px\) \{\s*\.row \{ padding: 7px 12px;[^}]*\}\s*\.rows \{ gap: 4px; \}\s*\.timer \{ height: 44px; \}\s*\.tip \{ display: none; \}/);
   assert.match(css, /\.journal \{ scroll-margin-bottom: calc\(84px \+ env\(safe-area-inset-bottom, 0px\)\);/);
 });
 
