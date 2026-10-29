@@ -65,3 +65,40 @@ test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래
   assert.match(css, /\.tabbar \{[^}]*padding-bottom: calc\(env\(safe-area-inset-bottom, 0px\) \+ 10px\)/);
   assert.match(css, /\.wrap \{[^}]*padding-bottom: calc\(70px \+ env\(safe-area-inset-bottom/);
 });
+
+test('스와이프: 왼쪽으로 밀면 다음 탭, 오른쪽으로 밀면 이전 탭, 끝에서는 그대로', () => {
+  const { w, doc, el, tabs } = setup();
+  const swipe = (target, dx, dy = 0, x0 = 200) => {
+    const mk = (type, x, y) => {
+      const ev = new w.Event(type, { bubbles: true });
+      const t = { clientX: x, clientY: y };
+      ev.touches = type === 'touchend' ? [] : [t];
+      ev.changedTouches = [t];
+      return ev;
+    };
+    target.dispatchEvent(mk('touchstart', x0, 300));
+    target.dispatchEvent(mk('touchend', x0 + dx, 300 + dy));
+  };
+  Object.defineProperty(w, 'innerWidth', { value: 390 });
+  swipe(el('a'), 100, 10);
+  assert.equal(tabs.current, 'today', '첫 탭에서 오른쪽으로 밀어도 그대로');
+  swipe(el('a'), -100, 10);
+  assert.equal(tabs.current, 'record');
+  assert.equal(w.location.hash, '#record');
+  swipe(el('b'), -100);
+  assert.equal(tabs.current, 'settings');
+  swipe(el('c'), -100);
+  assert.equal(tabs.current, 'settings', '마지막 탭에서 왼쪽으로 밀어도 그대로');
+  swipe(el('c'), 100);
+  assert.equal(tabs.current, 'record');
+  swipe(el('b'), -30);
+  assert.equal(tabs.current, 'record', '짧게 밀면 무시');
+  swipe(el('b'), -100, 80);
+  assert.equal(tabs.current, 'record', '세로로 더 많이 움직이면 무시(스크롤)');
+  swipe(el('b'), -100, 0, 10);
+  assert.equal(tabs.current, 'record', '가장자리에서 시작하면 무시');
+  const input = doc.createElement('input');
+  el('b').appendChild(input);
+  swipe(input, -100);
+  assert.equal(tabs.current, 'record', '입력칸에서 시작하면 무시');
+});
