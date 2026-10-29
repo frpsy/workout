@@ -220,12 +220,23 @@ export function mountToday(root, store) {
       if (done) actions.addWorkSec(done.date, done.sec);
       playSound('stop');
     } else {
-      session.start(store.state.today);
-      ticking(true);
+      startWork();
       playSound('start');
     }
     renderWork();
   });
+  function startWork() {
+    session.start(store.state.today);
+    ticking(true);
+  }
+  // 오늘 첫 세트를 마치면 '운동 시작'을 대신 눌러 줌 (이미 재는 중이거나, 오늘 이미 시간을 기록했거나, 지난 날을 고치는 중이면 그대로)
+  function autoStart(before, after) {
+    const state = store.state;
+    const recorded = (state.days[state.today] && state.days[state.today].workSec) || 0;
+    if (after.setsDone <= before.setsDone || session.running || recorded || state.selected !== state.today || !state.ready) return;
+    startWork();
+    renderWork();
+  }
   // 중지: 시간이 멈추고(기록은 안 함), 재개하면 이어서 흐름
   $('#wPause', root).addEventListener('click', () => {
     haptic();
@@ -395,6 +406,7 @@ export function mountToday(root, store) {
         actions.setProgress(ex.id, before.setsDone === i ? i - 1 : i);
         const after = view();
         soundFor(before, after);
+        autoStart(before, after);
         // 세트를 새로 마쳤으면(되돌린 게 아니면) 휴식 타이머에 알림. 모든 운동을 끝냈으면 쉴 필요가 없음
         const allDone = store.activeExercises().every((e) => store.view(store.state.selected, e).done);
         if (after.setsDone > before.setsDone && !allDone) document.dispatchEvent(new Event('workout:set-checked'));
@@ -404,6 +416,7 @@ export function mountToday(root, store) {
         const before = view();
         actions.toggle(ex.id);
         soundFor(before, view());
+        autoStart(before, view());
       });
       // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
       holdStep(r.minus, () => step(-unit.inc), () => step(-unit.big));
