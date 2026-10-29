@@ -27,14 +27,6 @@ test('저장 공간 초과는 quota_exceeded 코드로', async () => {
   await assert.rejects(ad.saveDay('2026-10-26', { entries: {} }), { code: 'quota_exceeded' });
 });
 
-test('saveDays는 여러 날을 한 번에 쓰고 기존 날은 유지', async () => {
-  const ad = createLocalAdapter();
-  await ad.saveDay('2026-10-01', { entries: { a: { done: true } } });
-  await ad.saveDays({ '2026-10-02': { entries: {} }, '2026-10-03': { entries: {} } });
-  const saved = JSON.parse(localStorage.getItem(KEY));
-  assert.deepEqual(Object.keys(saved.days).sort(), ['2026-10-01', '2026-10-02', '2026-10-03']);
-});
-
 test('예전 단일 파일 버전(wk-state) 기록을 읽음', () => {
   localStorage.setItem('wk-state', JSON.stringify({ cfg: { startDate: '2026-10-01' }, days: { '2026-10-01': { push: { done: true } } } }));
   const ad = createLocalAdapter();

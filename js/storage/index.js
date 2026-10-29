@@ -2,11 +2,10 @@
 //
 // 어댑터는 모두 같은 모양입니다:
 //   {
-//     kind, label, synced, canDownload,
+//     kind, label, synced,
 //     subscribe({ onConfig(rawOrNull), onDays({date: raw}), onError(err) }) -> unsubscribe,
 //     saveConfig(doc) -> Promise,
 //     saveDay(date, doc) -> Promise,
-//     saveDays?({date: doc}) -> Promise,   // 선택: 여러 날을 한 번에 (없으면 saveDay를 차례로)
 //   }
 // 저장 공간이 가득 차면 { code: 'quota_exceeded' } 오류를 던집니다.
 // 선택 사항: account = { email?, signIn?(), signOut?() } — 설정 화면에 로그인·로그아웃 버튼을 보여 줍니다.

@@ -22,13 +22,13 @@ before(async () => {
 
 const tick = () => new Promise((r) => setImmediate(r));
 
-function adapter({ days = {}, config = null, kind = 'fake' } = {}) {
+function adapter({ days = {}, config = null, kind = 'fake', account } = {}) {
   const saved = { config: [], days: [] };
   return {
     saved,
     kind,
     label: '',
-    canDownload: false,
+    ...(account ? { account } : {}),
     subscribe({ onConfig, onDays }) {
       onConfig(config);
       onDays(days);
@@ -50,7 +50,7 @@ function fullDays(n) {
 }
 
 function setup(mount, opts) {
-  document.body.innerHTML = '<div id="today"></div><div id="history"></div><div id="settings"></div><details id="bakBox"></details>';
+  document.body.innerHTML = '<div id="today"></div><div id="history"></div><div id="settings"></div>';
   const store = createStore(adapter(opts));
   const root = document.getElementById(mount.id);
   const render = mount.fn(root, store);
@@ -194,17 +194,24 @@ test('오늘: 실제 개수 +를 누르면 목표와의 차이가 보임', () =>
   store.actions.flushAll();
 });
 
-test('오늘: 백업 안내는 기록이 쌓인 단독 실행에서만 보이고 "나중에"로 숨김', () => {
-  let { root } = setup(today, { kind: 'local', days: fullDays(8) });
-  assert.equal(root.querySelector('#bakNote').hidden, false);
-  root.querySelector('#bakLater').click();
-  assert.equal(root.querySelector('#bakNote').hidden, true);
+test('오늘: 로그인 권유는 기록이 쌓인 로그인 전 단독 실행에서만 보이고 "나중에"로 7일 숨김', () => {
+  const signIn = async () => true;
+  let { root, store } = setup(today, { kind: 'local', days: fullDays(8), account: { signIn } });
+  assert.equal(root.querySelector('#loginNote').hidden, false);
+  root.querySelector('#loginLater').click();
+  assert.equal(root.querySelector('#loginNote').hidden, true);
+  assert.equal(JSON.parse(localStorage.getItem('workout-check:login-nudge')).snoozeUntil, addDays(todayStr(), 7));
+  store.actions.flushAll();
 
   localStorage.clear();
   ({ root } = setup(today, { kind: 'claude-db', days: fullDays(8) }));
-  assert.equal(root.querySelector('#bakNote').hidden, true, '기기 간 저장소에서는 안내 없음');
-  ({ root } = setup(today, { kind: 'local', days: fullDays(3) }));
-  assert.equal(root.querySelector('#bakNote').hidden, true, '기록이 적으면 안내 없음');
+  assert.equal(root.querySelector('#loginNote').hidden, true, '기기 간 저장소에서는 안내 없음');
+  ({ root } = setup(today, { kind: 'local', days: fullDays(8), account: { email: 'me@example.com', signOut: async () => {} } }));
+  assert.equal(root.querySelector('#loginNote').hidden, true, '이미 로그인했으면 안내 없음');
+  ({ root } = setup(today, { kind: 'local', days: fullDays(2), account: { signIn } }));
+  assert.equal(root.querySelector('#loginNote').hidden, true, '기록이 적으면 안내 없음');
+  ({ root } = setup(today, { kind: 'local', days: fullDays(8) }));
+  assert.equal(root.querySelector('#loginNote').hidden, true, '로그인 기능이 없는 환경에서는 안내 없음');
 });
 
 test('기록: 이번 주만 맨 위에 바로 보이고 자세히는 펼쳐야 그려짐(달력 7칸 + 지난 4주 28칸)', async () => {
@@ -260,9 +267,7 @@ test('설정: 추천 운동을 추가하고 쉬는 요일을 골라 저장', asy
   assert.equal(cfg.exercises[3].sets, 3);
   assert.deepEqual(cfg.restDays, [0]);
   assert.equal(root.querySelectorAll('#restDays label.daychip').length, 7, '요일 7칸');
-  const pick = root.querySelector('label.filepick');
-  assert.equal(pick.getAttribute('for'), 'bakFile', '파일 선택 버튼이 숨긴 파일 입력과 연결');
-  assert.equal(pick.textContent, '파일 선택');
+  assert.equal(root.querySelector('#bakBox, #copyBak, #saveBak, #readBak, #bakFile'), null, '파일·복사 백업 화면은 없음');
 });
 
 test('설정: 이름을 비운 채 저장하면 오류 문구를 보이고 저장하지 않음', async () => {
@@ -307,23 +312,6 @@ test('설정: 바꾸고 저장하지 않으면 저장 줄이 아래에 붙고 �
   assert.deepEqual(ad.saved.config.at(-1).restDays, [1]);
   assert.equal(bar.classList.contains('dirty'), false, '저장하면 사라짐');
   assert.equal(note.hidden, true);
-});
-
-test('설정: 백업 복사를 하면 마지막 백업일이 남아 안내가 사라짐', async () => {
-  const ad = adapter({ kind: 'local', days: fullDays(8) });
-  document.body.innerHTML = '<div id="today"></div><div id="settings"></div><details id="bakBox"></details>';
-  const store = createStore(ad);
-  store.subscribe(mountToday(document.getElementById('today'), store));
-  store.subscribe(mountSettings(document.getElementById('settings'), store));
-  assert.equal(document.getElementById('bakNote').hidden, false);
-
-  globalThis.navigator ??= {};
-  Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async () => {} } }, configurable: true });
-  document.getElementById('copyBak').click();
-  await tick();
-  await tick();
-  assert.equal(document.getElementById('bakNote').hidden, true);
-  assert.equal(JSON.parse(localStorage.getItem('workout-check:backup')).last, todayStr());
 });
 
 test('설정: 계정이 있으면 로그인·로그아웃 버튼을 보여 주고 누르면 호출', async () => {
@@ -517,7 +505,7 @@ test('오늘: 난이도 쉬움·보통·어려움 버튼으로 그날 목표가 
 });
 
 function setupFull() {
-  document.body.innerHTML = '<div id="today"></div><details id="moreBox"></details><details id="planBox"></details><details id="bakBox"></details>';
+  document.body.innerHTML = '<div id="today"></div><details id="moreBox"></details><details id="planBox"></details>';
   const store = createStore(adapter());
   const root = document.getElementById('today');
   const render = mountToday(root, store);

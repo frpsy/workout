@@ -1,7 +1,6 @@
 // 머리말(날짜·진행)과 오늘의 운동 체크 행
 
 import { LEVEL_ORDER, LEVELS, UNITS } from '../config.js';
-import { backupDue, readBackupMeta, SNOOZE_DAYS, writeBackupMeta } from '../backup.js';
 import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { createSession, fmtClock, fmtKo } from '../session.js';
@@ -73,11 +72,11 @@ export function mountToday(root, store) {
         <span class="progtext" id="progText"></span>
       </div>
       <p class="note warn" id="recNote" hidden></p>
-      <div class="back backup-note" id="bakNote" hidden>
-        <span id="bakNoteText"></span>
+      <div class="back login-note" id="loginNote" hidden>
+        <span>이 기기에만 저장돼 있어요. 로그인하면 안전해요</span>
         <span>
-          <button type="button" class="link" id="bakGo">백업하기</button>
-          <button type="button" class="link" id="bakLater">나중에</button>
+          <button type="button" class="link" id="loginGo">로그인</button>
+          <button type="button" class="link" id="loginLater">나중에</button>
         </span>
       </div>
       <div class="back" id="back" hidden>
@@ -255,26 +254,42 @@ export function mountToday(root, store) {
   });
   if (session.running && !session.paused) ticking(true); // 새로고침·재실행 뒤에도 이어서 잼 (중지해 둔 것은 멈춘 채로)
 
-  /** 오래 백업하지 않았으면 안내 (이 브라우저에만 저장하는 경우) */
-  function updateBackupNote(state) {
-    const meta = readBackupMeta();
-    const due = state.ready && state.adapter.kind === 'local' && backupDue({ days: state.days, today: state.today, last: meta.last, snoozeUntil: meta.snoozeUntil });
-    $('#bakNote', root).hidden = !due;
-    if (due) {
-      $('#bakNoteText', root).textContent = meta.last ? `${labelMD(meta.last)} 이후 백업이 없어요` : '아직 백업이 없어요';
+  /**
+   * 이 브라우저에만 저장 중이고(로그인 전) 기록이 쌓였으면 Google 로그인을 권하는 안내.
+   * '나중에'를 누르면 7일 동안 숨김 (이 브라우저에만 기억).
+   */
+  const NUDGE_KEY = 'workout-check:login-nudge';
+  const NUDGE_MIN_DAYS = 3;
+  const NUDGE_SNOOZE_DAYS = 7;
+  const readSnooze = () => {
+    try {
+      return (JSON.parse(localStorage.getItem(NUDGE_KEY) || '{}') || {}).snoozeUntil || '';
+    } catch {
+      return '';
     }
+  };
+  function updateLoginNote(state) {
+    const account = state.adapter.account;
+    const recorded = Object.values(state.days).filter((d) => Object.values(d.entries || {}).some((e) => e.done)).length;
+    const due = state.ready && state.adapter.kind === 'local' && !!account && !!account.signIn && !account.signOut && recorded >= NUDGE_MIN_DAYS && !(readSnooze() && state.today < readSnooze());
+    $('#loginNote', root).hidden = !due;
   }
-  $('#bakGo', root).addEventListener('click', () => {
-    const box = document.getElementById('bakBox');
-    if (!box) return;
-    box.open = true;
-    box.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  $('#loginGo', root).addEventListener('click', () => {
+    document.dispatchEvent(new window.CustomEvent('workout:goto-tab', { detail: 'settings' }));
+    const box = document.getElementById('acctBox');
+    if (box) {
+      box.open = true;
+      box.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    }
   });
-  $('#bakLater', root).addEventListener('click', () => {
-    writeBackupMeta({ snoozeUntil: addDays(store.state.today, SNOOZE_DAYS) });
-    updateBackupNote(store.state);
+  $('#loginLater', root).addEventListener('click', () => {
+    try {
+      localStorage.setItem(NUDGE_KEY, JSON.stringify({ snoozeUntil: addDays(store.state.today, NUDGE_SNOOZE_DAYS) }));
+    } catch {
+      /* 저장이 막힌 브라우저에서는 안내가 계속 보일 뿐입니다 */
+    }
+    updateLoginNote(store.state);
   });
-  document.addEventListener('wc:backup', () => updateBackupNote(store.state));
 
   /* ---------- 초 단위 운동 스톱워치 (한 번에 한 종목) ---------- */
 
@@ -491,7 +506,7 @@ export function mountToday(root, store) {
       b.disabled = !state.ready;
     }
 
-    updateBackupNote(state);
+    updateLoginNote(state);
     renderWork();
 
     // 저장 문구(오류 포함)가 있으면 주차 안내 자리에 보여 줌
