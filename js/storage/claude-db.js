@@ -20,7 +20,6 @@ export function createDbAdapter(db, { kind, label, account }) {
   return {
     kind,
     synced: true,
-    canDownload: typeof document !== 'undefined' && document.documentElement.classList.contains('standalone'),
     label,
     account,
 
@@ -45,16 +44,5 @@ export function createDbAdapter(db, { kind, label, account }) {
     saveDay(date, doc) {
       return enqueue('days/' + date, () => db.doc('days/' + date).set(doc));
     },
-
-    // 백업 가져오기: 일괄 쓰기가 되는 db만
-    ...(db.setMany
-      ? {
-          saveDays(docs) {
-            const map = {};
-            for (const [date, doc] of Object.entries(docs)) map['days/' + date] = doc;
-            return db.setMany(map);
-          },
-        }
-      : {}),
   };
 }

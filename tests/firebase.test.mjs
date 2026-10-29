@@ -49,21 +49,15 @@ function loader({ user, db = fakeDb(), signIn = async () => true, signOut = asyn
 
 const run = (l, readLocal = () => local) => createFirebaseStorage({ config: {}, createLocal: localAdapter, readLocal, load: l.load });
 
-test('db 어댑터: 같은 모양으로 저장·일괄 저장', async () => {
+test('db 어댑터: 같은 모양으로 저장·구독', async () => {
   const db = fakeDb();
   const ad = createDbAdapter(db, { kind: 'firebase', label: 'x' });
   await ad.saveDay('2026-10-26', { entries: {} });
-  await ad.saveDays({ '2026-10-24': { entries: {} }, '2026-10-25': { entries: {} } });
-  assert.deepEqual([...db.data.keys()].sort(), ['days/2026-10-24', 'days/2026-10-25', 'days/2026-10-26']);
+  await ad.saveDay('2026-10-25', { entries: {} });
+  assert.deepEqual([...db.data.keys()].sort(), ['days/2026-10-25', 'days/2026-10-26']);
   const seen = [];
   ad.subscribe({ onConfig: (c) => seen.push(c), onDays: (d) => seen.push(Object.keys(d).length), onError() {} });
-  assert.deepEqual(seen, [null, 3]);
-});
-
-test('db 어댑터: 일괄 쓰기가 없는 db는 saveDays를 내놓지 않음', () => {
-  const db = fakeDb();
-  delete db.setMany;
-  assert.equal(createDbAdapter(db, { kind: 'k', label: 'x' }).saveDays, undefined);
+  assert.deepEqual(seen, [null, 2]);
 });
 
 test('로그인하지 않았으면 브라우저 저장 + 로그인 버튼, 로그인하면 true일 때 새로고침', async () => {

@@ -77,20 +77,6 @@ test('저장 공간이 가득 차면 그렇게 알림', async (t) => {
   assert.match(store.state.status.text, /저장 공간/);
 });
 
-test('가져오기는 saveDays가 있으면 한 번에 저장', async (t) => {
-  mock.timers.enable({ apis: ['setTimeout'] });
-  t.after(() => mock.timers.reset());
-  const batches = [];
-  const ad = fakeAdapter({ saveDays: async (docs) => batches.push(docs) });
-  const store = createStore(ad);
-  const days = { '2026-10-01': { entries: { push: { done: true } } }, '2026-10-02': { entries: { pull: { done: true } } } };
-  await store.actions.importData({ config: store.state.config, days }, { replaceConfig: false });
-  assert.equal(batches.length, 1);
-  assert.deepEqual(Object.keys(batches[0]), ['2026-10-01', '2026-10-02']);
-  assert.equal(ad.saved.days.length, 0);
-  assert.ok(store.state.days['2026-10-02'].entries.pull.done);
-});
-
 test('세트: 기본 3세트로 보이고, 완료한 날은 그때 세트 수를 유지(예전 기록은 1세트)', () => {
   const store = createStore(fakeAdapter());
   const ex = store.state.config.exercises.find((e) => e.id === 'push');

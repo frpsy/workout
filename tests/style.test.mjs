@@ -6,8 +6,6 @@ import { readFileSync } from 'node:fs';
 const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
 
 test('입력 칸 글자는 16px 이상(iOS가 포커스할 때 화면을 확대하지 않음)', () => {
-  const rule = (sel) => css.split('\n').find((l) => l.startsWith(sel));
-  assert.match(rule('textarea {'), /font-size: 16px/);
   assert.match(css, /input\[type="date"\][^{]*\{[^}]*font-size: 16px/);
 });
 
@@ -48,10 +46,9 @@ test('기록·설정 탭: 화면 제목이 있고 해당 탭에서만 보임', a
   assert.match(main, /settings: \[el\('settingsTitle'\)/);
 });
 
-test('설정: 쉬는 요일은 한 줄 7칸, 파일 고르기는 한글 버튼, 좁은 화면에서 입력칸이 잘리지 않음', () => {
+test('설정: 쉬는 요일은 한 줄 7칸, 좁은 화면에서 입력칸이 잘리지 않음', () => {
   assert.match(css, /\.restdays \{ display: grid; grid-template-columns: repeat\(7, minmax\(0, 1fr\)\);/);
   assert.match(css, /\.daychip input:checked \+ span/);
-  assert.match(css, /textarea::placeholder \{ font-family: var\(--font-body\); \}/);
   assert.match(css, /@media \(max-width: 360px\) \{ \.exrow2 label \{ flex-direction: column;/);
 });
 

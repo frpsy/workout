@@ -56,10 +56,8 @@ export function createLocalAdapter() {
   return {
     kind: 'local',
     synced: false,
-    // 아티팩트 뷰어는 파일 저장 링크를 막으므로 단독 실행일 때만
-    canDownload: typeof document !== 'undefined' && document.documentElement.classList.contains('standalone'),
     label: available
-      ? '이 브라우저에만 저장됩니다. 다른 기기로 옮기려면 백업을 쓰세요.'
+      ? '이 브라우저에만 저장됩니다. Google로 로그인하면 계정에 저장되어 다른 기기에서도 볼 수 있습니다.'
       : '이 브라우저는 저장을 막고 있어 새로고침하면 기록이 사라집니다.',
 
     subscribe({ onConfig, onDays }) {
@@ -89,12 +87,6 @@ export function createLocalAdapter() {
 
     async saveDay(date, doc) {
       data.days[date] = doc;
-      write();
-    },
-
-    // 백업 가져오기: 날마다 전체를 다시 쓰지 않고 한 번에 씁니다.
-    async saveDays(docs) {
-      Object.assign(data.days, docs);
       write();
     },
   };

@@ -1,11 +1,10 @@
-// 운동·목표 설정과 백업
+// 운동·목표 설정과 계정(로그인)
 
 import { DEFAULT_SETS, LIMITS, PRESETS, UNITS } from '../config.js';
-import { writeBackupMeta } from '../backup.js';
 import { DOW, todayStr } from '../dates.js';
-import { exportPayload, newExerciseId, parseImport, validateConfig } from '../model.js';
+import { newExerciseId, validateConfig } from '../model.js';
 import { canPlayInSilentMode, isSilentModeOn, playSound, setSilentMode } from '../sound.js';
-import { $, copyText, esc } from './dom.js';
+import { $, esc } from './dom.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
@@ -16,7 +15,6 @@ export function mountSettings(root, store) {
   let lastRev = -1;
   let confirmDelete = null; // 삭제 확인 중인 운동 id
   let confirmTimer;
-  let pendingImport = null;
 
   root.innerHTML = `
     <details class="block" id="soundBox">
@@ -81,34 +79,15 @@ export function mountSettings(root, store) {
       </div>
     </details>
 
-    <details class="block" id="bakBox">
-      <summary>기록 저장·백업</summary>
+    <details class="block" id="acctBox">
+      <summary>계정</summary>
       <div class="set-body">
         <p class="sub" id="storeLabel"></p>
         <div class="btnrow" id="acctRow" hidden>
           <button type="button" class="btn" id="acctBtn"></button>
         </div>
         <p class="sub" id="acctHelp" hidden></p>
-        <div class="btnrow">
-          <button type="button" class="btn ghost" id="copyBak">백업 복사</button>
-          <button type="button" class="btn ghost" id="saveBak">파일로 저장</button>
-        </div>
-        <label class="sub-h" for="bakText">가져오기</label>
-        <textarea id="bakText" rows="4" placeholder="복사해 둔 백업을 붙여 넣거나 파일을 고르세요"></textarea>
-        <div class="btnrow">
-          <label class="btn ghost filepick" for="bakFile">파일 선택</label>
-          <input type="file" id="bakFile" class="vh" accept="application/json,.json,text/plain">
-          <button type="button" class="btn ghost" id="readBak">가져오기</button>
-        </div>
-        <div class="confirm" id="impConfirm" hidden>
-          <p id="impText"></p>
-          <label class="radio"><input type="checkbox" id="impCfg"> 운동·목표 설정도 백업 것으로 바꾸기</label>
-          <div class="btnrow">
-            <button type="button" class="btn" id="impGo">가져오기 확정</button>
-            <button type="button" class="btn ghost" id="impCancel">취소</button>
-          </div>
-        </div>
-        <p class="status" id="bakStatus" role="status" aria-live="polite"></p>
+        <p class="status" id="acctStatus" role="status" aria-live="polite"></p>
       </div>
     </details>`;
 
@@ -314,85 +293,12 @@ export function mountSettings(root, store) {
     if (el('setBox').open && !dirty) loadDraft();
   });
 
-  /* ---------- 백업 ---------- */
-
-  const bakStatus = (t, err = false) => {
-    el('bakStatus').textContent = t;
-    el('bakStatus').classList.toggle('err', err);
-  };
-  const backupText = () => JSON.stringify(exportPayload(store.state.config, store.state.days), null, 1);
-  const backedUp = () => {
-    writeBackupMeta({ last: todayStr(), snoozeUntil: null });
-    document.dispatchEvent(new Event('wc:backup'));
-  };
-
-  el('copyBak').addEventListener('click', async () => {
-    const text = backupText();
-    if (await copyText(text)) {
-      backedUp();
-      bakStatus('백업을 복사했습니다. 메모 앱 등에 붙여 넣어 보관하세요.');
-    }
-    else {
-      el('bakText').value = text;
-      el('bakText').select();
-      bakStatus('자동 복사가 막혀 있어 아래 칸에 넣었습니다. 전체 선택 후 복사해 주세요.');
-    }
-  });
-
-  el('saveBak').addEventListener('click', () => {
-    const blob = new Blob([backupText()], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `workout-backup-${todayStr()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    backedUp();
-    bakStatus('백업 파일을 저장했습니다.');
-  });
-
-  el('bakFile').addEventListener('change', async (e) => {
-    const f = e.target.files && e.target.files[0];
-    if (!f) return;
-    el('bakText').value = await f.text();
-    bakStatus('파일을 읽었습니다. 가져오기를 눌러 주세요.');
-  });
-
-  el('readBak').addEventListener('click', () => {
-    try {
-      pendingImport = parseImport(el('bakText').value, store.state.config.startDate);
-    } catch (err) {
-      bakStatus(err.message, true);
-      return;
-    }
-    const n = Object.keys(pendingImport.days).length;
-    const overlap = Object.keys(pendingImport.days).filter((d) => store.state.days[d] && Object.keys(store.state.days[d].entries).length).length;
-    el('impText').textContent = `${n}일치 기록이 있습니다.${overlap ? ` 이 중 ${overlap}일은 지금 기록을 덮어씁니다.` : ''} 나머지 지금 기록은 그대로 남습니다.`;
-    el('impCfg').checked = false;
-    el('impConfirm').hidden = false;
-    bakStatus('');
-  });
-  el('impCancel').addEventListener('click', () => {
-    pendingImport = null;
-    el('impConfirm').hidden = true;
-  });
-  el('impGo').addEventListener('click', async () => {
-    if (!pendingImport) return;
-    el('impConfirm').hidden = true;
-    try {
-      await actions.importData(pendingImport, { replaceConfig: el('impCfg').checked });
-      bakStatus(`${Object.keys(pendingImport.days).length}일치 기록을 가져왔습니다.`);
-      el('bakText').value = '';
-      el('bakFile').value = '';
-      if (el('impCfg').checked) loadDraft();
-    } catch {
-      bakStatus('가져오는 중 저장에 실패했습니다.', true);
-    }
-    pendingImport = null;
-  });
-
   /* ---------- 계정(Firebase 로그인) ---------- */
+
+  const acctStatus = (t, err = false) => {
+    el('acctStatus').textContent = t;
+    el('acctStatus').classList.toggle('err', err);
+  };
 
   el('acctBtn').addEventListener('click', async () => {
     const account = store.state.adapter.account;
@@ -402,7 +308,7 @@ export function mountSettings(root, store) {
       if (account.signOut) await account.signOut();
       else await account.signIn();
     } catch {
-      bakStatus('로그인하지 못했습니다. 팝업 차단을 풀고 다시 시도해 주세요.', true);
+      acctStatus('로그인하지 못했습니다. 팝업 차단을 풀고 다시 시도해 주세요.', true);
     }
     el('acctBtn').disabled = false;
   });
@@ -417,10 +323,9 @@ export function mountSettings(root, store) {
       el('acctBtn').classList.toggle('ghost', !!account.signOut);
       el('acctHelp').textContent = account.signOut
         ? '로그아웃해도 계정의 기록은 지워지지 않습니다. 다시 로그인하면 보입니다.'
-        : '처음 로그인하면 이 브라우저의 기록이 계정으로 옮겨집니다(계정에 기록이 이미 있으면 옮기지 않으니 백업 가져오기를 쓰세요).';
+        : '처음 로그인하면 이 브라우저의 기록이 계정으로 옮겨집니다. 계정에 기록이 이미 있으면 옮기지 않고 계정의 기록이 보입니다.';
     }
-    el('saveBak').hidden = !state.adapter.canDownload;
-    for (const b of [el('saveCfg'), el('readBak'), el('impGo')]) b.disabled = !state.ready;
+    el('saveCfg').disabled = !state.ready;
     // 저장소에서 설정이 바뀌었고 편집 중이 아니면 초안 갱신
     if (!draft || (!dirty && lastRev !== state.rev && !root.contains(document.activeElement))) {
       lastRev = state.rev;

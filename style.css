@@ -49,7 +49,7 @@ body {
   font-size: 15px;
   line-height: 1.55;
 }
-button, input, select, textarea { font: inherit; color: inherit; }
+button, input, select { font: inherit; color: inherit; }
 button { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -176,10 +176,9 @@ details summary { cursor: pointer; font-weight: 700; font-size: 15px; min-height
 .inline label { font-size: 13px; color: var(--muted); }
 .radio { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; min-height: 36px; color: var(--fg); }
 .radio input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
-input[type="date"], input[type="number"], input:not([type]), select, textarea {
+input[type="date"], input[type="number"], input:not([type]), select {
   min-width: 0; height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 0 10px; font-size: 16px;
 }
-textarea { height: auto; padding: 10px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 16px; resize: vertical; width: 100%; }
 .sub-h { margin: 4px 0 0; font-size: 14px; font-weight: 700; }
 
 .exlist { display: flex; flex-direction: column; gap: 10px; }
@@ -201,8 +200,6 @@ textarea { height: auto; padding: 10px; font-family: ui-monospace, 'SF Mono', Me
 .btn { height: 44px; padding: 0 20px; border: 0; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-weight: 700; font-size: 15px; cursor: pointer; }
 .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
 .errors { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--err); font-size: 13px; }
-.confirm { border: 1px solid var(--warn); background: var(--warn-soft); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-.confirm p { margin: 0; font-size: 14px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .row, .check, .segs i, .cell { transition: background-color 0.18s, border-color 0.18s; }
@@ -220,14 +217,10 @@ textarea { height: auto; padding: 10px; font-family: ui-monospace, 'SF Mono', Me
 /* 화면 제목 (기록·설정 탭) */
 .page-title { margin: 6px 0 2px; }
 .page-title + .stack > details.block:first-child { border-top: 0; }
-/* 파일 고르기: 기본 'Choose File' 대신 버튼 모양 */
-.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
-.filepick { display: inline-flex; align-items: center; }
-.filepick:has(+ input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
-textarea::placeholder { font-family: var(--font-body); }
-.backup-note { flex-wrap: nowrap; }
-.backup-note > span:first-child { min-width: 0; }
-.backup-note .link { padding: 8px 8px; }
+.login-note { flex-wrap: nowrap; }
+.login-note > span:first-child { min-width: 0; }
+.login-note > span:last-child { flex: none; white-space: nowrap; }
+.login-note .link { padding: 8px 8px; }
 
 /* 세트 */
 td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; color: var(--muted); }

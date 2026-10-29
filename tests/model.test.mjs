@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { exportPayload, normalizeConfig, normalizeDay, parseImport, validateConfig } from '../js/model.js';
+import { normalizeConfig, normalizeDay, validateConfig } from '../js/model.js';
 
 test('v1 설정을 v2로 변환', () => {
   const c = normalizeConfig({ startDate: '2026-10-26', push: { base: 20, step: 3 }, pull: { base: 3, step: 0.5 }, squat: { base: 30, step: 5 } }, '2026-01-01');
@@ -35,26 +35,6 @@ test('설정 검증', () => {
   assert.ok(validateConfig(bad).length > 0);
 });
 
-test('백업 내보내기 → 가져오기 왕복', () => {
-  const cfg = normalizeConfig(null, '2026-10-26');
-  const days = { '2026-10-26': { entries: { push: { done: true, count: 16, target: 15 } } }, '2026-10-27': { entries: {} } };
-  const back = parseImport(JSON.stringify(exportPayload(cfg, days)), '2026-01-01');
-  assert.deepEqual(Object.keys(back.days), ['2026-10-26']);
-  assert.equal(back.days['2026-10-26'].entries.push.count, 16);
-  assert.equal(back.config.startDate, '2026-10-26');
-});
-
-test('예전 브라우저 저장 형식도 가져오기', () => {
-  const v1 = { cfg: { startDate: '2026-10-26', push: { base: 15, step: 2 } }, days: { '2026-10-26': { push: { done: true } } } };
-  const back = parseImport(JSON.stringify(v1), '2026-01-01');
-  assert.ok(back.days['2026-10-26'].entries.push.done);
-});
-
-test('엉뚱한 내용은 오류', () => {
-  assert.throws(() => parseImport('hello', '2026-10-26'));
-  assert.throws(() => parseImport('{"a":1}', '2026-10-26'));
-});
-
 test('운동 추가일(since)은 올바른 날짜만 유지', async () => {
   const { normalizeExercise } = await import('../js/model.js');
   const base = { id: 'x', name: 'x', unit: 'reps', base: 5, step: 1 };
@@ -84,8 +64,8 @@ test('세트: 기본 3, 범위 안만 받고 기록에도 보존', async () => {
   assert.ok(validateConfig({ startDate: '2026-10-26', exercises: [{ ...base, sets: 0, active: true }], plan: {} }).some((m) => m.includes('세트')));
 });
 
-test('하루 총 운동시간(workSec): 읽고 저장하고 백업에도 포함, 이상한 값은 버림', async () => {
-  const { serializeDay, exportPayload, parseImport } = await import('../js/model.js');
+test('하루 총 운동시간(workSec): 읽고 저장, 이상한 값은 버림', async () => {
+  const { serializeDay } = await import('../js/model.js');
   const day = normalizeDay({ entries: { a: { done: true } }, workSec: 1830.4 });
   assert.equal(day.workSec, 1830);
   assert.equal(normalizeDay({ entries: {}, workSec: -5 }).workSec, undefined);
@@ -93,11 +73,6 @@ test('하루 총 운동시간(workSec): 읽고 저장하고 백업에도 포함,
   assert.equal(normalizeDay({ entries: {} }).workSec, undefined);
   assert.equal(serializeDay('2026-10-26', day).workSec, 1830);
   assert.equal('workSec' in serializeDay('2026-10-26', { entries: {} }), false, '없으면 필드를 두지 않음');
-  const cfg = normalizeConfig(null, '2026-10-01');
-  const onlyTime = { '2026-10-25': { entries: {}, workSec: 600 } };
-  const payload = exportPayload(cfg, onlyTime);
-  assert.equal(payload.days['2026-10-25'].workSec, 600, '운동시간만 있는 날도 백업에 들어감');
-  assert.equal(parseImport(JSON.stringify(payload), '2026-10-01').days['2026-10-25'].workSec, 600);
 });
 
 test('난이도(level): easy·hard만 읽고 저장, 보통과 이상한 값은 두지 않음', async () => {
@@ -124,16 +99,13 @@ test('예전 기본 이름 "푸쉬업"은 표기법에 맞는 "푸시업"으로 
   assert.equal(normalizeConfig(null, '2026-01-01').exercises[0].name, '푸시업', '기본 이름도 푸시업');
 });
 
-test('운동 소감·감사한 일: 읽을 때 정리(공백·길이·형식), 소감만 있는 날도 백업에 포함', () => {
+test('운동 소감·감사한 일: 읽을 때 정리(공백·길이·형식)', async () => {
   const day = normalizeDay({ v: 2, entries: {}, note: { feel: '  좋았다 ', thanks: 'x'.repeat(300), extra: 1 } });
   assert.deepEqual(day.note, { feel: '좋았다', thanks: 'x'.repeat(200) });
   assert.equal(normalizeDay({ v: 2, entries: {}, note: { feel: ' ', thanks: 3 } }).note, undefined, '빈 내용·잘못된 형식은 버림');
   assert.equal(normalizeDay({ v: 2, entries: {}, note: 'text' }).note, undefined);
-  const cfg = normalizeConfig(null, '2026-10-01');
-  const out = exportPayload(cfg, { '2026-10-02': { entries: {}, note: { feel: '피곤했지만 해냈다', thanks: '' } } });
-  assert.deepEqual(out.days['2026-10-02'].note, { feel: '피곤했지만 해냈다' });
-  const back = parseImport(JSON.stringify(out), '2026-10-01');
-  assert.deepEqual(back.days['2026-10-02'].note, { feel: '피곤했지만 해냈다' });
+  const { serializeDay } = await import('../js/model.js');
+  assert.deepEqual(serializeDay('2026-10-02', { entries: {}, note: { feel: '피곤했지만 해냈다', thanks: '' } }).note, { feel: '피곤했지만 해냈다' }, '저장할 때 빈 칸은 뺌');
 });
 
 test('운동 소감·감사한 일: 줄바꿈·여러 칸 공백은 한 줄로 합침', () => {

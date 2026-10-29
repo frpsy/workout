@@ -311,35 +311,6 @@ export function createStore(adapter) {
       }
     },
 
-    /** 백업 가져오기: 같은 날짜는 덮어쓰고 나머지 기록은 유지 */
-    async importData({ config, days }, { replaceConfig }) {
-      const dates = Object.keys(days);
-      if (replaceConfig) {
-        state.config = config;
-        state.configRev++;
-      }
-      for (const d of dates) state.days[d] = days[d];
-      state.daysRev++;
-      emit();
-      try {
-        if (replaceConfig || !state.configSaved) await persistConfig();
-        if (adapter.saveDays) {
-          const docs = {};
-          for (const d of dates) docs[d] = serializeDay(d, days[d]);
-          await adapter.saveDays(docs);
-        } else {
-          for (let i = 0; i < dates.length; i++) {
-            await adapter.saveDay(dates[i], serializeDay(dates[i], days[dates[i]]));
-            if (i % 20 === 19) setStatus(`가져오는 중… ${i + 1}/${dates.length}`);
-          }
-        }
-        setStatus(`${dates.length}일치 기록을 가져왔습니다`);
-      } catch (e) {
-        saveFailed(e);
-        throw e;
-      }
-    },
-
     flushAll,
   };
 

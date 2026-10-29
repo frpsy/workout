@@ -17,7 +17,6 @@ const ASSETS = [
   './fonts/noto-sans-kr-400.woff2',
   './fonts/noto-sans-kr-500.woff2',
   './fonts/noto-sans-kr-700.woff2',
-  './js/backup.js',
   './js/boot-progress.js',
   './js/config.js',
   './js/dates.js',

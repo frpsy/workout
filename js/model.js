@@ -93,11 +93,6 @@ export function normalizeNote(raw) {
   return feel || thanks ? note : null;
 }
 
-/** 저장할 만한 내용이 있는 날인지 (기록·운동시간·소감) */
-export function hasDayContent(day) {
-  return !!day && (Object.keys(day.entries || {}).length > 0 || !!day.workSec || !!normalizeNote(day.note));
-}
-
 /** v1은 운동 기록이 문서 최상위에, v2는 entries 안에 있습니다. */
 export function normalizeDay(raw) {
   const entries = {};
@@ -152,31 +147,4 @@ export function validateConfig(cfg) {
     if (!inRange(e.step, LIMITS.step)) errors.push(`${label}: 주당 증가는 0 이상이어야 합니다.`);
   });
   return errors;
-}
-
-/* ---------- 백업 ---------- */
-
-export function exportPayload(config, days) {
-  const out = {};
-  for (const [d, day] of Object.entries(days)) if (hasDayContent(day)) out[d] = serializeDay(d, day);
-  return { app: 'workout-check', v: SCHEMA_VERSION, exportedAt: new Date().toISOString(), config: serializeConfig(config), days: out };
-}
-
-/** 백업 JSON(v2) 또는 예전 브라우저 저장 형식(v1)을 읽습니다. */
-export function parseImport(text, fallbackStart) {
-  let raw;
-  try {
-    raw = JSON.parse(text);
-  } catch {
-    throw new Error('백업 내용을 읽지 못했습니다. 복사한 내용 전체를 붙여 넣었는지 확인해 주세요.');
-  }
-  if (!isObj(raw) || !isObj(raw.days)) throw new Error('운동 기록 백업이 아닙니다.');
-  const config = normalizeConfig(raw.config || raw.cfg, fallbackStart);
-  const days = {};
-  for (const [d, v] of Object.entries(raw.days)) {
-    if (!isDateStr(d)) continue;
-    const day = normalizeDay(v);
-    if (hasDayContent(day)) days[d] = day;
-  }
-  return { config, days };
 }
