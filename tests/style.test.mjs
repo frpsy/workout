@@ -18,7 +18,8 @@ test('더블탭 확대 지연을 없애고(touch-action) 작은 버튼의 눌리
 test('화면 보기·난이도·효과음 버튼은 손가락으로 누르기 충분한 크기', () => {
   assert.match(css, /\.views button \{ position: relative; min-width: 44px; height: 32px;/);
   assert.match(css, /\.levels button \{ position: relative; min-width: 44px; height: 32px;/);
-  assert.match(css, /\.snd \{ position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 32px;/);
+  assert.match(css, /\.snd \{ position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 34px;/);
+  assert.doesNotMatch(css, /\.(levels|views) \{[^}]*overflow: hidden/, '틀이 넘침을 자르면 누르는 영역이 32px로 줄어듦');
 });
 
 test('홈 화면 앱: 상태 표시줄 뒤를 배경색으로 덮고 html 배경도 지정', () => {
@@ -65,7 +66,7 @@ test('디자인: 기록 내용은 카드로 묶고 중복 접기 제목은 숨�
 });
 
 test('키가 작은 폰(높이 700px 이하): 줄 간격을 줄이고 팁은 감추며, 마무리 칸은 탭 막대에 가려지지 않게 스크롤 여백을 둠', () => {
-  assert.match(css, /@media \(max-height: 700px\) \{\s*\.row \{ padding: 7px 12px;[^}]*\}\s*\.rows \{ gap: 4px; \}\s*\.timer \{ height: 44px; \}\s*\.tip \{ display: none; \}/);
+  assert.match(css, /@media \(max-height: 700px\) \{\s*\.row \{ padding: 7px 12px;[^}]*\}\s*\.rows \{ gap: 4px; \}\s*\.timer \{ height: 44px; \}\s*#timer \{ position: sticky;[^}]*\}[^\n]*\s*\.tip \{ display: none; \}/);
   assert.match(css, /\.journal \{ scroll-margin-bottom: calc\(84px \+ env\(safe-area-inset-bottom, 0px\)\);/);
 });
 
@@ -73,6 +74,6 @@ test('iOS Safari: 선택칸·날짜칸은 기본 모양 대신 같은 모양, de
   assert.match(css, /select \{ -webkit-appearance: none; appearance: none; padding-right: 32px; background: var\(--surface\) var\(--chev\)/);
   assert.match(css, /input\[type="date"\] \{ -webkit-appearance: none; appearance: none;/);
   assert.match(css, /details summary::-webkit-details-marker \{ display: none; \}/);
-  assert.match(css, /--ctrl-line: #A9B6AF;/);
-  assert.match(css, /--ctrl-line: #4A5C53;/);
+  assert.match(css, /--ctrl-line: #7F8F87;/, '밝은 배경과 3.07:1 이상');
+  assert.match(css, /--ctrl-line: #64776D;/, '어두운 배경과 3.5:1 이상');
 });

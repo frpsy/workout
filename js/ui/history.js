@@ -112,7 +112,7 @@ export function mountHistory(root, store) {
       if (s) active++;
     }
     $('#workText', root).innerHTML = week
-      ? `운동시간 오늘 <b>${secOf(today) ? fmtKo(secOf(today)) : '없음'}</b> · 최근 7일 <b>${fmtKo(week)}</b> (하루 평균 ${fmtKo(Math.round(week / active))})`
+      ? `운동시간 오늘 <b>${secOf(today) ? fmtKo(secOf(today)) : '없음'}</b> · 최근 7일 <b>${fmtKo(week)}</b> <span class="nowrap">(하루 평균 ${fmtKo(Math.round(week / active))})</span>`
       : '운동시간은 오늘 탭의 ▶ 운동 시작·■ 종료로 잴 수 있습니다.';
 
     /* 마무리 기록: 운동 소감·감사한 일 (최근 것부터) */
@@ -129,8 +129,8 @@ export function mountHistory(root, store) {
         const thanks = (n.thanks || '').trim();
         return (
           `<li><span class="note-date">${labelMD(d)}</span>` +
-          (feel ? `<p class="note-feel">${esc(feel)}</p>` : '') +
-          (thanks ? `<p class="note-thanks"><b>감사</b> ${esc(thanks)}</p>` : '') +
+          (feel ? `<p class="note-line"><b>소감</b> ${esc(feel)}</p>` : '') +
+          (thanks ? `<p class="note-line"><b>감사</b> ${esc(thanks)}</p>` : '') +
           '</li>'
         );
       })

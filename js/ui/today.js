@@ -191,6 +191,8 @@ export function mountToday(root, store) {
     btn.textContent = running ? '■ 종료' : '▶ 운동 시작';
     btn.classList.toggle('stop', running);
     btn.disabled = !state.ready;
+    // 지난 날을 고치는 중에는 시작 버튼을 숨김 (시간은 늘 오늘 기록으로 들어가므로 헷갈리지 않게)
+    btn.hidden = !running && state.selected !== state.today;
     // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
     const finished = running && state.selected === state.today && store.activeExercises().length > 0 && store.activeExercises().every((e) => store.view(state.selected, e).done);
     btn.classList.toggle('ready', finished);
@@ -199,6 +201,7 @@ export function mountToday(root, store) {
     pauseBtn.hidden = !running;
     cancelBtn.hidden = !running;
     pauseBtn.textContent = paused ? '재개' : '중지';
+    pauseBtn.classList.toggle('resume', paused); // 멈춰 있으면 '재개'를 눈에 띄게
     pauseBtn.setAttribute('aria-label', paused ? '운동 시간 이어서 재기' : '운동 시간 잠시 멈추기');
     // 재지 않는 동안, 선택한 날에 기록된 운동시간이 있으면 초기화 버튼이 보임
     resetBtn.hidden = running || !total;
