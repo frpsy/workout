@@ -1,5 +1,5 @@
 // 화면 조각을 가짜 DOM(jsdom)에 붙여 눌러 보는 테스트
-import { before, beforeEach, mock, test } from 'node:test';
+import { afterEach, before, beforeEach, mock, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { addDays, todayStr } from '../js/dates.js';
@@ -18,6 +18,19 @@ before(async () => {
   ({ mountSettings } = await import('../js/ui/settings.js'));
   ({ mountTimer } = await import('../js/ui/timer.js'));
   ({ mountJournal } = await import('../js/ui/journal.js'));
+});
+
+// 세트를 체크하면 스톱워치가 저절로 시작되므로, 테스트가 끝날 때 남은 1초 타이머를 모두 멈춰 다음 테스트에 새지 않게 함
+const realSetInterval = globalThis.setInterval;
+const intervals = new Set();
+globalThis.setInterval = (...args) => {
+  const id = realSetInterval(...args);
+  intervals.add(id);
+  return id;
+};
+afterEach(() => {
+  for (const id of intervals) clearInterval(id);
+  intervals.clear();
 });
 
 const tick = () => new Promise((r) => setImmediate(r));
@@ -597,6 +610,37 @@ test('오늘: 운동 중지·재개 버튼은 시간을 멈췄다 이어서 잼'
   store.actions.flushAll();
 });
 
+test('오늘: 첫 세트를 마치면 운동 시작을 대신 눌러 줌 (이미 재는 중이거나 오늘 시간을 기록했으면 그대로)', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const $$ = (id) => root.querySelector(id);
+  const row = root.querySelector('.row');
+  assert.equal($$('#wPause').hidden, true, '처음엔 재지 않음');
+  row.querySelector('[data-set="1"]').click();
+  assert.equal($$('#wBtn').textContent, '■ 종료', '한 세트를 마치면 시작됨');
+  assert.equal($$('#wPause').hidden, false);
+  mock.timers.tick(5_000);
+  assert.equal($$('#wTime').textContent, '0:05');
+  row.querySelector('[data-set="2"]').click();
+  mock.timers.tick(5_000);
+  assert.equal($$('#wTime').textContent, '0:10', '다음 세트를 마쳐도 다시 시작하지 않고 이어서 잼');
+  $$('#wBtn').click(); // 종료 → 시간 기록
+  row.querySelector('[data-set="3"]').click();
+  assert.equal($$('#wBtn').textContent, '▶ 운동 시작', '오늘 이미 시간을 기록했으면 자동으로 시작하지 않음');
+  store.actions.flushAll();
+});
+
+test('오늘: 세트를 되돌리거나 지난 날을 고칠 때는 자동으로 시작하지 않음', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  store.actions.select(addDays(todayStr(), -1));
+  root.querySelector('.row [data-f="check"]').click();
+  assert.equal(root.querySelector('#wPause').hidden, true, '지난 날을 고치는 중에는 시작하지 않음');
+  store.actions.flushAll();
+});
+
 test('오늘: 운동 취소는 바로 기록 없이 버려지고, 기록된 운동시간은 바로 초기화할 수 있음', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
@@ -770,8 +814,7 @@ test('오늘: 운동을 모두 마쳤는데 시간을 재는 중이면 종료 �
   const btn = root.querySelector('#wBtn');
   assert.equal(btn.textContent, '▶ 운동 시작', '휴식 타이머의 시작과 구분되는 이름');
   for (const r of root.querySelectorAll('.row')) r.querySelector('[data-f="check"]').click();
-  assert.ok(!btn.classList.contains('ready'), '시간을 재지 않으면 강조하지 않음');
-  btn.click();
+  assert.equal(btn.textContent, '■ 종료', '첫 체크에서 시간 재기가 저절로 시작됨');
   assert.ok(btn.classList.contains('ready'), '모두 마치고 재는 중이면 강조');
   root.querySelector('.row [data-f="check"]').click(); // 하나를 되돌리면 해제
   assert.ok(!btn.classList.contains('ready'));
