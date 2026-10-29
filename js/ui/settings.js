@@ -42,8 +42,8 @@ export function mountSettings(root, store) {
         <div class="srow col" role="group" aria-labelledby="lbMode">
           <span id="lbMode">늘리는 방식</span>
           <div class="modes">
-            <label class="radio"><input type="radio" name="mode" value="linear" id="modeLinear"> 매주</label>
-            <label class="radio"><input type="radio" name="mode" value="adaptive" id="modeAdaptive"> 해낸 주만</label>
+            <label class="seg"><input type="radio" name="mode" value="linear" id="modeLinear"><span>매주</span></label>
+            <label class="seg"><input type="radio" name="mode" value="adaptive" id="modeAdaptive"><span>해낸 주만</span></label>
           </div>
           <div class="inline" id="passRow">
             <label for="passDays">한 주에</label>
@@ -64,18 +64,20 @@ export function mountSettings(root, store) {
           </span>
         </div>
         <div class="srow col" role="group" aria-labelledby="lbRest">
-          <span id="lbRest">쉬는 요일 <small>기록이 없어도 연속이 이어집니다</small></span>
+          <span id="lbRest">쉬는 요일</span>
           <div class="restdays" id="restDays">
             ${[1, 2, 3, 4, 5, 6, 0].map((d) => `<label class="daychip"><input type="checkbox" value="${d}"><span>${DOW[d]}</span></label>`).join('')}
           </div>
+          <span class="shint">쉬는 날은 기록이 없어도 연속이 이어집니다</span>
         </div>
       </div>
     </section>
 
     <section class="sgroup">
-      <h2 class="sgh">운동 <small>목표 = 세트당 개수 × 세트 수 · 0.5는 2주에 1개씩</small></h2>
+      <h2 class="sgh">운동</h2>
       <div id="exList" class="exlist"></div>
       <div class="presets" id="presets"></div>
+      <p class="sub">목표 = 세트당 개수 × 세트 수. 매주 +0.5는 2주마다 1개씩 늘어납니다.</p>
       <p class="errors" id="setErr" role="alert" hidden></p>
       <div class="btnrow savebar" id="saveBar">
         <button type="button" class="btn" id="saveCfg">저장</button>
@@ -142,11 +144,11 @@ export function mountSettings(root, store) {
         </div>
         <div class="exrow2">
           <label>시작 <input data-k="base" type="number" inputmode="numeric" min="1" max="9999" value="${e.base}" id="bs-${e.id}"></label>
-          <label>주당 + <input data-k="step" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="${e.step}" id="st-${e.id}"></label>
+          <label>매주 + <input data-k="step" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="${e.step}" id="st-${e.id}"></label>
           <label>세트 <input data-k="sets" type="number" inputmode="numeric" min="${LIMITS.sets[0]}" max="${LIMITS.sets[1]}" value="${e.sets}" id="se-${e.id}"></label>
         </div>
         <div class="exrow3">
-          <label class="radio"><input type="checkbox" data-k="active"${e.active ? ' checked' : ''} id="ac-${e.id}"> 사용</label>
+          <label class="usechk"><span class="switch sm"><input type="checkbox" role="switch" data-k="active"${e.active ? ' checked' : ''} id="ac-${e.id}"><i aria-hidden="true"></i></span> 사용</label>
           <span class="spacer"></span>
           <button type="button" class="icon" data-act="up"${i === 0 ? ' disabled' : ''} aria-label="${esc(e.name)} 위로">↑</button>
           <button type="button" class="icon" data-act="down"${i === n - 1 ? ' disabled' : ''} aria-label="${esc(e.name)} 아래로">↓</button>

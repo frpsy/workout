@@ -63,5 +63,5 @@ test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래
   assert.ok(html.includes('viewport-fit=cover'));
   assert.match(css, /\.standalone body \{ padding-top: calc\(env\(safe-area-inset-top, 0px\) \+ 21px\); \}/);
   assert.match(css, /\.tabbar \{[^}]*padding-bottom: calc\(env\(safe-area-inset-bottom, 0px\) \+ 10px\)/);
-  assert.match(css, /\.wrap \{ padding-bottom: calc\(70px \+ env\(safe-area-inset-bottom/);
+  assert.match(css, /\.wrap \{[^}]*padding-bottom: calc\(70px \+ env\(safe-area-inset-bottom/);
 });
