@@ -70,7 +70,9 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   e.respondWith(
-    fetch(req)
+    // GitHub Pages는 파일을 10분(max-age=600) 동안 브라우저 HTTP 캐시에 두므로, 그대로 받으면 새 스크립트와
+    // 10분 전 스타일이 섞일 수 있습니다. 매번 서버에 바뀌었는지 물어(바뀌지 않았으면 304로 금방 끝남) 항상 같은 판을 씁니다.
+    fetch(req, { cache: 'no-cache' })
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
