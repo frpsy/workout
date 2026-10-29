@@ -163,6 +163,7 @@ export function createStore(adapter) {
       delete entry.setsDone;
       if (v.done) {
         entry.done = false;
+        if (entry.count === entry.target) delete entry.count; // 목표 그대로 했던 개수는 다시 목표(난이도)를 따라가게
         delete entry.target;
         delete entry.sets;
       } else {
@@ -225,6 +226,8 @@ export function createStore(adapter) {
       if ((day.level || 'normal') === level) return;
       if (level === 'normal') delete day.level;
       else day.level = level;
+      // 아직 마치지 않은 종목은 고쳐 둔 개수를 지우고 새 목표를 따라가게 함
+      for (const e of Object.values(day.entries)) if (!e.done) delete e.count;
       scheduleSave(date);
       state.daysRev++;
       emit();
