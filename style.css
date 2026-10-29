@@ -18,7 +18,7 @@
   --warn: #8A5200;
   --warn-soft: #F6E7CC;
   --err: #B3261E;
-  --ctrl-line: #A9B6AF; /* 입력칸·스위치 테두리: 배경과 3:1 이상 */
+  --ctrl-line: #7F8F87; /* 입력칸·스위치 테두리: 배경과 3:1 이상(3.07~3.28) */
   --accent-fill: #1F7A5C; /* 넓게 칠하는 초록(버튼·완료) */
   --knob: #FFFFFF;
   --r-ctrl: 10px; /* 버튼·입력칸 모서리 */
@@ -32,7 +32,7 @@
     --bg: #0F1613; --surface: #16201C; --fg: #E5EEE9; --muted: #93A69D; --line: #28372F;
     --accent: #4DC49A; --accent-soft: #17382C; --on-accent: #081A12;
     --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
-    --ctrl-line: #4A5C53; --accent-fill: #3BA57F; --knob: #E5EEE9;
+    --ctrl-line: #64776D; --accent-fill: #3BA57F; --knob: #E5EEE9;
     --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2393A69D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     color-scheme: dark;
   }
@@ -41,7 +41,7 @@
   --bg: #0F1613; --surface: #16201C; --fg: #E5EEE9; --muted: #93A69D; --line: #28372F;
   --accent: #4DC49A; --accent-soft: #17382C; --on-accent: #081A12;
   --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
-  --ctrl-line: #4A5C53; --accent-fill: #3BA57F; --knob: #E5EEE9;
+  --ctrl-line: #64776D; --accent-fill: #3BA57F; --knob: #E5EEE9;
   --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2393A69D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
@@ -90,14 +90,16 @@ h1 { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 700; }
 .progtext.all { color: var(--accent); font-weight: 700; }
 .note { margin: 8px 0 0; font-size: 13px; }
 .warn { color: var(--warn); }
+#back { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+#back #backText { font-weight: 700; }
 .back { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; padding: 4px 6px 4px 12px; border: 1px solid var(--line); border-radius: var(--r-ctrl); background: var(--surface); }
 .link { border: 0; background: none; color: var(--accent); font-weight: 700; font-size: 13px; padding: 8px 6px; cursor: pointer; }
 .tag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); line-height: 1.6; }
 
 /* 오늘 체크: 종목마다 (이름·목표 | 완료) / (개수 −5 −1 [ ] +1 +5 × 세트 − [ ] +) 두 줄. 3종목이 한 화면에 들어옴 */
 .rows { display: flex; flex-direction: column; gap: 8px; }
-.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info check" "ctrl ctrl"; gap: 6px 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-.row.done { background: var(--accent-soft); border-color: var(--accent); }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info check" "ctrl ctrl"; gap: 6px 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); }
+.row.done { background: var(--accent-soft); border-color: var(--accent-fill); }
 .info { grid-area: info; min-width: 0; }
 .name { margin: 0; font-size: 15px; line-height: 20px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .goal { margin: 0; display: flex; align-items: baseline; gap: 4px; min-width: 0; flex-wrap: wrap; }
@@ -114,11 +116,11 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 .stepper.reps { flex: 1; }
 .stepper.reps input[type="number"] { flex: 1; width: auto; }
 .times { flex: none; color: var(--muted); font-size: 14px; }
-.stepper { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctrl); overflow: hidden; background: var(--bg); }
+.stepper { display: inline-flex; border: 1px solid var(--ctrl-line); border-radius: var(--r-ctrl); overflow: hidden; background: var(--bg); }
 .stepper button { width: 46px; height: 40px; padding: 0; border: 0; background: transparent; font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; cursor: pointer; touch-action: manipulation; -webkit-touch-callout: none; font-variant-numeric: tabular-nums; }
 .stepper button:active:not(:disabled) { background: var(--accent-soft); }
 .stepper.setstep button { width: 38px; }
-.stepper input[type="number"] { min-width: 0; width: 56px; height: 40px; padding: 0; text-align: center; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: transparent; font-family: var(--font-num); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; border-radius: 0; }
+.stepper input[type="number"] { min-width: 0; width: 56px; height: 40px; padding: 0; text-align: center; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: transparent; font-family: var(--font-num); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; -moz-appearance: textfield; -webkit-appearance: none; appearance: textfield; border-radius: 0; }
 .stepper.setstep input[type="number"] { width: 34px; }
 .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .delta { margin-left: 6px; font-size: 12px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -131,7 +133,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   .stepper.setstep input[type="number"] { width: 28px; }
   .goal .label { display: none; }
 }
-.empty { margin: 0; padding: 20px 16px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 14px; }
+.empty { margin: 0; padding: 20px 16px; border: 1px dashed var(--line); border-radius: var(--r-card); color: var(--muted); font-size: 14px; }
 
 .status { margin: 0; line-height: 14px; font-size: 12px; color: var(--muted); }
 .statusrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
@@ -146,9 +148,9 @@ section { min-width: 0; }
 /* 달력 */
 .cal-head, .cal-row { display: grid; grid-template-columns: 34px repeat(7, minmax(0, 1fr)); gap: 4px; align-items: center; }
 .cal-head { font-size: 11px; color: var(--muted); text-align: center; margin-bottom: 2px; }
-.cal-row + .cal-row { margin-top: 4px; }
+.cal-row + .cal-row { margin-top: 6px; }
 .wk { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.cell { min-width: 0; height: 36px; border: 1px solid transparent; border-radius: 10px; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; cursor: pointer; touch-action: manipulation; }
+.cell { position: relative; min-width: 0; height: 44px; border: 1px solid transparent; border-radius: var(--r-ctrl); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; cursor: pointer; touch-action: manipulation; }
 .cell .dn { font-size: 13px; line-height: 1; font-variant-numeric: tabular-nums; }
 .cell .pips { display: flex; gap: 3px; }
 .cell .pips i { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
@@ -158,7 +160,7 @@ section { min-width: 0; }
 .cell.today { border-color: var(--muted); }
 .cell.sel { background: var(--accent-soft); border-color: var(--accent); }
 .cell.pre { background: transparent; }
-.cell:disabled { opacity: 0.35; }
+.cell:disabled { opacity: 0.5; }
 
 .tallytext { margin: 10px 0 0; font-size: 14px; }
 .tallytext b { font-variant-numeric: tabular-nums; }
@@ -173,10 +175,10 @@ section { min-width: 0; }
 /* 앞으로 4주 */
 .tblwrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th { font-size: 12px; font-weight: 500; color: var(--muted); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-td { padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+th { font-size: 12px; font-weight: 500; color: var(--muted); text-align: left; padding: 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
 td.n, th.n { text-align: right; }
-td.n { font-family: var(--font-num); font-size: 20px; font-weight: 600; }
+td.n { font-family: var(--font-num); font-size: 18px; font-weight: 600; }
 tr.cur td { background: var(--accent-soft); }
 
 /* 설정 */
@@ -221,7 +223,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; }
 
 /* 달력: 쉬는 요일, 목표 주차 시작 */
 .cell.rest:not(.sel) { background: transparent; border-color: var(--line); border-style: dashed; }
-.cell.wkstart { box-shadow: inset 3px 0 0 var(--accent); }
+.cell.wkstart::before { content: ''; position: absolute; left: 2px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); } /* 새 목표 주차 시작 */
 .restdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .daychip { position: relative; display: flex; }
 .daychip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
@@ -251,11 +253,12 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 
 /* 한 줄 휴식 타이머 */
 .timer { display: flex; align-items: center; gap: 6px; height: 48px; padding: 0 6px 0 8px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); }
-.timer .time { flex: 1; min-width: 0; height: 36px; padding: 0; border: 0; background: transparent; color: var(--fg); text-align: center; font-family: var(--font-num); font-size: 30px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; touch-action: manipulation; text-decoration: underline dotted var(--line); text-underline-offset: 6px; }
-.timer .time:disabled { opacity: 1; cursor: default; text-decoration: none; }
+.timer .time { flex: 1; min-width: 0; height: 36px; padding: 0; border: 0; background: transparent; color: var(--fg); text-align: center; font-family: var(--font-num); font-size: 30px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; touch-action: manipulation; border-radius: var(--r-ctrl); }
+.timer .time:disabled { opacity: 1; cursor: default; }
+.timer .time:not(:disabled):active { background: var(--accent-soft); }
 .timer.running .time { color: var(--accent); }
-.timer .tstep { width: 44px; height: 36px; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; font-variant-numeric: tabular-nums; }
-.timer .tgo { min-width: 64px; height: 36px; padding: 0 14px; border: 0; border-radius: var(--r-ctrl); background: var(--accent-fill); color: var(--on-accent); font-size: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+.timer .tstep { position: relative; width: 44px; height: 36px; padding: 0; border: 1px solid var(--ctrl-line); border-radius: var(--r-ctrl); background: var(--bg); color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; font-variant-numeric: tabular-nums; }
+.timer .tgo { position: relative; min-width: 64px; height: 36px; padding: 0 14px; border: 0; border-radius: var(--r-ctrl); background: var(--accent-fill); color: var(--on-accent); font-size: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
 .timer .tgo.stop { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .timer.done { animation: timer-flash 0.5s ease-in-out 6; }
@@ -265,8 +268,8 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* 초 단위 운동의 시간 재기 버튼 */
-.watch { flex: none; min-width: 44px; height: 40px; padding: 0 8px; border: 1px solid var(--accent); border-radius: 10px; background: transparent; color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
-.watch.stop { background: var(--accent); color: var(--on-accent); }
+.watch { flex: none; min-width: 44px; height: 40px; padding: 0 8px; border: 1px solid var(--accent); border-radius: var(--r-ctrl); background: transparent; color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+.watch.stop { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
 .row.timing .stepper.reps input { color: var(--accent); }
 @media (max-width: 360px) { .watch { min-width: 38px; padding: 0 4px; } }
 
@@ -274,29 +277,32 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .work { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .wtime { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .wtime.running { font-family: var(--font-num); font-size: 24px; line-height: 1; font-weight: 700; color: var(--accent); }
-.wbtn { flex: none; min-width: 72px; height: 36px; padding: 0 12px; border: 1px solid var(--accent); border-radius: 10px; background: transparent; color: var(--accent); font-size: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+.wbtn { position: relative; flex: none; min-width: 72px; height: 36px; padding: 0 12px; border: 1px solid var(--accent); border-radius: var(--r-ctrl); background: transparent; color: var(--accent); font-size: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
 .wbtn.stop { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
 
 /* 오늘 난이도 3단계 */
-.levels { display: flex; flex: none; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
+.levels { display: flex; flex: none; border: 1px solid var(--ctrl-line); border-radius: var(--r-ctrl); background: var(--bg); }
 .levels button { position: relative; min-width: 44px; height: 32px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
 .levels button:first-child { border-left: 0; }
-.levels button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.levels button[aria-pressed="true"], .views button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+/* 감싸는 틀이 넘침을 자르지 않으므로(누르는 영역 44px 유지) 양 끝 버튼만 모서리를 둥글게 */
+.levels button:first-child, .views button:first-child { border-radius: 9px 0 0 9px; }
+.levels button:last-child, .views button:last-child { border-radius: 0 9px 9px 0; }
 
 /* 화면 보기 3단계 */
-.views { display: flex; flex: none; border: 1px solid var(--line); border-radius: var(--r-ctrl); overflow: hidden; background: var(--bg); }
+.views { display: flex; flex: none; border: 1px solid var(--ctrl-line); border-radius: var(--r-ctrl); background: var(--bg); }
 .views button { position: relative; min-width: 44px; height: 32px; padding: 0 8px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
 .views button:first-child { border-left: 0; }
-.views button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
 .row .hint { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted); display: none; }
 [data-view="detail"] .row .hint { display: block; }
 [data-view="compact"] .row .ctrl { display: none; }
 [data-view="compact"] .row { grid-template-areas: "info check"; }
 
 /* 운동 스톱워치: 중지(재개)·취소 */
-.wsec { flex: none; min-width: 44px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
+.wsec { position: relative; flex: none; min-width: 44px; height: 36px; padding: 0 10px; border: 1px solid var(--ctrl-line); border-radius: var(--r-ctrl); background: var(--bg); color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
 .wcancel { color: var(--muted); }
-.wtime.paused { color: var(--muted); opacity: 0.8; }
+.wtime.paused { color: var(--muted); }
+.wsec.resume { background: var(--accent-soft); border-color: var(--accent); }
 .headline.working h1 { display: none; }
 .headline.working .work { flex: 1; justify-content: space-between; }
 .headline.working .wtime { margin-right: auto; }
@@ -311,7 +317,8 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .check .frac { font-family: var(--font-num); font-size: 20px; line-height: 1; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
 .check.part { border-color: transparent; background: conic-gradient(var(--accent) var(--p, 0%), var(--line) 0) border-box; }
 .check.part::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px solid transparent; background: var(--surface) padding-box; }
-.timer button.tlabel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 44px; height: 36px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 11px; line-height: 1.1; cursor: pointer; touch-action: manipulation; }
+.timer button.tlabel { position: relative; } 
+.timer button.tlabel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 44px; height: 36px; padding: 0; border: 0; border-radius: var(--r-ctrl); background: transparent; color: var(--muted); font-size: 11px; line-height: 1.1; cursor: pointer; touch-action: manipulation; }
 .timer button.tlabel b { font-weight: 700; color: var(--muted); }
 .timer button.tlabel[aria-pressed="true"] b { color: var(--accent); }
 .wbtn.ready { box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -319,14 +326,16 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
   .wbtn.ready { animation: ready-pulse 1.4s ease-in-out infinite; }
 }
 @keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
-.snd { position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-ctrl); background: var(--bg); color: var(--accent); cursor: pointer; touch-action: manipulation; }
+.snd { position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 34px; padding: 0; border: 1px solid var(--ctrl-line); border-radius: var(--r-ctrl); background: var(--bg); color: var(--accent); cursor: pointer; touch-action: manipulation; }
 .snd[aria-pressed="false"] { color: var(--muted); }
 
 /* 모바일: 더블탭 확대 지연 없애기, 작은 버튼의 눌리는 영역 넓히기, 누르는 즉시 반응 */
 html { touch-action: manipulation; background: var(--bg); }
 .setpips button { position: relative; }
 .setpips button::after { content: ''; position: absolute; inset: -4px -3px; }
-.levels button::after, .views button::after, .snd::after { content: ''; position: absolute; inset: -6px 0; } /* 보이는 크기는 작게, 누르는 영역은 44px */
+.levels button::after, .views button::after, .snd::after { content: ''; position: absolute; inset: -6px 0; }
+.wbtn::after, .wsec::after { content: ''; position: absolute; inset: -4px 0; }
+.timer .tstep::after, .timer .tgo::after, .timer button.tlabel::after { content: ''; position: absolute; inset: -5px 0; } /* 보이는 크기는 작게, 누르는 영역은 44px */
 @media (prefers-reduced-motion: no-preference) {
   .check, .wbtn, .tgo, .wsec, .setpips button { transition: transform 0.08s; }
   .check:active:not(:disabled), .wbtn:active:not(:disabled), .tgo:active:not(:disabled), .wsec:active:not(:disabled), .setpips button:active:not(:disabled) { transform: scale(0.94); }
@@ -342,9 +351,9 @@ html { touch-action: manipulation; background: var(--bg); }
 .standalone body { padding-top: calc(env(safe-area-inset-top, 0px) + 21px); }
 
 /* 오늘 화면 아래 빈 곳의 운동 팁: 탭 바 바로 위에 낮게 */
-.wrap { min-height: calc(100vh - 21px); min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 21px); }
+.wrap { min-height: calc(100vh - 21px); min-height: calc(100svh - env(safe-area-inset-top, 0px) - 21px); } /* svh: Safari 주소창이 들어가고 나와도 흔들리지 않음 */
 #bottom { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
-.tip { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 8px 4px; border: 0; border-radius: var(--r-ctrl); background: transparent; color: var(--muted); font-size: 13px; line-height: 1.5; text-align: left; cursor: pointer; touch-action: manipulation; }
+.tip { display: flex; align-items: flex-start; justify-content: center; gap: 8px; width: 100%; padding: 8px 4px; border: 0; border-radius: var(--r-ctrl); background: transparent; color: var(--muted); font-size: 13px; line-height: 1.5; text-align: left; cursor: pointer; touch-action: manipulation; }
 .tip svg { flex: none; margin-top: 2px; color: var(--accent); }
 .weather { display: block; width: 100%; padding: 2px 4px; border: 0; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; text-align: center; cursor: pointer; touch-action: manipulation; font-variant-numeric: tabular-nums; }
 
@@ -371,7 +380,6 @@ html { touch-action: manipulation; background: var(--bg); }
 .savebar .btn { flex: 1; }
 
 /* 기록·설정 탭: 내용 묶음을 카드로 */
-#moreBox { border-top: 0; padding-top: 0; }
 #moreBox > summary { display: none; } /* 기록 탭에서는 늘 펼쳐 보여 줌: 화면 제목과 겹치는 접기 제목은 숨김 */
 #moreBox .set-body { margin-top: 0; gap: 12px; }
 #moreBox .set-body > section, #plan-sec details.block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px; }
@@ -379,7 +387,6 @@ html { touch-action: manipulation; background: var(--bg); }
 #planBox > summary { min-height: 0; margin-bottom: 12px; }
 /* 기록: 이번 주 달력도 다른 내용처럼 카드로 */
 #history > section:first-child { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 12px 16px; }
-.cal-hint { margin-bottom: 0; }
 .sgroup > .sgh + .sub { margin-top: -4px; }
 /* 목표 늘리는 방식: 두 선택지를 나란히 */
 .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -391,12 +398,12 @@ html { touch-action: manipulation; background: var(--bg); }
 .daychip { -webkit-tap-highlight-color: transparent; }
 
 /* 오늘의 마무리: 운동 소감·감사한 일 */
-.journal { scroll-margin-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); }
+.journal { scroll-margin-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); padding: 12px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); }
 .journal[data-mode="closed"] { padding: 0; }
 .journal[data-mode="closed"] .jhead { display: none; }
 .jhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; margin-bottom: 6px; }
 .jhead .sec { margin: 0; }
-.jpen { flex: none; width: 40px; height: 40px; margin: -6px -8px -6px 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: transparent; color: var(--accent); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.jpen { flex: none; width: 44px; height: 44px; margin: -8px -8px -8px 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: transparent; color: var(--accent); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .jpen:active { background: var(--accent-soft); }
 .journal #jForm { display: flex; flex-direction: column; gap: 6px; }
 .jlabel { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
@@ -406,26 +413,26 @@ html { touch-action: manipulation; background: var(--bg); }
 .jsaved { flex: 1; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
 .jsaved svg { color: var(--accent); }
 .journal .btn { height: 40px; padding: 0 18px; }
-.journal .btn.ghost { border-color: var(--ctrl-line); }
-.jview { cursor: pointer; border-radius: 10px; -webkit-tap-highlight-color: transparent; }
+.jview { cursor: pointer; border-radius: var(--r-ctrl); -webkit-tap-highlight-color: transparent; }
 .jview:active { background: var(--accent-soft); }
 .jview:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .jview dl { margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .jview dl div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; }
-.jview dt { font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 8px; }
 .jview dd { margin: 0; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
 .jopen { width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: transparent; color: var(--accent); font-weight: 700; font-size: 14px; cursor: pointer; }
 .notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .notes li { display: flex; flex-direction: column; gap: 2px; padding-left: 10px; border-left: 3px solid var(--accent-soft); }
 .note-date { font-size: 12px; color: var(--muted); }
-.note-feel, .note-thanks { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
-.note-thanks b { font-size: 12px; color: var(--accent); margin-right: 4px; }
+.note-line { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.note-line b, .jview dt { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 8px; line-height: 1.5; } /* 소감·감사 꼬리표: 오늘·기록 탭 같은 모양 */
+.note-line b { margin-right: 6px; }
 
 /* 키가 작은 폰(높이 700px 이하): 한 화면에 들어오도록 간격을 줄이고, 자리를 못 얻는 운동 팁은 감춤 (날씨 줄은 유지) */
 @media (max-height: 700px) {
   .row { padding: 7px 12px; gap: 4px 10px; }
   .rows { gap: 4px; }
   .timer { height: 44px; }
+  #timer { position: sticky; bottom: calc(63px + env(safe-area-inset-bottom, 0px)); z-index: 3; } /* 종목이 많아 넘쳐도 휴식 타이머는 탭 막대 위에 */
   .tip { display: none; }
   #bottom { gap: 0; }
   .weather { padding: 0 4px; line-height: 20px; }
@@ -457,3 +464,4 @@ html { touch-action: manipulation; background: var(--bg); }
 .switch.sm { width: 40px; height: 24px; }
 .switch.sm i::after { width: 18px; height: 18px; }
 .switch.sm input:checked + i::after { transform: translateX(16px); }
+.nowrap { white-space: nowrap; }

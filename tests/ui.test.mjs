@@ -1146,3 +1146,35 @@ test('마무리: 마지막 종목을 막 체크하면 칸을 화면으로 끌어
     proto.scrollIntoView = orig;
   }
 });
+
+test('오늘: 지난 날을 고치는 중에는 운동 시작 버튼을 숨기고(시간은 오늘로 기록되므로), 멈춘 스톱워치는 재개를 강조', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  localStorage.removeItem('workout-check:session');
+  const { store, root } = setup(today);
+  const btn = root.querySelector('#wBtn');
+  assert.equal(btn.hidden, false);
+  store.actions.select(addDays(todayStr(), -1));
+  assert.equal(btn.hidden, true, '지난 날에는 숨김');
+  store.actions.goToday();
+  assert.equal(btn.hidden, false);
+  btn.click();
+  root.querySelector('#wPause').click();
+  assert.equal(root.querySelector('#wPause').textContent, '재개');
+  assert.ok(root.querySelector('#wPause').classList.contains('resume'));
+  root.querySelector('#wPause').click();
+  assert.equal(root.querySelector('#wPause').classList.contains('resume'), false);
+  root.querySelector('#wCancel').click();
+  store.actions.flushAll();
+});
+
+test('기록: 마무리 기록은 소감·감사를 같은 꼬리표로 보여 줌', () => {
+  const t0 = todayStr();
+  const days = fullDays(1);
+  days[t0] = { ...days[t0], note: { feel: '가뿐함', thanks: '물 한 잔' } };
+  const { root } = setup(history, { days });
+  root.querySelector('#moreBox').open = true;
+  root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
+  const tags = [...root.querySelectorAll('#notes .note-line b')].map((b) => b.textContent);
+  assert.deepEqual(tags, ['소감', '감사']);
+});
