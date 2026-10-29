@@ -52,10 +52,12 @@ test('설정: 쉬는 요일은 한 줄 7칸, 좁은 화면에서 입력칸이 �
   assert.match(css, /@media \(max-width: 360px\) \{ \.exrow2 label \{ flex-direction: column;/);
 });
 
-test('디자인: 기록·설정 내용은 카드로 묶고, 기록 탭의 중복 접기 제목은 숨김, 목표 방식은 나란한 두 칸', () => {
+test('디자인: 기록 내용은 카드로 묶고 중복 접기 제목은 숨김, 설정은 작은 제목 + 줄 목록, 목표 방식은 나란한 두 칸', () => {
   assert.match(css, /#moreBox > summary \{ display: none; \}/);
-  assert.match(css, /#moreBox \.set-body > section, #settings details\.block, #plan-sec details\.block \{ background: var\(--surface\);/);
+  assert.match(css, /#moreBox \.set-body > section, #plan-sec details\.block \{ background: var\(--surface\);/);
   assert.match(css, /\.modes \{ display: grid; grid-template-columns: 1fr 1fr;/);
+  assert.match(css, /\.slist \{ background: var\(--surface\);/);
+  assert.match(css, /\.switch input:checked \+ i \{ background: var\(--accent\); \}/);
 });
 
 test('키가 작은 폰(높이 700px 이하): 줄 간격을 줄이고 팁은 감추며, 마무리 칸은 탭 막대에 가려지지 않게 스크롤 여백을 둠', () => {
