@@ -1,4 +1,4 @@
-// 최근 2주 달력(바로 보임), 자세히(달성·연속, 종목별 꾸준함, 지난 3주 — 접어 두고 펼쳤을 때만 그림)
+// 이번 주 달력(맨 위에 바로 보임), 자세히(달성·연속, 종목별 꾸준함, 지난 4주 — 접어 두고 펼쳤을 때만 그림)
 
 import { addDays, diffDays, labelMD, mondayOf, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
@@ -6,8 +6,8 @@ import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, is
 import { fmtKo } from '../session.js';
 import { $, esc } from './dom.js';
 
-const WEEKS = 5; // 달력 전체 주 수: 최근 2주는 바로, 앞의 3주는 자세히 안에
-const RECENT = 2;
+const WEEKS = 5; // 달력 전체 주 수: 이번 주만 맨 위에 바로, 앞의 4주는 자세히 안에
+const RECENT = 1;
 const MAX_PIPS = 6;
 const NOTES_SHOWN = 10; // 마무리 기록은 최근 10개까지
 
@@ -15,7 +15,7 @@ const HEAD = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목'
 
 export function mountHistory(root, store) {
   root.innerHTML = `
-    <section aria-label="최근 2주">
+    <section aria-label="이번 주">
       <div id="calRecent" class="cal"></div>
       <p class="sub cal-hint">날짜를 누르면 그날 기록을 고칠 수 있습니다.</p>
     </section>

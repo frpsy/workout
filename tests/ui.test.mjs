@@ -207,10 +207,11 @@ test('오늘: 백업 안내는 기록이 쌓인 단독 실행에서만 보이고
   assert.equal(root.querySelector('#bakNote').hidden, true, '기록이 적으면 안내 없음');
 });
 
-test('기록: 최근 2주만 바로 보이고 자세히는 펼쳐야 그려짐(달력 14칸 + 지난 3주 21칸)', async () => {
+test('기록: 이번 주만 맨 위에 바로 보이고 자세히는 펼쳐야 그려짐(달력 7칸 + 지난 4주 28칸)', async () => {
   const rest = [0, 6];
   const { root, render, store } = setup(history, { days: fullDays(5), config: { startDate: addDays(todayStr(), -40), restDays: rest } });
-  assert.equal(root.querySelectorAll('#calRecent button.cell').length, 14);
+  assert.equal(root.querySelectorAll('#calRecent button.cell').length, 7);
+  assert.equal(root.querySelectorAll('#calRecent .cal-row').length, 1, '이번 주 한 줄');
   assert.match(root.querySelector('.cal-hint').textContent, /날짜를 누르면 그날 기록을 고칠 수 있습니다/, '최근 달력 바로 아래 안내');
   assert.equal(root.querySelector('#summary').innerHTML, '', '접혀 있는 동안은 계산하지 않음');
   assert.equal(root.querySelector('#calOlder').innerHTML, '');
