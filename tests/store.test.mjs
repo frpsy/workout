@@ -168,6 +168,24 @@ test('난이도 3단계: 쉬움 0.8 · 보통 1 · 어려움 1.2배로 그날 �
   store.actions.flushAll();
 });
 
+test('난이도를 바꾸면 체크했다 푼 종목·개수를 고친 종목도 새 목표 개수를 따라감', (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const store = createStore(fakeAdapter());
+  const squat = store.state.config.exercises.find((e) => e.id === 'squat');
+  const push = store.state.config.exercises.find((e) => e.id === 'push');
+  const d = todayStr();
+  const base = store.view(d, squat).target;
+  store.actions.toggle('squat');
+  store.actions.toggle('squat'); // 체크했다 풂
+  store.actions.setCount('push', 99); // 개수를 직접 고침
+  store.actions.setLevel('hard');
+  assert.equal(store.view(d, squat).count, store.view(d, squat).target, '체크했다 푼 종목도 새 목표');
+  assert.notEqual(store.view(d, squat).count, base);
+  assert.equal(store.view(d, push).count, store.view(d, push).target, '고친 개수도 새 목표로');
+  store.actions.flushAll();
+});
+
 test('운동 소감·감사한 일: 쓰는 대로 저장하고, 둘 다 지우면 필드도 없앰', async (t) => {
   mock.timers.enable({ apis: ['setTimeout'] });
   t.after(() => mock.timers.reset());
