@@ -1111,3 +1111,47 @@ test('마무리: 아무것도 안 썼으면 나중에로 한 줄로 접고, 접�
   assert.equal(q('#jFeelN').textContent, '20자 남음', '거의 다 썼을 때 남은 글자 수');
   store.actions.flushAll();
 });
+
+test('마무리: 마지막 종목을 막 체크하면 칸을 화면으로 끌어올리고(포커스는 그대로), 처음 열 때·다른 탭에서는 이동하지 않음', () => {
+  const proto = window.HTMLElement.prototype;
+  const orig = proto.scrollIntoView;
+  const calls = [];
+  proto.scrollIntoView = function (opts) {
+    calls.push([this.id, opts && opts.block]);
+  };
+  try {
+    // 이미 모두 마친 날을 열었을 때는 이동하지 않음
+    let ad = adapter({ days: fullDays(1) });
+    document.body.innerHTML = '<div id="journal"></div>';
+    let store = createStore(ad);
+    let root = document.getElementById('journal');
+    store.subscribe(mountJournal(root, store));
+    assert.equal(calls.length, 0, '열 때는 가만히');
+
+    // 하나 남은 상태에서 마지막 종목을 체크하면 이동
+    ad = adapter();
+    document.body.innerHTML = '<div id="journal"></div>';
+    store = createStore(ad);
+    root = document.getElementById('journal');
+    store.subscribe(mountJournal(root, store));
+    store.actions.toggle('push');
+    store.actions.toggle('pull');
+    assert.equal(calls.length, 0);
+    store.actions.toggle('squat');
+    assert.deepEqual(calls, [['jBox', 'nearest']]);
+    assert.notEqual(document.activeElement, root.querySelector('#jFeel'), '포커스는 뺏지 않음');
+    store.actions.toggle('squat');
+    store.actions.toggle('squat'); // 되돌렸다 다시 마치면 다시 이동
+    assert.equal(calls.length, 2);
+
+    // 다른 탭(마무리가 속한 화면이 숨겨짐)에서는 이동하지 않음
+    calls.length = 0;
+    store.actions.toggle('squat');
+    root.hidden = true;
+    store.actions.toggle('squat');
+    assert.equal(calls.length, 0);
+    store.actions.flushAll();
+  } finally {
+    proto.scrollIntoView = orig;
+  }
+});
