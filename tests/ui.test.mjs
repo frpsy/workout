@@ -318,12 +318,13 @@ test('설정: 계정이 있으면 로그인·로그아웃 버튼을 보여 주�
   let called = '';
   const signedOut = { ...adapter(), account: { signIn: async () => void (called = 'in') } };
   const signedIn = { ...adapter(), account: { email: 'a@b.c', signOut: async () => void (called = 'out') } };
-  for (const [ad, text, want] of [[signedOut, 'Google로 로그인해 기기 간 동기화', 'in'], [signedIn, '로그아웃', 'out']]) {
+  for (const [ad, text, want] of [[signedOut, 'Google 로그인', 'in'], [signedIn, '로그아웃', 'out']]) {
     document.body.innerHTML = '<div id="settings"></div>';
     const store = createStore(ad);
     const root = document.getElementById('settings');
     store.subscribe(mountSettings(root, store));
     assert.equal(root.querySelector('#acctRow').hidden, false);
+    assert.equal(root.querySelector('#acctBtn').hidden, false);
     assert.equal(root.querySelector('#acctBtn').textContent, text);
     root.querySelector('#acctBtn').click();
     await tick();
@@ -333,7 +334,8 @@ test('설정: 계정이 있으면 로그인·로그아웃 버튼을 보여 주�
   const store = createStore(adapter());
   const root = document.getElementById('settings');
   store.subscribe(mountSettings(root, store));
-  assert.equal(root.querySelector('#acctRow').hidden, true, '계정 기능이 없으면 숨김');
+  assert.equal(root.querySelector('#acctBtn').hidden, true, '계정 기능이 없으면 버튼 없음');
+  assert.match(root.querySelector('#acctText').textContent, /저장 중/, '저장 위치만 한 줄로');
 });
 
 test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림', (t) => {
@@ -879,15 +881,14 @@ test('효과음: 무음 모드에서도 소리 내기를 켜면 오디오 세션
   const prev = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   localStorage.removeItem('workout-check:sound-silent');
   try {
-    // 지원하지 않는 브라우저: 설정 칸을 끄고 안내만
+    // 지원하지 않는 브라우저: 줄 자체를 보이지 않음
     Object.defineProperty(globalThis, 'navigator', { value: {}, configurable: true });
     assert.equal(canPlayInSilentMode(), false);
     let ad = adapter();
     document.body.innerHTML = '<div id="settings"></div>';
     let root = document.getElementById('settings');
     mountSettings(root, createStore(ad));
-    assert.equal(root.querySelector('#silentMode').disabled, true);
-    assert.match(root.querySelector('#silentHelp').textContent, /지원하지 않습니다/);
+    assert.equal(root.querySelector('#silentRow').hidden, true);
 
     // 지원하는 브라우저
     const session = { type: 'auto' };
@@ -899,7 +900,8 @@ test('효과음: 무음 모드에서도 소리 내기를 켜면 오디오 세션
     const store = createStore(ad);
     store.subscribe(mountSettings(root, store));
     const box = root.querySelector('#silentMode');
-    assert.equal(box.disabled, false);
+    assert.equal(root.querySelector('#silentRow').hidden, false, '지원하면 한 줄 스위치만 보임');
+    assert.equal(root.querySelector('#silentHelp'), null, '긴 설명은 없음');
     assert.equal(box.checked, false, '기본은 꺼짐');
     box.checked = true;
     played.length = 0;

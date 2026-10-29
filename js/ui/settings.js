@@ -17,89 +17,79 @@ export function mountSettings(root, store) {
   let confirmTimer;
 
   root.innerHTML = `
-    <details class="block" id="soundBox">
-      <summary>효과음</summary>
-      <div class="set-body">
-        <label class="radio"><input type="checkbox" id="silentMode"> 아이폰 무음 모드에서도 효과음 내기</label>
-        <p class="sub" id="silentHelp"></p>
-      </div>
-    </details>
-
-    <details class="block" id="setBox">
-      <summary>운동·목표 설정</summary>
-      <div class="set-body">
-        <div class="field">
-          <label for="startDate">시작일</label>
-          <input id="startDate" type="date">
+    <section class="sgroup" id="acctBox">
+      <div class="slist">
+        <label class="srow" id="silentRow" hidden>
+          <span>무음 모드에서도 효과음</span>
+          <span class="switch"><input type="checkbox" role="switch" id="silentMode"><i aria-hidden="true"></i></span>
+        </label>
+        <div class="srow" id="acctRow">
+          <span class="sval" id="acctText"></span>
+          <button type="button" class="btn ghost sm" id="acctBtn" hidden></button>
         </div>
+      </div>
+      <p class="sub" id="acctHelp" hidden></p>
+      <p class="status" id="acctStatus" role="status" aria-live="polite"></p>
+    </section>
 
-        <fieldset class="field">
-          <legend>목표 늘리는 방식</legend>
+    <section class="sgroup" id="setBox">
+      <h2 class="sgh">목표</h2>
+      <div class="slist">
+        <label class="srow">
+          <span>시작일</span>
+          <input id="startDate" type="date">
+        </label>
+        <div class="srow col" role="group" aria-labelledby="lbMode">
+          <span id="lbMode">늘리는 방식</span>
           <div class="modes">
-            <label class="radio"><input type="radio" name="mode" value="linear" id="modeLinear"> 매주 늘리기</label>
-            <label class="radio"><input type="radio" name="mode" value="adaptive" id="modeAdaptive"> 해낸 주만 늘리기</label>
+            <label class="radio"><input type="radio" name="mode" value="linear" id="modeLinear"> 매주</label>
+            <label class="radio"><input type="radio" name="mode" value="adaptive" id="modeAdaptive"> 해낸 주만</label>
           </div>
           <div class="inline" id="passRow">
             <label for="passDays">한 주에</label>
             <select id="passDays">${[3, 4, 5, 6, 7].map((n) => `<option value="${n}">${n}일</option>`).join('')}</select>
-            <span>이상 하면 다음 주에 늘립니다</span>
+            <span>이상 하면 늘립니다</span>
           </div>
-        </fieldset>
-
-        <div class="field inline">
-          <label for="recEvery">회복주</label>
-          <select id="recEvery">
-            <option value="0">없음</option>
-            ${[3, 4, 5, 6].map((n) => `<option value="${n}">${n}주마다</option>`).join('')}
-          </select>
-          <select id="recRatio" aria-label="회복주 목표 비율">
-            ${[0.6, 0.7, 0.8, 0.9].map((r) => `<option value="${r}">${Math.round(r * 100)}%로</option>`).join('')}
-          </select>
         </div>
-
-        <fieldset class="field">
-          <legend>쉬는 요일</legend>
+        <div class="srow">
+          <label for="recEvery">회복주</label>
+          <span class="pair">
+            <select id="recEvery">
+              <option value="0">없음</option>
+              ${[3, 4, 5, 6].map((n) => `<option value="${n}">${n}주마다</option>`).join('')}
+            </select>
+            <select id="recRatio" aria-label="회복주 목표 비율">
+              ${[0.6, 0.7, 0.8, 0.9].map((r) => `<option value="${r}">${Math.round(r * 100)}%로</option>`).join('')}
+            </select>
+          </span>
+        </div>
+        <div class="srow col" role="group" aria-labelledby="lbRest">
+          <span id="lbRest">쉬는 요일 <small>기록이 없어도 연속이 이어집니다</small></span>
           <div class="restdays" id="restDays">
             ${[1, 2, 3, 4, 5, 6, 0].map((d) => `<label class="daychip"><input type="checkbox" value="${d}"><span>${DOW[d]}</span></label>`).join('')}
           </div>
-          <p class="sub">쉬는 요일에 기록이 없어도 연속 기록이 끊기지 않습니다.</p>
-        </fieldset>
-
-        <h3 class="sub-h">운동 목록</h3>
-        <div id="exList" class="exlist"></div>
-        <div class="presets" id="presets"></div>
-
-        <p class="errors" id="setErr" role="alert" hidden></p>
-        <div class="btnrow savebar" id="saveBar">
-          <button type="button" class="btn" id="saveCfg">저장</button>
-          <button type="button" class="btn ghost" id="resetCfg">되돌리기</button>
-          <span class="dirty-note" id="dirtyNote" hidden>저장하지 않은 변경이 있습니다</span>
         </div>
-        <p class="sub">목표는 세트당 개수 × 세트 수입니다(예: 15 × 3). 오늘 화면의 − + 는 한 번 누르면 1씩, 꾹 누르면 5씩 바뀝니다. 풀업처럼 0.5를 넣으면 2주에 1개씩 늘어납니다. 이미 완료한 날의 목표와 세트는 바뀌지 않습니다.</p>
       </div>
-    </details>
+    </section>
 
-    <details class="block" id="acctBox">
-      <summary>계정</summary>
-      <div class="set-body">
-        <p class="sub" id="storeLabel"></p>
-        <div class="btnrow" id="acctRow" hidden>
-          <button type="button" class="btn" id="acctBtn"></button>
-        </div>
-        <p class="sub" id="acctHelp" hidden></p>
-        <p class="status" id="acctStatus" role="status" aria-live="polite"></p>
+    <section class="sgroup">
+      <h2 class="sgh">운동 <small>목표 = 세트당 개수 × 세트 수 · 0.5는 2주에 1개씩</small></h2>
+      <div id="exList" class="exlist"></div>
+      <div class="presets" id="presets"></div>
+      <p class="errors" id="setErr" role="alert" hidden></p>
+      <div class="btnrow savebar" id="saveBar">
+        <button type="button" class="btn" id="saveCfg">저장</button>
+        <button type="button" class="btn ghost" id="resetCfg">되돌리기</button>
+        <span class="dirty-note" id="dirtyNote" hidden>저장하지 않은 변경이 있습니다</span>
       </div>
-    </details>`;
+    </section>`;
 
   const el = (id) => $('#' + id, root);
 
   /* ---------- 효과음: 이 기기에만 저장, 바꾸면 바로 적용 ---------- */
   const silentOk = canPlayInSilentMode();
+  el('silentRow').hidden = !silentOk; // 지원하지 않는 브라우저에서는 보이지 않음
   el('silentMode').checked = silentOk && isSilentModeOn();
-  el('silentMode').disabled = !silentOk;
-  el('silentHelp').textContent = silentOk
-    ? '켜면 벨소리를 꺼 둔 상태에서도 소리가 납니다. 다른 앱에서 듣던 음악이 멈출 수 있습니다. 소리 크기는 기기 음량을 따릅니다.'
-    : '이 브라우저에서는 지원하지 않습니다. 소리가 안 나면 벨소리(무음) 스위치와 기기 음량을 확인해 주세요.';
   el('silentMode').addEventListener('change', (e) => {
     setSilentMode(e.target.checked);
     playSound('set'); // 바로 들어 보기 (효과음이 꺼져 있으면 조용)
@@ -289,9 +279,6 @@ export function mountSettings(root, store) {
     loadDraft();
     el('setErr').hidden = true;
   });
-  el('setBox').addEventListener('toggle', () => {
-    if (el('setBox').open && !dirty) loadDraft();
-  });
 
   /* ---------- 계정(Firebase 로그인) ---------- */
 
@@ -314,16 +301,17 @@ export function mountSettings(root, store) {
   });
 
   return function render(state) {
-    el('storeLabel').textContent = state.adapter.label;
     const account = state.adapter.account;
-    el('acctRow').hidden = !account;
-    el('acctHelp').hidden = !account;
+    const kind = state.adapter.kind;
+    // 한 줄로: 어디에 저장되는지 + 로그인/로그아웃
+    el('acctText').textContent = account && account.signOut && kind === 'firebase' ? account.email || '로그인됨' : kind === 'local' ? '이 기기에만 저장 중' : '계정에 저장 중';
+    el('acctBtn').hidden = !account;
+    el('acctHelp').hidden = !(account && (account.signOut ? kind === 'local' : true));
     if (account) {
-      el('acctBtn').textContent = account.signOut ? '로그아웃' : 'Google로 로그인해 기기 간 동기화';
+      el('acctBtn').textContent = account.signOut ? '로그아웃' : 'Google 로그인';
       el('acctBtn').classList.toggle('ghost', !!account.signOut);
-      el('acctHelp').textContent = account.signOut
-        ? '로그아웃해도 계정의 기록은 지워지지 않습니다. 다시 로그인하면 보입니다.'
-        : '처음 로그인하면 이 브라우저의 기록이 계정으로 옮겨집니다. 계정에 기록이 이미 있으면 옮기지 않고 계정의 기록이 보입니다.';
+      // 로그인 전에는 한 줄 안내, 읽기가 막혀 이 기기에만 저장하는 중이면 그 이유(어댑터가 알려 줌)
+      el('acctHelp').textContent = account.signOut ? state.adapter.label : '로그인하면 이 기기의 기록이 계정으로 옮겨져요';
     }
     el('saveCfg').disabled = !state.ready;
     // 저장소에서 설정이 바뀌었고 편집 중이 아니면 초안 갱신

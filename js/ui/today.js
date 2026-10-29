@@ -278,7 +278,6 @@ export function mountToday(root, store) {
     document.dispatchEvent(new window.CustomEvent('workout:goto-tab', { detail: 'settings' }));
     const box = document.getElementById('acctBox');
     if (box) {
-      box.open = true;
       box.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     }
   });
