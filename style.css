@@ -223,7 +223,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; }
 
 /* 달력: 쉬는 요일, 목표 주차 시작 */
 .cell.rest:not(.sel) { background: transparent; border-color: var(--line); border-style: dashed; }
-.cell.wkstart::before { content: ''; position: absolute; left: 2px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); } /* 새 목표 주차 시작 */
+.cell.wkstart::before { content: ''; position: absolute; left: 1px; top: 9px; height: 14px; width: 3px; border-radius: 2px; background: var(--accent); } /* 새 목표 주차 시작 */
 .restdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .daychip { position: relative; display: flex; }
 .daychip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
@@ -432,7 +432,7 @@ html { touch-action: manipulation; background: var(--bg); }
   .row { padding: 7px 12px; gap: 4px 10px; }
   .rows { gap: 4px; }
   .timer { height: 44px; }
-  #timer { position: sticky; bottom: calc(63px + env(safe-area-inset-bottom, 0px)); z-index: 3; } /* 종목이 많아 넘쳐도 휴식 타이머는 탭 막대 위에 */
+  #timer { position: sticky; bottom: calc(63px + env(safe-area-inset-bottom, 0px)); z-index: 3; border-radius: var(--r-card); box-shadow: 0 8px 0 var(--bg), 0 -6px 12px -4px rgba(0, 0, 0, 0.18); } /* 종목이 많아 넘쳐도 휴식 타이머는 탭 막대 위에 */
   .tip { display: none; }
   #bottom { gap: 0; }
   .weather { padding: 0 4px; line-height: 20px; }
