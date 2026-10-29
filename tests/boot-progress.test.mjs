@@ -41,40 +41,40 @@ test('진행 막대: 단계가 오르면 목표가 오르고, 막대는 목표�
   assert.match(bar.style.width, /%$/);
 });
 
-test('진행 막대: 너무 빨리 끝나도 최소 시간은 보여 주고, 100%로 찬 뒤 잠깐 있다가 사라짐', () => {
-  const { root, p, timeouts, tick, at } = setup();
+test('시작 화면: 금방 끝나면 기다리지 않고 바로 사라지고, 오래 걸릴 때만 막대·문구를 보여 줌', () => {
+  const { root, p, timeouts } = setup();
+  const reveal = timeouts.find(([, ms]) => ms === 1200);
+  assert.ok(reveal, '1.2초 뒤에 막대를 보여 주도록 예약');
+  assert.equal(root.classList.contains('slow'), false, '처음에는 아이콘만');
   const slow = timeouts.find(([, ms]) => ms === 8000);
   assert.ok(slow);
-  slow[0]();
-  assert.match(root.querySelector('#splashText').textContent, /연결이 느립니다/);
-  at(300); // 0.3초 만에 준비가 끝남
+
   const before = timeouts.length;
-  p.done();
-  const [finish, wait] = timeouts[before];
-  assert.equal(wait, 600, '최소 0.9초까지 남은 시간만큼 기다림');
-  assert.equal(root.querySelector('#splashBar').style.width, '0%', '아직 채우지 않음');
-  p.done(); // 두 번 불러도 한 번만 예약
-  assert.equal(timeouts.length, before + 1);
-  at(900);
-  finish();
+  p.done(); // 0.3초 만에 준비가 끝남: 최소 표시 시간 없이 바로
+  assert.ok(root.classList.contains('leaving'), '바로 사라지기 시작');
   assert.equal(root.querySelector('#splashBar').style.width, '100%');
   assert.equal(root.querySelector('#splashTrack').getAttribute('aria-valuenow'), '100');
-  assert.ok(!root.classList.contains('leaving'), '찬 모습을 잠깐 보여 줌');
-  const [leave, pause] = timeouts[timeouts.length - 1];
-  assert.equal(pause, 250);
-  leave();
-  assert.ok(root.classList.contains('leaving'));
-  timeouts[timeouts.length - 1][0](); // 서서히 사라진 뒤 제거
+  const [remove, wait] = timeouts[before];
+  assert.equal(wait, 180, '짧게 사라진 뒤 제거');
+  p.done(); // 두 번 불러도 한 번만
+  assert.equal(timeouts.length, before + 1);
+  remove();
   assert.equal(root.isConnected, false, '화면에서 제거');
-  tick(3);
+
+  reveal[0](); // 이미 끝났으면 늦게 불린 예약은 아무것도 하지 않음
+  slow[0]();
+  assert.equal(root.classList.contains('slow'), false);
+  assert.doesNotMatch(root.querySelector('#splashText').textContent, /연결이 느립니다/);
 });
 
-test('진행 막대: 이미 오래 걸렸다면 기다리지 않고 바로 채움', () => {
-  const { p, timeouts, at } = setup();
-  at(5000);
-  const before = timeouts.length;
+test('시작 화면: 1.2초를 넘기면 막대를 보여 주고, 8초를 넘기면 느리다는 안내를 덧붙임', () => {
+  const { root, p, timeouts } = setup();
+  timeouts.find(([, ms]) => ms === 1200)[0]();
+  assert.ok(root.classList.contains('slow'));
+  timeouts.find(([, ms]) => ms === 8000)[0]();
+  assert.match(root.querySelector('#splashText').textContent, /연결이 느립니다/);
   p.done();
-  assert.equal(timeouts[before][1], 0);
+  assert.ok(root.classList.contains('leaving'));
 });
 
 test('진행 막대: 실패하면 멈추고 안내를 보여 줌', () => {

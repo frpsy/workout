@@ -355,8 +355,10 @@ html { background: var(--bg); }
 .weather[hidden] { display: none; }
 
 /* 시작 화면: 아이콘 + 진행 막대. 준비되면 서서히 사라지며 앱으로 전환 */
-.splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; background: var(--bg); transition: opacity 0.4s ease, transform 0.4s ease; }
+.splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; background: var(--bg); transition: opacity 0.18s ease, transform 0.18s ease; }
 .splash.leaving { opacity: 0; transform: scale(1.02); pointer-events: none; }
+/* 금방 열릴 때는 아이콘만 깜빡 보이고, 오래 걸릴 때(.slow)와 실패했을 때(.failed)만 막대·문구를 보여 줌 */
+.splash:not(.slow):not(.failed) .splash-track, .splash:not(.slow):not(.failed) .splash-text { visibility: hidden; }
 .splash-icon { border-radius: 19px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
 .splash-title { margin: 4px 0 8px; font-size: 18px; font-weight: 700; color: var(--fg); }
 .splash-track { width: min(220px, 60vw); height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
