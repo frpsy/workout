@@ -37,6 +37,7 @@ export function mountJournal(root, store) {
   const thanks = $('#jThanks', root);
   let date = null; // 지금 보여 주는 날
   let editing = false; // 쓰는 중이면 접지 않음
+  let wasAllDone = false; // 직전 그림에서 모두 마친 상태였는지 (방금 마쳤을 때만 칸으로 데려가기 위해)
   const later = new Set(); // '나중에'를 누른 날 (이 화면을 여는 동안만)
 
   const noteOf = (state, d) => (state.days[d] && state.days[d].note) || null;
@@ -105,11 +106,14 @@ export function mountJournal(root, store) {
     if (state.selected !== date) {
       date = state.selected;
       editing = false;
+      wasAllDone = allDone; // 날짜를 옮겼을 때는 이동하지 않음
       feel.value = (note && note.feel) || '';
       thanks.value = (note && note.thanks) || '';
       $('#jSaved', root).textContent = '';
       counts();
     }
+    const justFinished = allDone && !wasAllDone;
+    wasAllDone = allDone;
     // 모두 마친 날이거나 이미 써 둔 날에만 보임 (root는 탭이 숨기고 보이므로 안쪽 상자를 숨김)
     const box = $('#jBox', root);
     box.hidden = !(allDone || filled(note));
@@ -126,6 +130,12 @@ export function mountJournal(root, store) {
     $('#jOpen', root).hidden = mode !== 'closed';
     $('#jDone', root).hidden = !has; // 아무것도 안 썼으면 '나중에'만
     $('#jLater', root).hidden = has;
+
+    // 마지막 종목을 막 체크했으면 마무리 칸이 탭 막대 아래에 가려지지 않게 살며시 끌어올림 (포커스는 뺏지 않음)
+    if (justFinished && mode === 'form' && !root.hidden) { // 다른 탭을 보는 중(root 숨김)에는 이동하지 않음
+      const calm = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      box.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
+    }
 
     if (mode === 'view') {
       const rows = [];
