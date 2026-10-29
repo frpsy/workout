@@ -147,12 +147,6 @@ section { min-width: 0; }
 .cell.pre { background: transparent; }
 .cell:disabled { opacity: 0.35; }
 
-/* 正 누적 */
-.glyphs { display: flex; flex-wrap: wrap; gap: 6px 4px; align-items: center; }
-.glyphs svg { width: 30px; height: 30px; }
-.glyphs .on { stroke: var(--accent); }
-.glyphs .off { stroke: var(--line); }
-.glyphs .more { color: var(--muted); margin-right: 4px; }
 .tallytext { margin: 10px 0 0; font-size: 14px; }
 .tallytext b { font-variant-numeric: tabular-nums; }
 .totals { margin: 14px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px 8px; }
@@ -248,7 +242,6 @@ td.n small { font-family: var(--font-body); font-size: 12px; font-weight: 400; c
 .pe-bar { grid-area: bar; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
 .pe-bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
 .pe-pct { grid-area: pct; min-width: 40px; text-align: right; font-family: var(--font-num); font-size: 20px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
-.glyphs { margin-top: 14px; }
 
 /* 한 줄 휴식 타이머 */
 .timer { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 8px 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
@@ -355,8 +348,10 @@ html { background: var(--bg); }
 .weather[hidden] { display: none; }
 
 /* 시작 화면: 아이콘 + 진행 막대. 준비되면 서서히 사라지며 앱으로 전환 */
-.splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; background: var(--bg); transition: opacity 0.4s ease, transform 0.4s ease; }
+.splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; background: var(--bg); transition: opacity 0.18s ease, transform 0.18s ease; }
 .splash.leaving { opacity: 0; transform: scale(1.02); pointer-events: none; }
+/* 금방 열릴 때는 아이콘만 깜빡 보이고, 오래 걸릴 때(.slow)와 실패했을 때(.failed)만 막대·문구를 보여 줌 */
+.splash:not(.slow):not(.failed) .splash-track, .splash:not(.slow):not(.failed) .splash-text { visibility: hidden; }
 .splash-icon { border-radius: 19px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
 .splash-title { margin: 4px 0 8px; font-size: 18px; font-weight: 700; color: var(--fg); }
 .splash-track { width: min(220px, 60vw); height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }

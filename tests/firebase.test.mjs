@@ -167,3 +167,76 @@ test('SDK를 불러오지 못하면 null (브라우저 저장으로 넘어감)',
   });
   assert.equal(ad, null);
 });
+
+function fakeLocalStorage() {
+  const m = new Map();
+  return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => void m.set(k, String(v)), removeItem: (k) => void m.delete(k), m };
+}
+
+test('빠른 열기: 정상으로 읽어 본 계정은 다음부터 서버 확인을 기다리지 않고 바로 열림', async () => {
+  const ls = fakeLocalStorage();
+  globalThis.localStorage = ls;
+  try {
+    const user = { uid: 'u1', email: 'me@example.com' };
+    // 처음: 확인하고 열고, 정상이면 표시를 남김
+    const first = await run(loader({ user, db: fakeDb({ 'config/main': { v: 2 } }) }));
+    assert.equal(first.kind, 'firebase');
+    assert.equal(ls.getItem('workout-check:account-ok'), 'u1');
+
+    // 다음: 서버 확인(get)을 아예 부르지 않음 (서버가 느려도 기다리지 않는 것)
+    const db = fakeDb({ 'config/main': { v: 2 } });
+    let probed = 0;
+    const doc = db.doc;
+    db.doc = (path) => ({ ...doc(path), get: async () => (probed++, doc(path).get()) });
+    const second = await run(loader({ user, db }));
+    assert.equal(second.kind, 'firebase');
+    assert.equal(probed, 0, '서버 확인 없이 바로');
+
+    // 다른 계정이면 다시 확인
+    probed = 0;
+    await run(loader({ user: { uid: 'u2', email: 'x@example.com' }, db }));
+    assert.equal(probed, 1);
+  } finally {
+    delete globalThis.localStorage;
+  }
+});
+
+test('빠른 열기: 나중에 읽기가 막히면 표시를 지워 다음 실행에서는 다시 확인하고, 막혀 있으면 브라우저 저장으로 엶', async () => {
+  const ls = fakeLocalStorage();
+  globalThis.localStorage = ls;
+  try {
+    ls.setItem('workout-check:account-ok', 'u1');
+    const user = { uid: 'u1', email: 'me@example.com' };
+    const db = fakeDb();
+    let onErr;
+    db.collection = () => ({ get: async () => ({ docs: [], empty: true }), onSnapshot: (ok, err) => ((onErr = err), () => {}) });
+    const ad = await run(loader({ user, db }));
+    let shown = 0;
+    ad.subscribe({ onConfig() {}, onDays() {}, onError: () => shown++ });
+    onErr(Object.assign(new Error('denied'), { code: 'permission-denied' }));
+    assert.equal(shown, 1, '화면에는 그대로 알림');
+    assert.equal(ls.getItem('workout-check:account-ok'), null, '표시를 지움');
+
+    // 다음 실행: 다시 확인하고, 막혀 있으면 브라우저 저장으로
+    const blocked = fakeDb();
+    blocked.doc = () => ({ get: async () => { throw Object.assign(new Error('denied'), { code: 'permission-denied' }); } });
+    const next = await run(loader({ user, db: blocked }));
+    assert.equal(next.kind, 'local');
+    assert.equal(ls.getItem('workout-check:account-ok'), null);
+  } finally {
+    delete globalThis.localStorage;
+  }
+});
+
+test('빠른 열기: 오프라인·시간 초과로 확인하지 못한 경우에는 표시를 남기지 않음', async () => {
+  const ls = fakeLocalStorage();
+  globalThis.localStorage = ls;
+  try {
+    const db = fakeDb();
+    db.doc = () => ({ get: async () => { throw Object.assign(new Error('offline'), { code: 'unavailable' }); } });
+    await run(loader({ user: { uid: 'u1', email: '' }, db }));
+    assert.equal(ls.getItem('workout-check:account-ok'), null);
+  } finally {
+    delete globalThis.localStorage;
+  }
+});

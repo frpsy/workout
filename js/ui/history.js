@@ -10,15 +10,6 @@ const WEEKS = 5; // 달력 전체 주 수: 최근 2주는 바로, 앞의 3주는
 const RECENT = 2;
 const MAX_PIPS = 6;
 const NOTES_SHOWN = 10; // 마무리 기록은 최근 10개까지
-const STROKES = ['M3 4H21', 'M12 4V20', 'M12 12H18', 'M7 9V16', 'M3 20H21'];
-
-function glyph(on) {
-  return (
-    '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-width="2" stroke-linecap="round">' +
-    STROKES.map((p, i) => `<path class="${i < on ? 'on' : 'off'}" d="${p}"/>`).join('') +
-    '</svg>'
-  );
-}
 
 const HEAD = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목', '금', '토', '일'].map((x) => `<span>${x}</span>`).join('') + '</div>';
 
@@ -34,7 +25,6 @@ export function mountHistory(root, store) {
         <section>
           <h2 class="sec">달성·연속</h2>
           <dl class="totals" id="summary"></dl>
-          <div class="glyphs" id="glyphs" role="img"></div>
           <p class="tallytext" id="tallyText"></p>
           <p class="tallytext" id="workText"></p>
         </section>
@@ -108,16 +98,8 @@ export function mountHistory(root, store) {
     $('#calOlder', root).innerHTML = calHtml(state, ctx, 0, WEEKS - RECENT);
     $('#calSub', root).textContent = help.filter(Boolean).join(' ');
 
-    /* 正 누적 */
+    /* 모두 마친 날 수 */
     const complete = completeDayCount(days, exs);
-    const full = Math.floor(complete / 5);
-    const shown = Math.min(full, 40);
-    let g = full > shown ? '<span class="more">…</span>' : '';
-    for (let i = 0; i < shown; i++) g += glyph(5);
-    g += glyph(complete % 5);
-    const glyphs = $('#glyphs', root);
-    glyphs.innerHTML = g;
-    glyphs.setAttribute('aria-label', `모든 운동을 마친 날 ${complete}일`);
     $('#tallyText', root).innerHTML = `모두 마친 날 <b>${complete}</b>일`;
 
     /* 운동시간: 오늘과 최근 7일 (스톱워치로 잰 총 운동시간) */
