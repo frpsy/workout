@@ -31,8 +31,19 @@ export function mountTabs(nav, panels, { win = window, doc = document } = {}) {
   function show(name, { push = false } = {}) {
     if (!TABS.includes(name)) name = 'today';
     if (name === current) return;
+    // 처음 열 때는 움직임 없이, 탭을 옮길 때는 가는 방향에서 새 화면이 밀려 들어옴 (움직임 줄이기 설정이면 없음)
+    const slide = current && !(typeof win.matchMedia === 'function' && win.matchMedia('(prefers-reduced-motion: reduce)').matches) ? (TABS.indexOf(name) > TABS.indexOf(current) ? 'next' : 'prev') : null;
     current = name;
-    for (const [tab, els] of Object.entries(panels)) for (const el of els) if (el) el.hidden = tab !== name;
+    for (const [tab, els] of Object.entries(panels)) {
+      for (const el of els) {
+        if (!el) continue;
+        el.hidden = tab !== name;
+        if (slide && tab === name) {
+          el.dataset.slide = slide;
+          el.addEventListener('animationend', () => delete el.dataset.slide, { once: true });
+        }
+      }
+    }
     for (const b of nav.querySelectorAll('button[data-tab]')) {
       const on = b.dataset.tab === name;
       b.setAttribute('aria-selected', String(on));

@@ -102,3 +102,18 @@ test('스와이프: 왼쪽으로 밀면 다음 탭, 오른쪽으로 밀면 이�
   swipe(input, -100);
   assert.equal(tabs.current, 'record', '입력칸에서 시작하면 무시');
 });
+
+test('탭을 옮기면 새 화면에 가는 방향 표시(data-slide)가 붙고, 처음 열 때나 움직임 줄이기 설정에서는 붙지 않음', () => {
+  const { w, doc, el, tabs } = setup();
+  assert.equal(el('a').dataset.slide, undefined, '처음 열 때는 움직임 없음');
+  doc.querySelector('[data-tab="record"]').click();
+  assert.equal(el('b').dataset.slide, 'next', '다음 탭은 오른쪽에서');
+  el('b').dispatchEvent(new w.Event('animationend'));
+  assert.equal(el('b').dataset.slide, undefined, '끝나면 표시를 지움');
+  doc.querySelector('[data-tab="today"]').click();
+  assert.equal(el('a').dataset.slide, 'prev', '이전 탭은 왼쪽에서');
+  w.matchMedia = () => ({ matches: true });
+  el('a').dispatchEvent(new w.Event('animationend'));
+  tabs.show('settings');
+  assert.equal(el('c').dataset.slide, undefined, '움직임 줄이기 설정이면 없음');
+}); 
