@@ -27,21 +27,46 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
   // 탭 위 짧은 막대: 가로 스크롤 위치(0 = 오늘 … 2 = 설정)에 맞춰 버튼 가운데 사이를 미끄러짐
   const ind = nav.querySelector('.tab-ind');
   const buttons = TABS.map((name) => nav.querySelector(`button[data-tab="${name}"]`));
-  function placeIndicator() {
+  // 버튼 가운데 위치는 미리 재 둠: 미는 동안 매 프레임 다시 재면(강제 레이아웃) 막대가 뚝뚝 끊김
+  let centers = null;
+  let half = 0;
+  // 스크롤 연동 애니메이션(style.css의 .tab-ind.linked)을 쓸 수 있으면 막대는 브라우저가 움직이고, 여기서는 위치만 알려 줌
+  const linked = !!ind && typeof win.CSS !== 'undefined' && typeof win.CSS.supports === 'function'
+    && win.CSS.supports('animation-timeline: --a') && win.CSS.supports('timeline-scope: --a');
+  if (linked) ind.classList.add('linked');
+  function measure() {
     if (!ind || buttons.some((b) => !b)) return;
+    centers = buttons.map((b) => b.offsetLeft + b.offsetWidth / 2);
+    half = ind.offsetWidth / 2;
+    if (linked) centers.forEach((c, i) => ind.style.setProperty(`--ind-${i}`, `${(c - half).toFixed(1)}px`));
+  }
+  function placeIndicator() {
+    if (!centers || linked) return;
     const pos = Math.min(TABS.length - 1, Math.max(0, pager.scrollLeft / width()));
-    const i = Math.floor(pos);
-    const center = (b) => b.offsetLeft + b.offsetWidth / 2;
-    const a = center(buttons[i]);
-    const b = center(buttons[Math.min(i + 1, TABS.length - 1)]);
-    const x = a + (b - a) * (pos - i) - ind.offsetWidth / 2;
-    ind.style.transform = `translateX(${Math.round(x * 10) / 10}px)`;
+    const i = Math.min(Math.floor(pos), TABS.length - 2);
+    const x = centers[i] + (centers[i + 1] - centers[i]) * (pos - i) - half;
+    ind.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`;
   }
 
-  /** 탭 막대·접근성 표시를 바꿈. 넘기는 도중에도 가까운 화면을 따라 바로 바뀜 */
-  function mark(name) {
+  /** 아래 탭 표시만 바꿈(가벼움). 넘기는 도중에도 가까운 화면을 따라 바로 바뀜 */
+  function select(name) {
     if (name === current) return;
     current = name;
+    for (const b of buttons) {
+      if (!b) continue;
+      const on = b.dataset.tab === name;
+      b.setAttribute('aria-selected', String(on));
+      if (on) b.setAttribute('aria-current', 'page');
+      else b.removeAttribute('aria-current');
+    }
+  }
+
+  /** 화면 쪽 표시까지 바꿈(세 화면 전체에 영향을 줘 무거움): 넘김이 멈췄을 때·버튼으로 옮길 때만 */
+  let shown = null;
+  function mark(name) {
+    select(name);
+    if (name === shown) return;
+    shown = name;
     doc.documentElement.dataset.tab = name;
     TABS.forEach((tab, i) => {
       const page = pages[i];
@@ -51,12 +76,6 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
       else page.setAttribute('inert', '');
       page.setAttribute('aria-hidden', String(tab !== name));
     });
-    for (const b of nav.querySelectorAll('button[data-tab]')) {
-      const on = b.dataset.tab === name;
-      b.setAttribute('aria-selected', String(on));
-      if (on) b.setAttribute('aria-current', 'page');
-      else b.removeAttribute('aria-current');
-    }
     // 기록·설정 탭은 안의 접힌 항목을 펼쳐 둠 (탭 하나가 곧 그 내용이므로)
     const page = pages[TABS.indexOf(name)];
     if (name !== 'today' && page) page.querySelectorAll('details').forEach((d) => (d.open = true));
@@ -96,9 +115,11 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
     settleTimer = 0;
     commit(nearest());
   };
+  // scroll 이벤트는 브라우저가 이미 프레임마다 한 번 보내므로 그 자리에서 바로 옮김
+  // (requestAnimationFrame으로 미루면 한 프레임 늦게 따라와 오히려 어긋남)
   pager.addEventListener('scroll', () => {
     placeIndicator();
-    mark(nearest());
+    select(nearest());
     clearTimeout(settleTimer);
     settleTimer = setTimeout(settled, SETTLE_MS);
   }, { passive: true });
@@ -107,6 +128,7 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
   // 화면 크기가 바뀌면(돌리기 등) 보던 화면에 다시 맞춤
   win.addEventListener('resize', () => {
     if (current) pager.scrollLeft = TABS.indexOf(current) * width();
+    measure();
     placeIndicator();
   });
   win.addEventListener('popstate', () => go(tabFromHash(win.location.hash), { push: false }));
@@ -125,10 +147,12 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
     if (page) page.scrollTop = 0;
   };
   fromAddress();
+  measure();
   placeIndicator();
   win.addEventListener('load', () => {
     fromAddress();
-    placeIndicator(); // 글꼴이 늦게 와 버튼 폭이 바뀌어도 맞춤
+    measure(); // 글꼴이 늦게 와 버튼 폭이 바뀌어도 맞춤
+    placeIndicator();
   }, { once: true });
   committed = current;
   return { show: go, get current() { return current; } };
