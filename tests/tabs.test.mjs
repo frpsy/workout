@@ -61,10 +61,10 @@ test('탭: 처음엔 오늘 화면, 다른 화면은 inert(탭 키·화면 읽�
   assert.equal(doc.documentElement.dataset.tab, 'today');
 });
 
-test('탭: 버튼을 누르면 그 화면으로 부드럽게 넘기고 주소에 남김, 접힌 항목은 펼침', () => {
+test('탭: 버튼을 누르면 그 화면으로 바로 전환하고(미끄러지지 않음) 주소에 남김, 접힌 항목은 펼침', () => {
   const s = setup();
   s.btn('record').click();
-  assert.deepEqual(s.scrolls.at(-1), { left: W, behavior: 'smooth' });
+  assert.deepEqual(s.scrolls.at(-1), { left: W, behavior: 'auto' });
   assert.equal(s.tabs.current, 'record');
   assert.equal(s.w.location.hash, '#record');
   assert.equal(s.btn('record').getAttribute('aria-selected'), 'true');
@@ -116,10 +116,13 @@ test('뒤로 가기(popstate)는 주소의 탭으로 넘기되 주소를 새로 
   assert.equal(s.w.history.length, before);
 });
 
-test('움직임 줄이기 설정이면 버튼으로 옮길 때도 미끄러지지 않고 바로', () => {
-  const s = setup(undefined, { reduce: true });
-  s.btn('settings').click();
-  assert.deepEqual(s.scrolls.at(-1), { left: 2 * W, behavior: 'auto' });
+test('다른 화면에서 옮겨 달라는 이벤트(goto-tab)는 부드럽게, 움직임 줄이기 설정이면 바로', () => {
+  const s = setup();
+  s.doc.dispatchEvent(new s.w.CustomEvent('workout:goto-tab', { detail: 'settings' }));
+  assert.deepEqual(s.scrolls.at(-1), { left: 2 * W, behavior: 'smooth' });
+  const r = setup(undefined, { reduce: true });
+  r.doc.dispatchEvent(new r.w.CustomEvent('workout:goto-tab', { detail: 'settings' }));
+  assert.deepEqual(r.scrolls.at(-1), { left: 2 * W, behavior: 'auto' });
 });
 
 test('탭 전환이 "불러오는 중…" 문구를 다시 띄우지 않음(탭 대상에서 제외)', () => {

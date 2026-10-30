@@ -105,7 +105,7 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
 
   nav.addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-tab]');
-    if (b) go(b.dataset.tab);
+    if (b) go(b.dataset.tab, { smooth: false }); // 탭 버튼은 미끄러지지 않고 바로 전환
   });
 
   // 손으로 넘길 때: 가까운 화면을 따라 탭 표시를 바로 바꾸고, 멈추면 주소에 남김
