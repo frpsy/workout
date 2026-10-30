@@ -46,7 +46,7 @@ async function boot() {
     today: [el('today'), el('journal'), el('timer'), el('bottom')],
     record: [el('recordTitle'), el('history'), el('plan-sec')],
     settings: [el('settingsTitle'), el('settings')],
-  });
+  }, { stage: document.querySelector('.wrap') });
 
   let frame = 0;
   store.subscribe((state) => {

@@ -114,7 +114,7 @@
 
 * { box-sizing: border-box; }
 /* 더블탭 확대 지연 없애기 */
-html { touch-action: manipulation; background: var(--bg); }
+html { touch-action: manipulation; background: var(--bg); overflow-x: hidden; } /* overflow-x: 탭을 옆으로 밀 때 화면 틀이 넘쳐도 가로 스크롤·화면 넓어짐이 생기지 않게(body에 두면 휴대폰에서 막지 못함) */
 body {
   background: var(--bg);
   color: var(--fg);
@@ -1186,7 +1186,7 @@ tr.cur td { background: var(--accent-soft); }
 @keyframes timer-flash { 50% { background: var(--accent-soft); border-color: var(--accent); } }
 @keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
 
-.wrap, .tabbar { animation: app-in 0.35s ease-out both; }
+.wrap, .tabbar { animation: app-in 0.35s ease-out backwards; } /* backwards: 끝난 뒤 opacity를 붙잡지 않아야 밀 때 화면 틀의 인라인 opacity가 먹음 */
 
 @media (prefers-reduced-motion: no-preference) {
   .row, .check, .segs i, .cell { transition: background-color 0.18s, border-color 0.18s; }
