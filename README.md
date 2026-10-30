@@ -62,11 +62,6 @@ js/
   local-store.js      이 브라우저에 작은 설정·상태 읽고 쓰기(저장이 막혀도 예외 없음)
   view.js             화면 보기 3단계(요약/기본/상세) 저장
   timer.js            휴식 타이머 상태 (종료 시각 기준)
-  ui/tabs.js          아래 탭 전환
-  ui/sound-ui.js      효과음 켜기/끄기 버튼과 상태 변화별 소리
-  ui/view-switch.js   화면 보기 3단계 버튼
-  ui/login-note.js    로그인 권유 안내(나중에 → 7일 숨김)
-  ui/workbar.js       머리말 운동 스톱워치(시작·종료·중지·취소·초기화, 자동 시작, 화면 켜짐 유지)
   boot-progress.js    시작 화면 진행 막대
   tips.js             운동 팁 30개
   weather.js          내일 날씨(Open-Meteo) 가져오기·표기
@@ -77,11 +72,22 @@ js/
   storage/            저장소 어댑터 (local, claude-db, firebase) — 같은 인터페이스
   firebase-config.js  Firebase 연결 값 (null이면 사용 안 함)
   vendor/firebase.js  Firebase SDK 묶음 (빌드 결과, 직접 고치지 않음)
-  ui/                 화면 조각 (today, history, plan, settings)
+  ui/                 화면 조각
+    today.js            오늘 탭: 머리말·종목 줄(체크·세트·개수·난이도)
+    workbar.js          머리말 운동 스톱워치(시작·종료·중지·취소·초기화, 첫 세트 자동 시작, 화면 켜짐 유지)
+    sound-ui.js         효과음 켜기/끄기 버튼과 상태 변화별 소리
+    view-switch.js      화면 보기 3단계 버튼
+    login-note.js       로그인 권유 안내(나중에 → 7일 숨김)
+    journal.js          오늘의 마무리(소감·감사한 일)
+    timer.js            휴식 타이머 화면
+    history.js, plan.js 기록 탭(이번 주·지난 4주·마무리 기록)과 앞으로 목표
+    settings.js         설정 탭(계정·목표·운동 목록)
+    tabs.js             아래 탭 전환(스와이프·슬라이드)
+    weather.js, tip.js  내일 날씨 한 줄, 운동 팁
   main.js             시작점
 fonts/                직접 포함한 글꼴 (필요한 글자만 추린 woff2, 오프라인·외부 요청 없음)
 sw.js, manifest.webmanifest, icons/   홈 화면 설치·오프라인 (sw.js의 ASSETS에 앱 파일 전체)
-tests/                node --test 테스트 (계산·저장 형식·store·저장소·오프라인 파일 목록, jsdom 화면 테스트)
+tests/                node --test 테스트 (계산·저장 형식·store·저장소·오프라인 파일 목록, 화면별 jsdom 테스트 ui-*.test.mjs, 공통 환경 helpers/ui-env.mjs)
 scripts/build-artifact.mjs           claude.ai용 단일 파일 빌드
 scripts/update-sw.mjs                sw.js 미리 저장 목록·캐시 이름 자동 생성
 scripts/build-firebase.mjs           Firebase SDK 묶음 만들기
