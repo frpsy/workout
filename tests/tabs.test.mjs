@@ -13,11 +13,10 @@ function setup(url = 'http://localhost/', { reduce = false } = {}) {
     `<!doctype html><body>
       <main id="pager">
         <div class="page" data-tab="today"><div id="a"></div></div>
-        <div class="page" data-tab="log"><div id="b"><details id="d"></details></div></div>
-        <div class="page" data-tab="stats"></div>
+        <div class="page" data-tab="record"><div id="b"><details id="d"></details></div></div>
         <div class="page" data-tab="settings"><div id="c"></div></div>
       </main>
-      <nav id="nav"><button data-tab="today"></button><button data-tab="log"></button><button data-tab="stats"></button><button data-tab="settings"></button></nav>
+      <nav id="nav"><button data-tab="today"></button><button data-tab="record"></button><button data-tab="settings"></button></nav>
     </body>`,
     { url },
   );
@@ -47,10 +46,10 @@ function setup(url = 'http://localhost/', { reduce = false } = {}) {
 
 test('탭 이름은 주소 뒤 #이름에서 읽고, 모르는 값은 오늘로', () => {
   assert.equal(tabFromHash(''), 'today');
-  assert.equal(tabFromHash('#log'), 'log');
+  assert.equal(tabFromHash('#record'), 'record');
   assert.equal(tabFromHash('#settings'), 'settings');
-  assert.equal(tabFromHash('#stats'), 'stats');
-  assert.equal(tabFromHash('#record'), 'stats', '예전 주소 #record(달력·달성)는 통계로');
+  assert.equal(tabFromHash('#stats'), 'record', '기록·통계를 합치기 전 주소도 기록 탭으로');
+  assert.equal(tabFromHash('#log'), 'record');
   assert.equal(tabFromHash('#엉뚱'), 'today');
 });
 
@@ -58,7 +57,7 @@ test('탭: 처음엔 오늘 화면, 다른 화면은 inert(탭 키·화면 읽�
   const { tabs, page, btn, doc } = setup();
   assert.equal(tabs.current, 'today');
   assert.equal(page('today').hasAttribute('inert'), false);
-  assert.equal(page('log').hasAttribute('inert'), true);
+  assert.equal(page('record').hasAttribute('inert'), true);
   assert.equal(page('settings').getAttribute('aria-hidden'), 'true');
   assert.equal(btn('today').getAttribute('aria-selected'), 'true');
   assert.equal(doc.documentElement.dataset.tab, 'today');
@@ -66,14 +65,14 @@ test('탭: 처음엔 오늘 화면, 다른 화면은 inert(탭 키·화면 읽�
 
 test('탭: 버튼을 누르면 그 화면으로 바로 전환하고(미끄러지지 않음) 주소에 남김, 접힌 항목은 펼침', () => {
   const s = setup();
-  s.btn('log').click();
+  s.btn('record').click();
   assert.deepEqual(s.scrolls.at(-1), { left: W, behavior: 'auto' });
-  assert.equal(s.tabs.current, 'log');
-  assert.equal(s.w.location.hash, '#log');
-  assert.equal(s.btn('log').getAttribute('aria-selected'), 'true');
-  assert.equal(s.btn('log').getAttribute('aria-current'), 'page');
+  assert.equal(s.tabs.current, 'record');
+  assert.equal(s.w.location.hash, '#record');
+  assert.equal(s.btn('record').getAttribute('aria-selected'), 'true');
+  assert.equal(s.btn('record').getAttribute('aria-current'), 'page');
   assert.equal(s.btn('today').getAttribute('aria-selected'), 'false');
-  assert.equal(s.page('log').hasAttribute('inert'), false);
+  assert.equal(s.page('record').hasAttribute('inert'), false);
   assert.equal(s.page('today').hasAttribute('inert'), true);
   assert.equal(s.el('d').open, true, '기록·설정 탭 안의 접힌 항목은 펼쳐 줌');
   s.btn('today').click();
@@ -84,7 +83,7 @@ test('탭: 버튼을 누르면 그 화면으로 바로 전환하고(미끄러지
 test('탭: 주소의 #settings로 열면 설정 화면에서 시작(움직임 없이), 이벤트로도 이동', () => {
   const s = setup('http://localhost/#settings');
   assert.equal(s.tabs.current, 'settings');
-  assert.deepEqual(s.scrolls[0], { left: 3 * W, behavior: 'auto' });
+  assert.deepEqual(s.scrolls[0], { left: 2 * W, behavior: 'auto' });
   s.doc.dispatchEvent(new s.w.CustomEvent('workout:goto-tab', { detail: 'today' }));
   assert.equal(s.tabs.current, 'today');
   assert.equal(s.left, 0);
@@ -97,12 +96,12 @@ test('손으로 넘기기: 미는 동안 가까운 화면을 따라 탭 표시�
   s.drag(150);
   assert.equal(s.tabs.current, 'today', '반이 안 넘었으면 그대로');
   s.drag(260);
-  assert.equal(s.tabs.current, 'log', '반을 넘기면 탭 표시가 바로 바뀜');
+  assert.equal(s.tabs.current, 'record', '반을 넘기면 탭 표시가 바로 바뀜');
   assert.equal(s.w.location.hash, '', '아직 멈추지 않았으면 주소는 그대로');
   s.drag(W);
   mock.timers.tick(120);
-  assert.equal(s.w.location.hash, '#log', '멈추면 주소에 남김');
-  s.drag(3 * W);
+  assert.equal(s.w.location.hash, '#record', '멈추면 주소에 남김');
+  s.drag(2 * W);
   s.pager.dispatchEvent(new s.w.Event('scrollend')); // scrollend가 있는 브라우저는 바로
   assert.equal(s.w.location.hash, '#settings');
   assert.equal(s.btn('settings').getAttribute('aria-selected'), 'true');
@@ -110,7 +109,7 @@ test('손으로 넘기기: 미는 동안 가까운 화면을 따라 탭 표시�
 
 test('뒤로 가기(popstate)는 주소의 탭으로 넘기되 주소를 새로 쌓지 않음', () => {
   const s = setup();
-  s.btn('log').click();
+  s.btn('record').click();
   const before = s.w.history.length;
   s.w.history.replaceState(null, '', '/');
   s.w.dispatchEvent(new s.w.PopStateEvent('popstate'));
@@ -122,10 +121,10 @@ test('뒤로 가기(popstate)는 주소의 탭으로 넘기되 주소를 새로 
 test('다른 화면에서 옮겨 달라는 이벤트(goto-tab)는 부드럽게, 움직임 줄이기 설정이면 바로', () => {
   const s = setup();
   s.doc.dispatchEvent(new s.w.CustomEvent('workout:goto-tab', { detail: 'settings' }));
-  assert.deepEqual(s.scrolls.at(-1), { left: 3 * W, behavior: 'smooth' });
+  assert.deepEqual(s.scrolls.at(-1), { left: 2 * W, behavior: 'smooth' });
   const r = setup(undefined, { reduce: true });
   r.doc.dispatchEvent(new r.w.CustomEvent('workout:goto-tab', { detail: 'settings' }));
-  assert.deepEqual(r.scrolls.at(-1), { left: 3 * W, behavior: 'auto' });
+  assert.deepEqual(r.scrolls.at(-1), { left: 2 * W, behavior: 'auto' });
 });
 
 test('탭 전환이 "불러오는 중…" 문구를 다시 띄우지 않음(탭 대상에서 제외)', () => {
@@ -136,7 +135,7 @@ test('탭 전환이 "불러오는 중…" 문구를 다시 띄우지 않음(탭 
 
 test('화면 구성: 세 탭 화면이 가로로 나란히 붙고 한 화면씩 넘어감', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  for (const tab of ['today', 'log', 'stats', 'settings']) assert.match(html, new RegExp(`<div class="page" data-tab="${tab}">`));
+  for (const tab of ['today', 'record', 'settings']) assert.match(html, new RegExp(`<div class="page" data-tab="${tab}">`));
   assert.equal(value('.pager', 'scroll-snap-type'), 'x mandatory');
   assert.equal(value('.pager', 'overscroll-behavior-x'), 'contain');
   assert.equal(value('.page', 'scroll-snap-align'), 'start');
@@ -159,8 +158,8 @@ test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래
 test('탭 위 짧은 막대: 화면을 미는 만큼 옆 탭 버튼 쪽으로 따라 움직임', () => {
   const dom = new JSDOM(
     `<!doctype html><body><main id="pager">
-      <div class="page" data-tab="today"></div><div class="page" data-tab="log"></div><div class="page" data-tab="stats"></div><div class="page" data-tab="settings"></div>
-    </main><nav id="nav"><i class="tab-ind"></i><button data-tab="today"></button><button data-tab="log"></button><button data-tab="stats"></button><button data-tab="settings"></button></nav></body>`,
+      <div class="page" data-tab="today"></div><div class="page" data-tab="record"></div><div class="page" data-tab="settings"></div>
+    </main><nav id="nav"><i class="tab-ind"></i><button data-tab="today"></button><button data-tab="record"></button><button data-tab="settings"></button></nav></body>`,
     { url: 'http://localhost/' },
   );
   const w = dom.window;
@@ -170,7 +169,7 @@ test('탭 위 짧은 막대: 화면을 미는 만큼 옆 탭 버튼 쪽으로 �
   Object.defineProperty(pager, 'clientWidth', { value: W });
   Object.defineProperty(pager, 'scrollLeft', { get: () => left, set: (v) => { left = v; } });
   pager.scrollTo = (o) => { left = o.left; };
-  // 버튼 네 개가 130px씩 나란히(가운데 65 · 195 · 325 · 455), 막대 폭 28px
+  // 버튼 세 개가 130px씩 나란히(가운데 65 · 195 · 325), 막대 폭 28px
   doc.querySelectorAll('nav button').forEach((b, i) => {
     Object.defineProperty(b, 'offsetLeft', { value: i * 130 });
     Object.defineProperty(b, 'offsetWidth', { value: 130 });
@@ -182,9 +181,9 @@ test('탭 위 짧은 막대: 화면을 미는 만큼 옆 탭 버튼 쪽으로 �
   left = W / 4; // 오늘 → 기록 사이 1/4
   pager.dispatchEvent(new w.Event('scroll'));
   assert.equal(ind.style.transform, 'translate3d(83.5px, 0, 0)', '65 + 130 × 0.25 − 14');
-  left = 3 * W;
+  left = 2 * W;
   pager.dispatchEvent(new w.Event('scroll'));
-  assert.equal(ind.style.transform, 'translate3d(441.0px, 0, 0)', '설정 버튼 가운데(455 − 14)');
+  assert.equal(ind.style.transform, 'translate3d(311.0px, 0, 0)', '설정 버튼 가운데(325 − 14)');
 });
 
 test('탭 표시 막대는 하나만 두고 tabs.js가 위치를 정함', () => {
@@ -198,20 +197,20 @@ test('미는 도중에는 아래 탭 표시만 바꾸고, 화면 쪽 무거운 �
   t.after(() => mock.timers.reset());
   const s = setup();
   s.drag(260);
-  assert.equal(s.btn('log').getAttribute('aria-selected'), 'true', '탭 표시는 바로');
-  assert.equal(s.page('log').hasAttribute('inert'), true, '화면 쪽은 아직 그대로');
+  assert.equal(s.btn('record').getAttribute('aria-selected'), 'true', '탭 표시는 바로');
+  assert.equal(s.page('record').hasAttribute('inert'), true, '화면 쪽은 아직 그대로');
   assert.equal(s.doc.documentElement.dataset.tab, 'today');
   s.drag(W);
   mock.timers.tick(120);
-  assert.equal(s.page('log').hasAttribute('inert'), false, '멈추면 바꿈');
+  assert.equal(s.page('record').hasAttribute('inert'), false, '멈추면 바꿈');
   assert.equal(s.page('today').hasAttribute('inert'), true);
-  assert.equal(s.doc.documentElement.dataset.tab, 'log');
+  assert.equal(s.doc.documentElement.dataset.tab, 'record');
 });
 
-test('스크롤 연동 애니메이션을 지원하면 막대는 CSS가 움직이고, tabs.js는 버튼 위치(--ind-0~3)만 넣음', () => {
+test('스크롤 연동 애니메이션을 지원하면 막대는 CSS가 움직이고, tabs.js는 버튼 위치(--ind-0~2)만 넣음', () => {
   const dom = new JSDOM(
-    `<!doctype html><body><main id="pager"><div class="page" data-tab="today"></div><div class="page" data-tab="log"></div><div class="page" data-tab="stats"></div><div class="page" data-tab="settings"></div></main>
-    <nav id="nav"><i class="tab-ind"></i><button data-tab="today"></button><button data-tab="log"></button><button data-tab="stats"></button><button data-tab="settings"></button></nav></body>`,
+    `<!doctype html><body><main id="pager"><div class="page" data-tab="today"></div><div class="page" data-tab="record"></div><div class="page" data-tab="settings"></div></main>
+    <nav id="nav"><i class="tab-ind"></i><button data-tab="today"></button><button data-tab="record"></button><button data-tab="settings"></button></nav></body>`,
     { url: 'http://localhost/' },
   );
   const w = dom.window;
@@ -232,7 +231,6 @@ test('스크롤 연동 애니메이션을 지원하면 막대는 CSS가 움직�
   assert.equal(ind.classList.contains('linked'), true);
   assert.equal(ind.style.getPropertyValue('--ind-0'), '51.0px');
   assert.equal(ind.style.getPropertyValue('--ind-2'), '311.0px');
-  assert.equal(ind.style.getPropertyValue('--ind-3'), '441.0px');
   left = W;
   pager.dispatchEvent(new w.Event('scroll'));
   assert.equal(ind.style.transform, '', '직접 옮기지 않음');
