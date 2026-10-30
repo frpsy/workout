@@ -7,12 +7,17 @@ import { createTargetResolver } from './progression.js';
 
 const SAVE_DELAY = 350;
 
-export function createStore(adapter) {
+/**
+ * options.cycleFor(date): 그날 처음 보여 줄 사이클(1 아침, 2 저녁). 오늘 탭에서 시각에 맞춰 정할 수 있게 밖에서 넘기며, 기본은 아침.
+ * 지난 날은 저녁 기록만 있을 때 저녁, 아니면 아침.
+ */
+export function createStore(adapter, { cycleFor = () => 1 } = {}) {
   const today = todayStr();
   const state = {
     adapter,
     today,
     selected: today,
+    cycle: 1, // 지금 체크하는 사이클: 1 아침(day.entries), 2 저녁(day.pm)
     config: normalizeConfig(null, today),
     configSaved: false, // 저장소에 설정 문서가 있는지
     days: {},
@@ -71,6 +76,7 @@ export function createStore(adapter) {
       for (const date of timers.keys()) if (state.days[date]) next[date] = state.days[date];
       state.days = next;
       state.daysRev++;
+      if (!state.loaded.days) state.cycle = startCycle(state.selected); // 처음 불러왔을 때 한 번
       state.loaded.days = true;
       if (state.loaded.config && state.status.text === '불러오는 중…') state.status = { text: '', error: false };
       emit();
@@ -124,8 +130,13 @@ export function createStore(adapter) {
   }
 
   /** 선택한 날의 종목 상태 (완료했으면 그때 목표를 그대로 보여줌) */
-  function view(date, ex, res = resolver()) {
-    const e = state.days[date] && state.days[date].entries[ex.id];
+  /** 그날의 사이클별 종목 기록 모음(저녁은 없을 수 있음) */
+  function cycleEntries(day, cycle) {
+    return (cycle === 2 ? day && day.pm : day && day.entries) || {};
+  }
+
+  function view(date, ex, res = resolver(), cycle = state.cycle) {
+    const e = cycleEntries(state.days[date], cycle)[ex.id];
     const done = !!(e && e.done);
     // 그날 난이도(쉬움 0.8 / 보통 1 / 어려움 1.2)를 곱함. 단위(개 1, 초 5)에 맞춰 반올림, 최소 한 단위
     const level = (state.days[date] && state.days[date].level) || 'normal';
@@ -150,10 +161,26 @@ export function createStore(adapter) {
     return state.days[date];
   }
 
-  function ensureEntry(date, id) {
+  function ensureEntry(date, id, cycle = state.cycle) {
     const day = ensureDay(date);
-    if (!day.entries[id]) day.entries[id] = { done: false };
-    return day.entries[id];
+    if (cycle === 2 && !day.pm) day.pm = {};
+    const box = cycle === 2 ? day.pm : day.entries;
+    if (!box[id]) box[id] = { done: false };
+    return box[id];
+  }
+
+  /** 그날 아침·저녁 어느 쪽이든 체크한 세트·완료가 하나라도 있는지 */
+  function hasProgress(date) {
+    const day = state.days[date];
+    const any = (box) => Object.values(box || {}).some((e) => e.done || e.setsDone > 0);
+    return !!day && (any(day.entries) || any(day.pm));
+  }
+
+  /** 그날 처음 보여 줄 사이클 */
+  function startCycle(date) {
+    if (date === state.today) return cycleFor(date) === 2 ? 2 : 1;
+    const day = state.days[date];
+    return day && day.pm && Object.keys(day.pm).length && !Object.values(day.entries || {}).some((e) => e.done || e.setsDone > 0) ? 2 : 1;
   }
 
   /** 그날 기록을 바꾼 뒤: 저장 예약 + 화면 갱신 */
@@ -233,7 +260,7 @@ export function createStore(adapter) {
       if (level === 'normal') delete day.level;
       else day.level = level;
       // 아직 마치지 않은 종목은 고쳐 둔 개수를 지우고 새 목표를 따라가게 함
-      for (const e of Object.values(day.entries)) if (!e.done) delete e.count;
+      for (const e of [...Object.values(day.entries), ...Object.values(day.pm || {})]) if (!e.done) delete e.count;
       commitDay(date);
     },
 
@@ -243,7 +270,7 @@ export function createStore(adapter) {
       const day = ensureDay(date);
       day.workSec = Math.min(86400, (day.workSec || 0) + Math.round(sec));
       if (span && Number.isFinite(span.s) && Number.isFinite(span.e) && span.e >= span.s) {
-        day.sessions = [...(day.sessions || []), { s: span.s, e: span.e, sec: Math.round(sec) }].slice(-MAX_SESSIONS);
+        day.sessions = [...(day.sessions || []), { s: span.s, e: span.e, sec: Math.round(sec), ...(span.c === 2 ? { c: 2 } : {}) }].slice(-MAX_SESSIONS);
       }
       commitDay(date);
     },
@@ -280,11 +307,20 @@ export function createStore(adapter) {
     select(date) {
       if (!isDateStr(date) || date > state.today) return;
       state.selected = date;
+      state.cycle = startCycle(date);
       emit();
     },
 
     goToday() {
       state.selected = state.today;
+      state.cycle = startCycle(state.today);
+      emit();
+    },
+
+    /** 체크할 사이클을 바꿈(1 아침, 2 저녁) */
+    setCycle(c) {
+      if (c !== 1 && c !== 2) return;
+      state.cycle = c;
       emit();
     },
 
@@ -295,7 +331,10 @@ export function createStore(adapter) {
       const wasToday = state.selected === state.today;
       state.today = t;
       state.daysRev++;
-      if (wasToday) state.selected = t;
+      if (wasToday) {
+        state.selected = t;
+        state.cycle = startCycle(t);
+      }
       emit();
     },
 
@@ -319,6 +358,7 @@ export function createStore(adapter) {
     state,
     actions,
     view,
+    hasProgress,
     resolver,
     activeExercises,
     subscribe(fn) {

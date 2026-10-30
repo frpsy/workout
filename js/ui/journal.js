@@ -4,6 +4,7 @@
 
 import { labelMD } from '../dates.js';
 import { NOTE_MAX } from '../model.js';
+import { isDone } from '../stats.js';
 import { $, esc } from './dom.js';
 
 const PEN = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
@@ -101,7 +102,7 @@ export function mountJournal(root, store) {
 
   function render(state) {
     const exs = store.activeExercises();
-    const allDone = exs.length > 0 && exs.every((e) => store.view(state.selected, e).done);
+    const allDone = exs.length > 0 && exs.every((e) => isDone(state.days[state.selected], e.id)); // 아침·저녁 합쳐서
     const note = noteOf(state, state.selected);
     if (state.selected !== date) {
       date = state.selected;

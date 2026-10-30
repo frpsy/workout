@@ -40,10 +40,7 @@ export function mountWorkbar(root, store) {
   function resetTimeIfCleared() {
     const state = store.state;
     if (!state.ready) return;
-    const any = store.activeExercises().some((e) => {
-      const v = store.view(state.selected, e);
-      return v.done || v.setsDone > 0;
-    });
+    const any = store.hasProgress(state.selected); // 아침·저녁 어느 쪽이든
     const was = prevProgress && prevProgress.date === state.selected && prevProgress.any;
     prevProgress = { date: state.selected, any };
     if (!was || any || state.selected !== state.today) return;
@@ -98,7 +95,7 @@ export function mountWorkbar(root, store) {
     if (session.running) {
       ticking(false);
       const done = session.stop();
-      if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e });
+      if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e, c: store.state.cycle });
       playSound('stop');
     } else {
       startWork();
@@ -113,7 +110,10 @@ export function mountWorkbar(root, store) {
   // 오늘 첫 세트를 마치면 '운동 시작'을 대신 눌러 줌 (이미 재는 중이거나, 오늘 이미 시간을 기록했거나, 지난 날을 고치는 중이면 그대로)
   function autoStart(before, after) {
     const state = store.state;
-    const recorded = (state.days[state.today] && state.days[state.today].workSec) || 0;
+    // 지금 체크하는 사이클(아침/저녁)에서 이미 운동 시간을 기록했는지 (시각 없는 예전 기록은 아침으로 봄)
+    const day = state.days[state.today];
+    const sessions = (day && day.sessions) || [];
+    const recorded = sessions.length ? sessions.some((x) => (x.c || 1) === state.cycle) : !!(day && day.workSec) && state.cycle === 1;
     if (after.setsDone <= before.setsDone || session.running || recorded || state.selected !== state.today || !state.ready) return;
     startWork();
     renderWork();

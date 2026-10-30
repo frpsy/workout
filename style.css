@@ -349,6 +349,10 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   border-radius: var(--r-ctrl);
   background: var(--line);
 }
+/* 아침·저녁 사이클: 한 줄 전체를 둘로 나눔 */
+.cycles { margin: 8px 0; }
+.cycles button { flex: 1; }
+.cycles small { font-weight: 400; font-variant-numeric: tabular-nums; opacity: 0.8; }
 /* 감싸는 틀이 넘침을 자르지 않으므로(누르는 영역 44px 유지) overflow: hidden을 쓰지 않음 */
 .levels button, .views button {
   position: relative;
@@ -946,6 +950,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .log-total { font-size: var(--fs-sm); font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .log-total.none { font-weight: 400; color: var(--muted); }
 .log-time { margin: 0; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.day-cycle { margin: 4px 0 0; font-size: var(--fs-sm); font-weight: 700; color: var(--muted); }
 .dayex { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .dayex li { display: flex; justify-content: space-between; gap: var(--gap); font-size: var(--fs-md); }
 .dayex li b { font-variant-numeric: tabular-nums; }

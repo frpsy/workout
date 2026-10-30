@@ -126,3 +126,27 @@ test('기록: 오늘·최근 7일 운동시간과 하루 평균을 보여 줌', 
   const none = setup(history, { days: fullDays(2) });
   assert.match(none.root.querySelector('#workText').textContent, /▶ 운동 시작/, '기록이 없으면 사용법 안내');
 });
+
+test('기록: 저녁 기록이 있는 날은 아침·저녁 이름을 붙여 사이클별로 보여 주고, 시각에도 이름이 붙음', () => {
+  const t0 = todayStr();
+  const days = fullDays(2);
+  days[t0] = {
+    v: 2,
+    entries: { push: { done: true, count: 23, target: 23, sets: 3 } },
+    pm: { pull: { done: true, count: 5, target: 5, sets: 3 }, squat: { done: false, setsDone: 1 } },
+    workSec: 3000,
+    sessions: [{ s: at(t0, 7, 10), e: at(t0, 7, 40), sec: 1800 }, { s: at(t0, 21, 0), e: at(t0, 21, 20), sec: 1200, c: 2 }],
+  };
+  const { root } = setup(history, { days });
+  const card = root.querySelector('#dayCard');
+  assert.deepEqual([...card.querySelectorAll('.day-cycle')].map((h) => h.textContent), ['아침', '저녁']);
+  assert.equal(card.querySelector('.log-time').textContent, '아침 07:10 – 07:40, 저녁 21:00 – 21:20');
+  const lists = card.querySelectorAll('.dayex');
+  assert.equal(lists.length, 2);
+  assert.match(lists[0].textContent, /푸시업23×3/);
+  assert.match(lists[1].textContent, /풀업5×3/);
+  assert.match(lists[1].textContent, /스쿼트.*1\/3|스쿼트15×1\/3|스쿼트.*×1\/3/);
+  // 아침 기록만 있는 날은 이름 없이 그대로
+  pickDate(root, addDays(t0, -1));
+  assert.equal(root.querySelectorAll('#dayCard .day-cycle').length, 0);
+});
