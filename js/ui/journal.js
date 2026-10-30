@@ -132,7 +132,7 @@ export function mountJournal(root, store) {
     $('#jLater', root).hidden = has;
 
     // 마지막 종목을 막 체크했으면 마무리 칸이 탭 막대 아래에 가려지지 않게 살며시 끌어올림 (포커스는 뺏지 않음)
-    if (justFinished && mode === 'form' && !root.hidden) { // 다른 탭을 보는 중(root 숨김)에는 이동하지 않음
+    if (justFinished && mode === 'form' && !root.hidden && !root.closest('[inert]')) { // 다른 탭을 보는 중(오늘 화면이 inert)에는 이동하지 않음
       const calm = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       box.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
     }

@@ -164,7 +164,7 @@ async function capture(launch, origin, outDir, only = null) {
           names.push(name);
         };
         await shot('screen');
-        const full = await page.evaluate(() => document.documentElement.scrollHeight);
+        const full = await page.evaluate(() => (document.querySelector('.page:not([inert])') || document.documentElement).scrollHeight); // 보고 있는 탭 화면의 내용 높이
         if (full > vp.height) {
           await page.setViewportSize({ width: vp.width, height: full });
           await page.waitForTimeout(100);

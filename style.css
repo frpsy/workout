@@ -98,7 +98,7 @@
 /* 단독 실행(GitHub Pages)일 때만 기본 리셋과 안전 영역 */
 .standalone { -webkit-text-size-adjust: 100%; }
 /* 홈 화면 앱: 상태 표시줄 뒤를 앱 배경색으로 덮어, 내용이 비쳐 뿌옇게 보이지 않게 함 */
-.standalone body { margin: 0; padding-top: calc(env(safe-area-inset-top, 0px) + 21px); }
+.standalone body { margin: 0; }
 .standalone body::before {
   content: '';
   position: fixed;
@@ -114,7 +114,7 @@
 
 * { box-sizing: border-box; }
 /* 더블탭 확대 지연 없애기 */
-html { touch-action: manipulation; background: var(--bg); overflow-x: hidden; } /* overflow-x: 탭을 옆으로 밀 때 화면 틀이 넘쳐도 가로 스크롤·화면 넓어짐이 생기지 않게(body에 두면 휴대폰에서 막지 못함) */
+html { touch-action: manipulation; background: var(--bg); overflow-x: hidden; } /* overflow-x: 가로로 넘치는 것이 있어도 휴대폰에서 화면이 넓어지지 않게 */
 body {
   background: var(--bg);
   color: var(--fg);
@@ -133,6 +133,29 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 .warn { color: var(--warn); }
 .spacer { flex: 1; }
 
+/* 탭 세 화면을 가로로 나란히: 밀면 옆 화면이 함께 따라오고, 손을 떼면 한 화면씩 붙음(브라우저 기본 스크롤·관성).
+   화면마다 세로 스크롤이 따로라 탭을 오가도 보던 위치가 남음 */
+.pager {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain; /* 끝 화면에서 더 밀어도 브라우저 뒤로 가기·바깥 스크롤로 번지지 않게 */
+  scrollbar-width: none;
+}
+.pager::-webkit-scrollbar { display: none; }
+.page {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-align: start;
+  scroll-snap-stop: always; /* 세게 튕겨도 한 화면씩 */
+}
+
 /* 화면 틀: 내용 한 줄기, 아래 탭 막대만큼 아래 여백 */
 .wrap {
   max-width: 560px;
@@ -144,9 +167,9 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   display: flex;
   flex-direction: column;
   gap: var(--gap-md);
-  min-height: calc(100vh - 21px);
-  min-height: calc(100svh - env(safe-area-inset-top, 0px) - 21px); /* svh: Safari 주소창이 들어가고 나와도 흔들리지 않음. 운동 팁을 탭 막대 바로 위로 내림 */
+  min-height: 100%; /* 화면 높이만큼: 운동 팁을 탭 막대 바로 위로 내림 */
 }
+.standalone .wrap { padding-top: calc(env(safe-area-inset-top, 0px) + 29px); } /* 상태 표시줄 + 21px 띄움 */
 .wrap > * { min-width: 0; }
 .stack { display: flex; flex-direction: column; gap: var(--gap-lg); }
 
@@ -1181,12 +1204,10 @@ tr.cur td { background: var(--accent-soft); }
 
 /* ── 움직임 ────────────────────────────────────────────── */
 @keyframes app-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slide-next { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
-@keyframes slide-prev { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
 @keyframes timer-flash { 50% { background: var(--accent-soft); border-color: var(--accent); } }
 @keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
 
-.wrap, .tabbar { animation: app-in 0.35s ease-out backwards; } /* backwards: 끝난 뒤 opacity를 붙잡지 않아야 밀 때 화면 틀의 인라인 opacity가 먹음 */
+.pager, .tabbar { animation: app-in 0.35s ease-out backwards; }
 
 @media (prefers-reduced-motion: no-preference) {
   .row, .check, .segs i, .cell { transition: background-color 0.18s, border-color 0.18s; }
@@ -1197,11 +1218,8 @@ tr.cur td { background: var(--accent-soft); }
   .check:active:not(:disabled), .wbtn:active:not(:disabled), .tgo:active:not(:disabled), .wsec:active:not(:disabled), .setpips button:active:not(:disabled) { transform: scale(0.94); }
   .timer.done { animation: timer-flash 0.5s ease-in-out 6; }
   .wbtn.ready { animation: ready-pulse 1.4s ease-in-out infinite; }
-  /* 탭을 옮길 때 새 화면이 가는 방향에서 살짝 밀려 들어옴 */
-  [data-slide="next"] { animation: slide-next 0.132s ease-out; }
-  [data-slide="prev"] { animation: slide-prev 0.132s ease-out; }
 }
 @media (prefers-reduced-motion: reduce) {
   .splash, .splash-track i { transition: none; }
-  .wrap, .tabbar { animation: none; }
+  .pager, .tabbar { animation: none; }
 }

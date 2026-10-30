@@ -1,45 +1,47 @@
 import { mock, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 import { mountTabs, tabFromHash } from '../js/ui/tabs.js';
+import { value } from './helpers/css.mjs';
 
-function setup(url = 'http://localhost/', { stage = false, reduce = false } = {}) {
+const W = 400; // 화면 폭
+
+/** jsdom에는 화면 배치가 없어 넘기는 틀의 폭·가로 스크롤 위치를 흉내 냄 */
+function setup(url = 'http://localhost/', { reduce = false } = {}) {
   const dom = new JSDOM(
-    '<!doctype html><body><div id="a"></div><div id="b"><details id="d"></details></div><div id="c"></div><nav id="nav"><button data-tab="today"></button><button data-tab="record"></button><button data-tab="settings"></button></nav></body>',
+    `<!doctype html><body>
+      <main id="pager">
+        <div class="page" data-tab="today"><div id="a"></div></div>
+        <div class="page" data-tab="record"><div id="b"><details id="d"></details></div></div>
+        <div class="page" data-tab="settings"><div id="c"></div></div>
+      </main>
+      <nav id="nav"><button data-tab="today"></button><button data-tab="record"></button><button data-tab="settings"></button></nav>
+    </body>`,
     { url },
   );
   const w = dom.window;
-  w.scrollTo = () => {};
   const doc = w.document;
   const el = (id) => doc.getElementById(id);
   if (reduce) w.matchMedia = (q) => ({ matches: q.includes('reduce') });
-  Object.defineProperty(w, 'innerWidth', { value: 400, configurable: true });
-  const main = doc.createElement('main');
-  doc.body.prepend(main);
-  const tabs = mountTabs(el('nav'), { today: [el('a')], record: [el('b')], settings: [el('c')] }, { win: w, doc, stage: stage ? main : null });
-  return { w, doc, el, tabs, main };
-}
-
-/** 손가락 끌기: 시작점에서 points의 x 이동량대로 touchmove를 보낸 뒤 놓음(each: ms 간격) */
-function drag(w, target, xs, { y = 300, x0 = 200, each = 16, end = true } = {}) {
-  const mk = (type, x, yy) => {
-    const ev = new w.Event(type, { bubbles: true, cancelable: true });
-    const t = { clientX: x, clientY: yy };
-    ev.touches = type === 'touchend' || type === 'touchcancel' ? [] : [t];
-    ev.changedTouches = [t];
-    return ev;
+  const pager = el('pager');
+  let left = 0;
+  const scrolls = [];
+  Object.defineProperty(pager, 'clientWidth', { value: W });
+  Object.defineProperty(pager, 'scrollLeft', { get: () => left, set: (v) => { left = v; } });
+  pager.scrollTo = (opts) => {
+    scrolls.push(opts);
+    left = opts.left;
   };
-  target.dispatchEvent(mk('touchstart', x0, y));
-  let last = null;
-  for (const p of xs) {
-    mock.timers.tick(each);
-    const [dx, dy = 0] = Array.isArray(p) ? p : [p];
-    last = mk('touchmove', x0 + dx, y + dy);
-    target.dispatchEvent(last);
-  }
-  const lastDx = xs.length ? [].concat(xs[xs.length - 1])[0] : 0;
-  if (end) target.dispatchEvent(mk('touchend', x0 + lastDx, y));
-  return last;
+  const tabs = mountTabs(el('nav'), pager, { win: w, doc });
+  const page = (name) => doc.querySelector(`.page[data-tab="${name}"]`);
+  const btn = (name) => doc.querySelector(`button[data-tab="${name}"]`);
+  /** 손으로 밀어 가로 위치가 바뀐 것처럼 scroll 이벤트를 보냄 */
+  const drag = (x) => {
+    left = x;
+    pager.dispatchEvent(new w.Event('scroll'));
+  };
+  return { w, doc, el, tabs, pager, page, btn, drag, scrolls, get left() { return left; } };
 }
 
 test('탭 이름은 주소 뒤 #이름에서 읽고, 모르는 값은 오늘로', () => {
@@ -49,155 +51,97 @@ test('탭 이름은 주소 뒤 #이름에서 읽고, 모르는 값은 오늘로'
   assert.equal(tabFromHash('#엉뚱'), 'today');
 });
 
-test('탭: 처음엔 오늘만 보이고, 누르면 그 탭만 보이며 주소에 남음', () => {
-  const { w, doc, el, tabs } = setup();
+test('탭: 처음엔 오늘 화면, 다른 화면은 inert(탭 키·화면 읽기에서 건너뜀)', () => {
+  const { tabs, page, btn, doc } = setup();
   assert.equal(tabs.current, 'today');
-  assert.equal(el('a').hidden, false);
-  assert.equal(el('b').hidden, true);
-  doc.querySelector('[data-tab="record"]').click();
-  assert.equal(el('a').hidden, true);
-  assert.equal(el('b').hidden, false);
-  assert.equal(w.location.hash, '#record');
-  assert.equal(doc.querySelector('[data-tab="record"]').getAttribute('aria-selected'), 'true');
-  assert.equal(doc.querySelector('[data-tab="today"]').getAttribute('aria-selected'), 'false');
-  assert.equal(el('d').open, true, '기록·설정 탭 안의 접힌 항목은 펼쳐 줌');
-  doc.querySelector('[data-tab="today"]').click();
-  assert.equal(el('a').hidden, false);
-  assert.equal(w.location.hash, '');
+  assert.equal(page('today').hasAttribute('inert'), false);
+  assert.equal(page('record').hasAttribute('inert'), true);
+  assert.equal(page('settings').getAttribute('aria-hidden'), 'true');
+  assert.equal(btn('today').getAttribute('aria-selected'), 'true');
+  assert.equal(doc.documentElement.dataset.tab, 'today');
 });
 
-test('탭: 주소의 #settings로 열면 설정 탭, 이벤트로도 이동', () => {
-  const { w, doc, el, tabs } = setup('http://localhost/#settings');
-  assert.equal(tabs.current, 'settings');
-  assert.equal(el('c').hidden, false);
-  doc.dispatchEvent(new w.CustomEvent('workout:goto-tab', { detail: 'today' }));
-  assert.equal(tabs.current, 'today');
-  assert.equal(el('a').hidden, false);
+test('탭: 버튼을 누르면 그 화면으로 부드럽게 넘기고 주소에 남김, 접힌 항목은 펼침', () => {
+  const s = setup();
+  s.btn('record').click();
+  assert.deepEqual(s.scrolls.at(-1), { left: W, behavior: 'smooth' });
+  assert.equal(s.tabs.current, 'record');
+  assert.equal(s.w.location.hash, '#record');
+  assert.equal(s.btn('record').getAttribute('aria-selected'), 'true');
+  assert.equal(s.btn('record').getAttribute('aria-current'), 'page');
+  assert.equal(s.btn('today').getAttribute('aria-selected'), 'false');
+  assert.equal(s.page('record').hasAttribute('inert'), false);
+  assert.equal(s.page('today').hasAttribute('inert'), true);
+  assert.equal(s.el('d').open, true, '기록·설정 탭 안의 접힌 항목은 펼쳐 줌');
+  s.btn('today').click();
+  assert.equal(s.left, 0);
+  assert.equal(s.w.location.hash, '');
 });
 
-test('탭 전환이 "불러오는 중…" 문구를 다시 띄우지 않음(탭 대상에서 제외)', async () => {
-  const { readFileSync } = await import('node:fs');
+test('탭: 주소의 #settings로 열면 설정 화면에서 시작(움직임 없이), 이벤트로도 이동', () => {
+  const s = setup('http://localhost/#settings');
+  assert.equal(s.tabs.current, 'settings');
+  assert.deepEqual(s.scrolls[0], { left: 2 * W, behavior: 'auto' });
+  s.doc.dispatchEvent(new s.w.CustomEvent('workout:goto-tab', { detail: 'today' }));
+  assert.equal(s.tabs.current, 'today');
+  assert.equal(s.left, 0);
+});
+
+test('손으로 넘기기: 미는 동안 가까운 화면을 따라 탭 표시가 바뀌고, 멈추면 주소에 남음', (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const s = setup();
+  s.drag(150);
+  assert.equal(s.tabs.current, 'today', '반이 안 넘었으면 그대로');
+  s.drag(260);
+  assert.equal(s.tabs.current, 'record', '반을 넘기면 탭 표시가 바로 바뀜');
+  assert.equal(s.w.location.hash, '', '아직 멈추지 않았으면 주소는 그대로');
+  s.drag(W);
+  mock.timers.tick(120);
+  assert.equal(s.w.location.hash, '#record', '멈추면 주소에 남김');
+  s.drag(2 * W);
+  s.pager.dispatchEvent(new s.w.Event('scrollend')); // scrollend가 있는 브라우저는 바로
+  assert.equal(s.w.location.hash, '#settings');
+  assert.equal(s.btn('settings').getAttribute('aria-selected'), 'true');
+});
+
+test('뒤로 가기(popstate)는 주소의 탭으로 넘기되 주소를 새로 쌓지 않음', () => {
+  const s = setup();
+  s.btn('record').click();
+  const before = s.w.history.length;
+  s.w.history.replaceState(null, '', '/');
+  s.w.dispatchEvent(new s.w.PopStateEvent('popstate'));
+  assert.equal(s.tabs.current, 'today');
+  assert.equal(s.left, 0);
+  assert.equal(s.w.history.length, before);
+});
+
+test('움직임 줄이기 설정이면 버튼으로 옮길 때도 미끄러지지 않고 바로', () => {
+  const s = setup(undefined, { reduce: true });
+  s.btn('settings').click();
+  assert.deepEqual(s.scrolls.at(-1), { left: 2 * W, behavior: 'auto' });
+});
+
+test('탭 전환이 "불러오는 중…" 문구를 다시 띄우지 않음(탭 대상에서 제외)', () => {
   const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
-  const call = main.slice(main.indexOf('mountTabs('), main.indexOf('});', main.indexOf('mountTabs(')));
+  const call = main.slice(main.indexOf('mountTabs('), main.indexOf(';', main.indexOf('mountTabs(')));
   assert.ok(!call.includes('boot-status'));
 });
 
-test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래 안전 영역만큼 여백을 직접 둠', async () => {
-  const { readFileSync } = await import('node:fs');
+test('화면 구성: 세 탭 화면이 가로로 나란히 붙고 한 화면씩 넘어감', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const { value } = await import('./helpers/css.mjs');
+  for (const tab of ['today', 'record', 'settings']) assert.match(html, new RegExp(`<div class="page" data-tab="${tab}">`));
+  assert.equal(value('.pager', 'scroll-snap-type'), 'x mandatory');
+  assert.equal(value('.pager', 'overscroll-behavior-x'), 'contain');
+  assert.equal(value('.page', 'scroll-snap-align'), 'start');
+  assert.equal(value('.page', 'scroll-snap-stop'), 'always');
+  assert.equal(value('.page', 'overflow-y'), 'auto', '화면마다 세로 스크롤 따로');
+});
+
+test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래 안전 영역만큼 여백을 직접 둠', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.ok(html.includes('viewport-fit=cover'));
-  assert.equal(value('.standalone body', 'padding-top'), 'calc(env(safe-area-inset-top, 0px) + 21px)');
+  assert.equal(value('.standalone .wrap', 'padding-top'), 'calc(env(safe-area-inset-top, 0px) + 29px)');
   assert.equal(value('.tabbar', 'padding-bottom'), 'calc(env(safe-area-inset-bottom, 0px) + 10px)');
   assert.equal(value('.wrap', 'padding-bottom'), 'calc(70px + env(safe-area-inset-bottom, 0px))');
-});
-
-test('스와이프: 왼쪽으로 밀면 다음 탭, 오른쪽으로 밀면 이전 탭, 끝에서는 그대로', () => {
-  const { w, doc, el, tabs } = setup();
-  const swipe = (target, dx, dy = 0, x0 = 200) => {
-    const mk = (type, x, y) => {
-      const ev = new w.Event(type, { bubbles: true });
-      const t = { clientX: x, clientY: y };
-      ev.touches = type === 'touchend' ? [] : [t];
-      ev.changedTouches = [t];
-      return ev;
-    };
-    target.dispatchEvent(mk('touchstart', x0, 300));
-    target.dispatchEvent(mk('touchend', x0 + dx, 300 + dy));
-  };
-  Object.defineProperty(w, 'innerWidth', { value: 390 });
-  swipe(el('a'), 100, 10);
-  assert.equal(tabs.current, 'today', '첫 탭에서 오른쪽으로 밀어도 그대로');
-  swipe(el('a'), -100, 10);
-  assert.equal(tabs.current, 'record');
-  assert.equal(w.location.hash, '#record');
-  swipe(el('b'), -100);
-  assert.equal(tabs.current, 'settings');
-  swipe(el('c'), -100);
-  assert.equal(tabs.current, 'settings', '마지막 탭에서 왼쪽으로 밀어도 그대로');
-  swipe(el('c'), 100);
-  assert.equal(tabs.current, 'record');
-  swipe(el('b'), -30);
-  assert.equal(tabs.current, 'record', '짧게 밀면 무시');
-  swipe(el('b'), -100, 80);
-  assert.equal(tabs.current, 'record', '세로로 더 많이 움직이면 무시(스크롤)');
-  swipe(el('b'), -100, 0, 10);
-  assert.equal(tabs.current, 'record', '가장자리에서 시작하면 무시');
-  const input = doc.createElement('input');
-  el('b').appendChild(input);
-  swipe(input, -100);
-  assert.equal(tabs.current, 'record', '입력칸에서 시작하면 무시');
-});
-
-test('탭을 옮기면 새 화면에 가는 방향 표시(data-slide)가 붙고, 처음 열 때나 움직임 줄이기 설정에서는 붙지 않음', () => {
-  const { w, doc, el, tabs } = setup();
-  assert.equal(el('a').dataset.slide, undefined, '처음 열 때는 움직임 없음');
-  doc.querySelector('[data-tab="record"]').click();
-  assert.equal(el('b').dataset.slide, 'next', '다음 탭은 오른쪽에서');
-  el('b').dispatchEvent(new w.Event('animationend'));
-  assert.equal(el('b').dataset.slide, undefined, '끝나면 표시를 지움');
-  doc.querySelector('[data-tab="today"]').click();
-  assert.equal(el('a').dataset.slide, 'prev', '이전 탭은 왼쪽에서');
-  w.matchMedia = () => ({ matches: true });
-  el('a').dispatchEvent(new w.Event('animationend'));
-  tabs.show('settings');
-  assert.equal(el('c').dataset.slide, undefined, '움직임 줄이기 설정이면 없음');
-}); 
-
-test('부드러운 슬라이드: 미는 동안 화면이 손가락을 따라오고, 화면 폭 25%를 넘겨 놓으면 옆 탭으로 넘어감', (t) => {
-  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
-  t.after(() => mock.timers.reset());
-  const { w, el, tabs, main } = setup(undefined, { stage: true });
-  const move = drag(w, el('a'), [-20, -60, -120], { end: false });
-  assert.equal(move.defaultPrevented, true, '옆으로 미는 동안 세로 스크롤을 막음');
-  assert.equal(main.style.transform, 'translateX(-120px)');
-  assert.ok(Number(main.style.opacity) < 1, '밀수록 옅어짐');
-  assert.equal(tabs.current, 'today', '놓기 전에는 그대로');
-  el('a').dispatchEvent(Object.assign(new w.Event('touchend', { bubbles: true }), { touches: [], changedTouches: [{ clientX: 80, clientY: 300 }] }));
-  assert.equal(tabs.current, 'today', '내보내는 동안은 아직');
-  mock.timers.tick(200);
-  assert.equal(tabs.current, 'record');
-  assert.equal(w.location.hash, '#record');
-  assert.equal(main.style.transform, '', '끝나면 인라인 이동을 지움');
-  assert.equal(main.style.opacity, '');
-  assert.equal(el('b').dataset.slide, 'next', '새 화면은 오른쪽에서 밀려 들어옴');
-});
-
-test('부드러운 슬라이드: 조금 밀고 천천히 놓으면 제자리로, 빠르게 튕기면 짧아도 넘어감', (t) => {
-  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
-  t.after(() => mock.timers.reset());
-  const { w, el, tabs, main } = setup(undefined, { stage: true });
-  drag(w, el('a'), [-15, -30, -50, -60], { each: 200 }); // 느리게 60px(15%)
-  mock.timers.tick(200);
-  assert.equal(tabs.current, 'today', '되돌아옴');
-  assert.equal(main.style.transform, '');
-  drag(w, el('a'), [-15, -45, -75], { each: 16 }); // 빠르게 튕김(약 1.9px/ms)
-  mock.timers.tick(200);
-  assert.equal(tabs.current, 'record');
-});
-
-test('부드러운 슬라이드: 더 갈 탭이 없으면 조금만 따라오고, 세로로 먼저 움직이면 스크롤로 보고 따라오지 않음', (t) => {
-  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
-  t.after(() => mock.timers.reset());
-  const { w, el, tabs, main } = setup(undefined, { stage: true });
-  drag(w, el('a'), [20, 100], { end: false });
-  assert.equal(main.style.transform, 'translateX(30px)', '첫 탭에서 오른쪽: 30%만');
-  el('a').dispatchEvent(Object.assign(new w.Event('touchend', { bubbles: true }), { touches: [], changedTouches: [{ clientX: 300, clientY: 300 }] }));
-  mock.timers.tick(200);
-  assert.equal(tabs.current, 'today');
-  assert.equal(main.style.transform, '');
-  const move = drag(w, el('a'), [[2, 20], [-150, 40]]);
-  assert.equal(move.defaultPrevented, false, '스크롤은 막지 않음');
-  mock.timers.tick(200);
-  assert.equal(main.style.transform, '');
-  assert.equal(tabs.current, 'today', '세로로 시작한 밀기는 탭을 넘기지 않음');
-});
-
-test('부드러운 슬라이드: 움직임 줄이기 설정이면 따라오지 않고, 예전처럼 놓을 때 바로 넘김', (t) => {
-  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
-  t.after(() => mock.timers.reset());
-  const { w, el, tabs, main } = setup(undefined, { stage: true, reduce: true });
-  drag(w, el('a'), [-40, -100], { each: 16 });
-  assert.equal(main.style.transform, '');
-  assert.equal(tabs.current, 'record', '기다리지 않고 바로');
 });

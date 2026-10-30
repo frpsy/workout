@@ -41,12 +41,7 @@ async function boot() {
     mountSettings(document.getElementById('settings'), store),
   ];
 
-  const el = (id) => document.getElementById(id);
-  mountTabs(el('tabbar'), {
-    today: [el('today'), el('journal'), el('timer'), el('bottom')],
-    record: [el('recordTitle'), el('history'), el('plan-sec')],
-    settings: [el('settingsTitle'), el('settings')],
-  }, { stage: document.querySelector('.wrap') });
+  mountTabs(document.getElementById('tabbar'), document.getElementById('pager'));
 
   let frame = 0;
   store.subscribe((state) => {

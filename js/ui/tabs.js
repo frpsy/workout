@@ -1,5 +1,6 @@
-// 아래 탭(오늘 / 기록 / 설정): 한 번에 한 화면만 보여 주는 앱 같은 구성.
-// 주소 뒤 #record 처럼 현재 탭을 남겨, 새로고침이나 뒤로 가기에도 같은 탭이 열립니다.
+// 아래 탭(오늘 / 기록 / 설정): 세 화면을 가로로 나란히 두고 한 화면씩 넘기는 구성.
+// 화면을 옆으로 밀면 옆 화면이 함께 따라오고, 손을 떼면 가까운 화면에 붙습니다(브라우저 기본 가로 스크롤·스냅이라 휴대폰 관성 그대로).
+// 화면마다 세로 스크롤 위치를 따로 기억하고, 주소 뒤 #record 처럼 현재 탭을 남겨 새로고침·뒤로 가기에도 같은 탭이 열립니다.
 
 export const TABS = ['today', 'record', 'settings'];
 const ALIAS = { '': 'today' };
@@ -9,155 +10,106 @@ export const tabFromHash = (hash) => {
   return TABS.includes(name) ? name : (ALIAS[name] ?? 'today');
 };
 
-const SWIPE_MIN_PX = 60;
-const SWIPE_MAX_MS = 600;
-const EDGE_PX = 24;
-const LOCK_PX = 10; // 이만큼 움직이면 가로(탭 넘기기)인지 세로(스크롤)인지 정함
-const COMMIT_RATIO = 0.25; // 화면 폭의 이만큼 넘게 밀고 놓으면 넘김
-const FLICK_PX_PER_MS = 0.5; // 짧게 밀어도 이보다 빠르게 튕기면 넘김
-const EDGE_RESIST = 0.3; // 더 갈 탭이 없을 때 따라오는 비율
-const SETTLE_MS = 96; // 놓은 뒤 내보내기·되돌리기 시간
-
-/** 입력칸·슬라이더·가로로 스크롤되는 곳에서 시작한 밀기는 탭 전환으로 보지 않음 */
-function swipeable(target, win) {
-  for (let n = target; n && n.nodeType === 1; n = n.parentElement) {
-    if (/^(INPUT|TEXTAREA|SELECT)$/.test(n.tagName) || n.isContentEditable) return false;
-    if (n.scrollWidth > n.clientWidth + 1 && /(auto|scroll)/.test(win.getComputedStyle(n).overflowX)) return false;
-  }
-  return true;
-}
+const SETTLE_MS = 120; // 스크롤이 멈춘 뒤 이만큼 지나면 넘김이 끝난 것으로 봄(scrollend가 없는 브라우저용)
 
 /**
- * nav: 탭 버튼이 든 요소(button[data-tab]), panels: { 탭 이름: [보여 줄 요소들] }.
- * stage: 밀 때 손가락을 따라 움직일 화면 틀(없으면 놓을 때만 넘김).
+ * nav: 탭 버튼이 든 요소(button[data-tab]), pager: 가로로 넘기는 틀(안에 .page[data-tab] 세 개).
  * 다른 화면에서 'workout:goto-tab' 이벤트(detail: 탭 이름)로도 탭을 바꿀 수 있음.
  */
-export function mountTabs(nav, panels, { win = window, doc = document, stage = null } = {}) {
-  let current = null;
+export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
+  const pages = TABS.map((name) => pager.querySelector(`.page[data-tab="${name}"]`));
   const reduced = () => typeof win.matchMedia === 'function' && win.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function show(name, { push = false } = {}) {
-    if (!TABS.includes(name)) name = 'today';
+  const width = () => pager.clientWidth || win.innerWidth || 1;
+  const nearest = () => TABS[Math.min(TABS.length - 1, Math.max(0, Math.round(pager.scrollLeft / width())))];
+  let current = null;
+  let committed = null; // 주소에 남긴 탭
+
+  /** 탭 막대·접근성 표시를 바꿈. 넘기는 도중에도 가까운 화면을 따라 바로 바뀜 */
+  function mark(name) {
     if (name === current) return;
-    // 처음 열 때는 움직임 없이, 탭을 옮길 때는 가는 방향에서 새 화면이 밀려 들어옴 (움직임 줄이기 설정이면 없음)
-    const slide = current && !reduced() ? (TABS.indexOf(name) > TABS.indexOf(current) ? 'next' : 'prev') : null;
     current = name;
-    for (const [tab, els] of Object.entries(panels)) {
-      for (const el of els) {
-        if (!el) continue;
-        el.hidden = tab !== name;
-        if (slide && tab === name) {
-          el.dataset.slide = slide;
-          el.addEventListener('animationend', () => delete el.dataset.slide, { once: true });
-        }
-      }
-    }
+    doc.documentElement.dataset.tab = name;
+    TABS.forEach((tab, i) => {
+      const page = pages[i];
+      if (!page) return;
+      // 보이지 않는 화면은 탭 키·화면 읽기 프로그램이 건너뛰게
+      if (tab === name) page.removeAttribute('inert');
+      else page.setAttribute('inert', '');
+      page.setAttribute('aria-hidden', String(tab !== name));
+    });
     for (const b of nav.querySelectorAll('button[data-tab]')) {
       const on = b.dataset.tab === name;
       b.setAttribute('aria-selected', String(on));
       if (on) b.setAttribute('aria-current', 'page');
       else b.removeAttribute('aria-current');
     }
-    // 기록·설정 탭은 안의 접힌 항목을 처음부터 펼쳐 둠 (탭 하나가 곧 그 내용이므로)
-    if (name !== 'today') for (const el of panels[name] || []) el && el.querySelectorAll('details').forEach((d) => (d.open = true));
-    win.scrollTo(0, 0);
+    // 기록·설정 탭은 안의 접힌 항목을 펼쳐 둠 (탭 하나가 곧 그 내용이므로)
+    const page = pages[TABS.indexOf(name)];
+    if (name !== 'today' && page) page.querySelectorAll('details').forEach((d) => (d.open = true));
+  }
+
+  /** 넘김이 끝났을 때 주소에 남김 */
+  function commit(name, { push = true } = {}) {
+    mark(name);
+    if (name === committed) return;
+    committed = name;
+    if (!push) return;
     try {
-      const hash = name === 'today' ? ' ' : `#${name}`;
-      if (push) win.history.pushState(null, '', hash === ' ' ? win.location.pathname + win.location.search : hash);
+      win.history.pushState(null, '', name === 'today' ? win.location.pathname + win.location.search : `#${name}`);
     } catch {
       /* 주소 기록을 못 남겨도 탭은 바뀜 */
     }
   }
+
+  /** 그 탭 화면으로 넘김 (smooth: 부드럽게, 움직임 줄이기 설정이면 바로) */
+  function go(name, { push = true, smooth = true } = {}) {
+    if (!TABS.includes(name)) name = 'today';
+    const left = TABS.indexOf(name) * width();
+    if (typeof pager.scrollTo === 'function') pager.scrollTo({ left, behavior: smooth && !reduced() ? 'smooth' : 'auto' });
+    else pager.scrollLeft = left;
+    commit(name, { push });
+  }
+
   nav.addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-tab]');
-    if (b) show(b.dataset.tab, { push: true });
+    if (b) go(b.dataset.tab);
   });
-  // 화면을 좌우로 밀면 옆 탭으로 (왼쪽으로 밀면 다음 탭, 오른쪽으로 밀면 이전 탭).
-  // stage(화면 틀)가 있으면 미는 동안 화면이 손가락을 따라오고, 놓을 때 넘길지 되돌릴지 정함
-  let from = null; // { x, y, at, mode: null | 'drag' | 'scroll', dx, lastX, lastAt, vx }
-  let settling = 0; // 놓은 뒤 움직이는 중이면 타이머 번호
-  const neighbor = (dx) => TABS[TABS.indexOf(current) + (dx < 0 ? 1 : -1)];
 
-  function setStage(dx, { animate = false } = {}) {
-    if (!stage) return;
-    const w = win.innerWidth || 1;
-    stage.style.transition = animate ? `transform ${SETTLE_MS}ms ease-out, opacity ${SETTLE_MS}ms ease-out` : 'none';
-    stage.style.transform = dx ? `translateX(${dx}px)` : '';
-    stage.style.opacity = dx ? String(Math.max(0.35, 1 - Math.abs(dx) / w)) : '';
-  }
-  function clearStage() {
-    if (!stage) return;
-    stage.style.transition = '';
-    stage.style.transform = '';
-    stage.style.opacity = '';
-    stage.style.willChange = '';
-  }
-  /** 놓은 뒤: 넘기면 화면을 그 방향으로 내보낸 다음 탭을 바꾸고(새 화면은 반대쪽에서 밀려 들어옴), 아니면 제자리로 */
-  function settle(next, dx) {
-    clearTimeout(settling);
-    const w = win.innerWidth || 1;
-    // 넘길 때는 지금 위치보다 더 바깥으로 내보냄(되돌아가는 것처럼 보이지 않게)
-    setStage(next ? Math.sign(dx) * Math.max(Math.abs(dx) + 40, w * 0.5) : 0, { animate: true });
-    settling = setTimeout(() => {
-      settling = 0;
-      clearStage();
-      if (next) show(next, { push: true });
-    }, SETTLE_MS);
-  }
-
-  doc.addEventListener('touchstart', (ev) => {
-    from = null;
-    if (settling || ev.touches.length !== 1 || !swipeable(ev.target, win)) return;
-    const t = ev.touches[0];
-    if (t.clientX < EDGE_PX || t.clientX > win.innerWidth - EDGE_PX) return; // 가장자리는 기기의 뒤로 가기 동작과 겹침
-    from = { x: t.clientX, y: t.clientY, at: Date.now(), mode: null, dx: 0, lastX: t.clientX, lastAt: Date.now(), vx: 0 };
+  // 손으로 넘길 때: 가까운 화면을 따라 탭 표시를 바로 바꾸고, 멈추면 주소에 남김
+  let settleTimer = 0;
+  const settled = () => {
+    clearTimeout(settleTimer);
+    settleTimer = 0;
+    commit(nearest());
+  };
+  pager.addEventListener('scroll', () => {
+    mark(nearest());
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(settled, SETTLE_MS);
   }, { passive: true });
+  pager.addEventListener('scrollend', settled);
 
-  doc.addEventListener('touchmove', (ev) => {
-    const f = from;
-    if (!f || !stage || reduced() || ev.touches.length !== 1) return;
-    const t = ev.touches[0];
-    const dx = t.clientX - f.x;
-    const dy = t.clientY - f.y;
-    if (!f.mode) {
-      if (Math.abs(dx) < LOCK_PX && Math.abs(dy) < LOCK_PX) return;
-      f.mode = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'drag' : 'scroll'; // 먼저 크게 움직인 쪽으로 정함
-      if (f.mode === 'drag') stage.style.willChange = 'transform, opacity';
-    }
-    if (f.mode !== 'drag') return;
-    if (ev.cancelable) ev.preventDefault(); // 옆으로 미는 동안에는 위아래로 흔들리지 않게
-    const now = Date.now();
-    if (now > f.lastAt) f.vx = (t.clientX - f.lastX) / (now - f.lastAt);
-    f.lastX = t.clientX;
-    f.lastAt = now;
-    f.dx = dx;
-    setStage(neighbor(dx) ? dx : dx * EDGE_RESIST); // 더 갈 탭이 없으면 조금만 따라옴
-  }, { passive: false });
+  // 화면 크기가 바뀌면(돌리기 등) 보던 화면에 다시 맞춤
+  win.addEventListener('resize', () => {
+    if (current) pager.scrollLeft = TABS.indexOf(current) * width();
+  });
+  win.addEventListener('popstate', () => go(tabFromHash(win.location.hash), { push: false }));
+  doc.addEventListener('workout:goto-tab', (ev) => go(ev.detail));
 
-  function release(ev) {
-    const f = from;
-    from = null;
-    if (!f) return;
-    if (f.mode === 'drag') {
-      const w = win.innerWidth || 1;
-      const next = neighbor(f.dx);
-      const far = Math.abs(f.dx) > w * COMMIT_RATIO;
-      const flick = Math.abs(f.dx) > LOCK_PX * 3 && Math.abs(f.vx) > FLICK_PX_PER_MS && Math.sign(f.vx) === Math.sign(f.dx);
-      settle(ev.type === 'touchend' && next && (far || flick) ? next : null, f.dx);
-      return;
-    }
-    if (f.mode === 'scroll' || ev.type !== 'touchend' || !ev.changedTouches.length) return;
-    // 따라오기 없이(움직임 줄이기 설정 등) 빠르게 민 경우: 예전처럼 놓을 때 바로 넘김
-    const t = ev.changedTouches[0];
-    const dx = t.clientX - f.x;
-    const dy = t.clientY - f.y;
-    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) < Math.abs(dy) * 2 || Date.now() - f.at > SWIPE_MAX_MS) return;
-    const next = neighbor(dx);
-    if (next) show(next, { push: true });
+  // 주소의 #settings 같은 조각은 같은 id(#settings)를 가진 요소로 화면을 내려 버리므로, 주소에서 열 때는 그 탭 화면을 맨 위로 맞춤.
+  // 뒤로 가기에서는 브라우저가 스크롤 위치를 건드리지 않게 함(화면마다 위치를 따로 기억)
+  try {
+    win.history.scrollRestoration = 'manual';
+  } catch {
+    /* 지원하지 않으면 그대로 */
   }
-  doc.addEventListener('touchend', release, { passive: true });
-  doc.addEventListener('touchcancel', release, { passive: true });
-  win.addEventListener('popstate', () => show(tabFromHash(win.location.hash)));
-  doc.addEventListener('workout:goto-tab', (ev) => show(ev.detail, { push: true }));
-  show(tabFromHash(win.location.hash));
-  return { show, get current() { return current; } };
+  const fromAddress = () => {
+    go(tabFromHash(win.location.hash), { push: false, smooth: false });
+    const page = pages[TABS.indexOf(current)];
+    if (page) page.scrollTop = 0;
+  };
+  fromAddress();
+  win.addEventListener('load', fromAddress, { once: true });
+  committed = current;
+  return { show: go, get current() { return current; } };
 }
