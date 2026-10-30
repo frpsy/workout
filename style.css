@@ -1198,8 +1198,8 @@ tr.cur td { background: var(--accent-soft); }
   .timer.done { animation: timer-flash 0.5s ease-in-out 6; }
   .wbtn.ready { animation: ready-pulse 1.4s ease-in-out infinite; }
   /* 탭을 옮길 때 새 화면이 가는 방향에서 살짝 밀려 들어옴 */
-  [data-slide="next"] { animation: slide-next 0.22s ease-out; }
-  [data-slide="prev"] { animation: slide-prev 0.22s ease-out; }
+  [data-slide="next"] { animation: slide-next 0.176s ease-out; }
+  [data-slide="prev"] { animation: slide-prev 0.176s ease-out; }
 }
 @media (prefers-reduced-motion: reduce) {
   .splash, .splash-track i { transition: none; }
