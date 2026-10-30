@@ -1115,6 +1115,18 @@ tr.cur td { background: var(--accent-soft); }
   pointer-events: none;
   will-change: transform;
 }
+/* 스크롤 연동 애니메이션을 지원하면 막대를 브라우저가 스크롤과 같은 단계에서 직접 움직임(손가락과 어긋남·끊김 없음).
+   세 버튼 가운데 위치(--ind-0~2)는 tabs.js가 재서 넣고, 지원하지 않으면 tabs.js가 scroll 이벤트로 옮김 */
+@supports (animation-timeline: --a) and (timeline-scope: --a) {
+  body { timeline-scope: --pager; }
+  .pager { scroll-timeline: --pager x; }
+  .tab-ind.linked { animation: tab-ind linear both; animation-timeline: --pager; }
+}
+@keyframes tab-ind {
+  from { transform: translate3d(var(--ind-0, 0px), 0, 0); }
+  50% { transform: translate3d(var(--ind-1, 0px), 0, 0); }
+  to { transform: translate3d(var(--ind-2, 0px), 0, 0); }
+}
 
 /* ── 시작 화면: 아이콘 + 진행 막대. 준비되면 서서히 사라지며 앱으로 전환 ── */
 .splash {

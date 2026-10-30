@@ -172,17 +172,62 @@ test('탭 위 짧은 막대: 화면을 미는 만큼 옆 탭 버튼 쪽으로 �
   const ind = doc.querySelector('.tab-ind');
   Object.defineProperty(ind, 'offsetWidth', { value: 28 });
   mountTabs(doc.getElementById('nav'), pager, { win: w, doc });
-  assert.equal(ind.style.transform, 'translateX(51px)', '처음엔 오늘 버튼 가운데(65 − 14)');
+  assert.equal(ind.style.transform, 'translate3d(51.0px, 0, 0)', '처음엔 오늘 버튼 가운데(65 − 14)');
   left = W / 4; // 오늘 → 기록 사이 1/4
   pager.dispatchEvent(new w.Event('scroll'));
-  assert.equal(ind.style.transform, 'translateX(83.5px)', '65 + 130 × 0.25 − 14');
+  assert.equal(ind.style.transform, 'translate3d(83.5px, 0, 0)', '65 + 130 × 0.25 − 14');
   left = 2 * W;
   pager.dispatchEvent(new w.Event('scroll'));
-  assert.equal(ind.style.transform, 'translateX(311px)', '설정 버튼 가운데(325 − 14)');
+  assert.equal(ind.style.transform, 'translate3d(311.0px, 0, 0)', '설정 버튼 가운데(325 − 14)');
 });
 
 test('탭 표시 막대는 하나만 두고 tabs.js가 위치를 정함', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /<nav class="tabbar"[^>]*>\s*<i class="tab-ind" aria-hidden="true"><\/i>/);
   assert.equal(value('.tab-ind', 'position'), 'absolute');
+});
+
+test('미는 도중에는 아래 탭 표시만 바꾸고, 화면 쪽 무거운 표시(inert)는 멈춘 뒤에 바꿈(막대가 끊기지 않게)', (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const s = setup();
+  s.drag(260);
+  assert.equal(s.btn('record').getAttribute('aria-selected'), 'true', '탭 표시는 바로');
+  assert.equal(s.page('record').hasAttribute('inert'), true, '화면 쪽은 아직 그대로');
+  assert.equal(s.doc.documentElement.dataset.tab, 'today');
+  s.drag(W);
+  mock.timers.tick(120);
+  assert.equal(s.page('record').hasAttribute('inert'), false, '멈추면 바꿈');
+  assert.equal(s.page('today').hasAttribute('inert'), true);
+  assert.equal(s.doc.documentElement.dataset.tab, 'record');
+});
+
+test('스크롤 연동 애니메이션을 지원하면 막대는 CSS가 움직이고, tabs.js는 버튼 위치(--ind-0~2)만 넣음', () => {
+  const dom = new JSDOM(
+    `<!doctype html><body><main id="pager"><div class="page" data-tab="today"></div><div class="page" data-tab="record"></div><div class="page" data-tab="settings"></div></main>
+    <nav id="nav"><i class="tab-ind"></i><button data-tab="today"></button><button data-tab="record"></button><button data-tab="settings"></button></nav></body>`,
+    { url: 'http://localhost/' },
+  );
+  const w = dom.window;
+  const doc = w.document;
+  w.CSS = { supports: () => true };
+  const pager = doc.getElementById('pager');
+  let left = 0;
+  Object.defineProperty(pager, 'clientWidth', { value: W });
+  Object.defineProperty(pager, 'scrollLeft', { get: () => left, set: (v) => { left = v; } });
+  pager.scrollTo = (o) => { left = o.left; };
+  doc.querySelectorAll('nav button').forEach((b, i) => {
+    Object.defineProperty(b, 'offsetLeft', { value: i * 130 });
+    Object.defineProperty(b, 'offsetWidth', { value: 130 });
+  });
+  const ind = doc.querySelector('.tab-ind');
+  Object.defineProperty(ind, 'offsetWidth', { value: 28 });
+  mountTabs(doc.getElementById('nav'), pager, { win: w, doc });
+  assert.equal(ind.classList.contains('linked'), true);
+  assert.equal(ind.style.getPropertyValue('--ind-0'), '51.0px');
+  assert.equal(ind.style.getPropertyValue('--ind-2'), '311.0px');
+  left = W;
+  pager.dispatchEvent(new w.Event('scroll'));
+  assert.equal(ind.style.transform, '', '직접 옮기지 않음');
+  assert.match(readFileSync(new URL('../style.css', import.meta.url), 'utf8'), /@supports \(animation-timeline: --a\) and \(timeline-scope: --a\) \{[\s\S]*?\.tab-ind\.linked \{ animation: tab-ind linear both; animation-timeline: --pager; \}/);
 });
