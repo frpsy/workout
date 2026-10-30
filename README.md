@@ -63,6 +63,7 @@ js/
   view.js             화면 보기 3단계(요약/기본/상세) 저장
   timer.js            휴식 타이머 상태 (종료 시각 기준)
   ui/tabs.js          아래 탭 전환
+  ui/workbar.js       머리말 운동 스톱워치(시작·종료·중지·취소·초기화, 자동 시작, 화면 켜짐 유지)
   boot-progress.js    시작 화면 진행 막대
   tips.js             운동 팁 30개
   weather.js          내일 날씨(Open-Meteo) 가져오기·표기

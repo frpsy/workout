@@ -4,11 +4,11 @@ import { LEVEL_ORDER, LEVELS, UNITS } from '../config.js';
 import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { readJson, writeJson } from '../local-store.js';
-import { createSession, fmtClock, fmtKo } from '../session.js';
 import { currentStreak } from '../stats.js';
 import { loadView, saveView, VIEW_LABEL, VIEW_ORDER } from '../view.js';
 import { isSoundOn, playSound, setSoundOn } from '../sound.js';
 import { $, esc, haptic } from './dom.js';
+import { mountWorkbar } from './workbar.js';
 
 const CHECK_SVG =
   '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -149,125 +149,7 @@ export function mountToday(root, store) {
     if (b && !b.disabled) actions.setLevel(b.dataset.level);
   });
 
-  /* ---------- 운동 스톱워치: 시작하면 시간이 흐르고, 종료하면 총 운동시간에 기록 ---------- */
-
-  const session = createSession();
-  let workTick = 0;
-
-
-  // 운동 시간을 재는 동안(중지 중이 아닐 때) 화면이 꺼지지 않게 요청
-  let screenLock = null;
-  let lockBusy = false;
-  async function holdScreen(on) {
-    try {
-      if (on && !screenLock && !lockBusy && navigator.wakeLock) {
-        lockBusy = true;
-        screenLock = await navigator.wakeLock.request('screen');
-        screenLock.addEventListener('release', () => (screenLock = null));
-      } else if (!on && screenLock) {
-        const l = screenLock;
-        screenLock = null;
-        await l.release();
-      }
-    } catch {
-      /* 허용되지 않음: 화면이 꺼질 수 있을 뿐입니다 */
-    } finally {
-      lockBusy = false;
-    }
-  }
-
-  function renderWork() {
-    const state = store.state;
-    const running = session.running;
-    const paused = session.paused;
-    const wTime = $('#wTime', root);
-    const btn = $('#wBtn', root);
-    const pauseBtn = $('#wPause', root);
-    const cancelBtn = $('#wCancel', root);
-    const resetBtn = $('#wReset', root);
-    const total = (state.days[state.selected] && state.days[state.selected].workSec) || 0;
-    wTime.textContent = running ? fmtClock(session.elapsed()) : total ? `총 ${fmtKo(total)}` : '';
-    wTime.classList.toggle('running', running);
-    wTime.classList.toggle('paused', paused);
-    btn.textContent = running ? '■ 종료' : '▶ 운동 시작';
-    btn.classList.toggle('stop', running);
-    btn.disabled = !state.ready;
-    // 지난 날을 고치는 중에는 시작 버튼을 숨김 (시간은 늘 오늘 기록으로 들어가므로 헷갈리지 않게)
-    btn.hidden = !running && state.selected !== state.today;
-    // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
-    const finished = running && state.selected === state.today && store.activeExercises().length > 0 && store.activeExercises().every((e) => store.view(state.selected, e).done);
-    btn.classList.toggle('ready', finished);
-    btn.setAttribute('aria-label', finished ? '운동을 모두 마쳤습니다. 눌러서 운동을 종료하고 총 운동시간 기록' : running ? '운동 종료하고 총 운동시간 기록' : '운동 시작 (시간이 흐릅니다)');
-    // 재는 동안에만 중지·취소가 보임. 재는 중에는 날짜 대신 시간을 크게 보여 줌
-    pauseBtn.hidden = !running;
-    cancelBtn.hidden = !running;
-    pauseBtn.textContent = paused ? '재개' : '중지';
-    pauseBtn.classList.toggle('resume', paused); // 멈춰 있으면 '재개'를 눈에 띄게
-    pauseBtn.setAttribute('aria-label', paused ? '운동 시간 이어서 재기' : '운동 시간 잠시 멈추기');
-    // 재지 않는 동안, 선택한 날에 기록된 운동시간이 있으면 초기화 버튼이 보임
-    resetBtn.hidden = running || !total;
-    root.querySelector('.headline').classList.toggle('working', running);
-    holdScreen(running && !paused);
-  }
-  function ticking(on) {
-    clearInterval(workTick);
-    workTick = on ? setInterval(renderWork, 1000) : 0;
-  }
-  $('#wBtn', root).addEventListener('click', () => {
-    haptic();
-    if (session.running) {
-      ticking(false);
-      const done = session.stop();
-      if (done) actions.addWorkSec(done.date, done.sec);
-      playSound('stop');
-    } else {
-      startWork();
-      playSound('start');
-    }
-    renderWork();
-  });
-  function startWork() {
-    session.start(store.state.today);
-    ticking(true);
-  }
-  // 오늘 첫 세트를 마치면 '운동 시작'을 대신 눌러 줌 (이미 재는 중이거나, 오늘 이미 시간을 기록했거나, 지난 날을 고치는 중이면 그대로)
-  function autoStart(before, after) {
-    const state = store.state;
-    const recorded = (state.days[state.today] && state.days[state.today].workSec) || 0;
-    if (after.setsDone <= before.setsDone || session.running || recorded || state.selected !== state.today || !state.ready) return;
-    startWork();
-    renderWork();
-  }
-  // 중지: 시간이 멈추고(기록은 안 함), 재개하면 이어서 흐름
-  $('#wPause', root).addEventListener('click', () => {
-    haptic();
-    if (session.paused) {
-      session.resume();
-      ticking(true);
-    } else {
-      session.pause();
-      ticking(false);
-    }
-    renderWork();
-  });
-  // 취소: 기록하지 않고 바로 버림
-  $('#wCancel', root).addEventListener('click', () => {
-    haptic();
-    ticking(false);
-    session.cancel();
-    renderWork();
-  });
-  // 초기화: 선택한 날의 기록된 운동시간을 바로 지움
-  $('#wReset', root).addEventListener('click', () => {
-    haptic();
-    actions.clearWorkSec(store.state.selected);
-    renderWork();
-  });
-  // 화면을 다시 켰을 때 흐른 시간을 바로 보여 줌
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) renderWork();
-  });
-  if (session.running && !session.paused) ticking(true); // 새로고침·재실행 뒤에도 이어서 잼 (중지해 둔 것은 멈춘 채로)
+  const workbar = mountWorkbar(root, store);
 
   /**
    * 이 브라우저에만 저장 중이고(로그인 전) 기록이 쌓였으면 Google 로그인을 권하는 안내.
@@ -397,7 +279,7 @@ export function mountToday(root, store) {
         actions.setProgress(ex.id, before.setsDone === i ? i - 1 : i);
         const after = view();
         soundFor(before, after);
-        autoStart(before, after);
+        workbar.autoStart(before, after);
         // 세트를 새로 마쳤으면(되돌린 게 아니면) 휴식 타이머에 알림. 모든 운동을 끝냈으면 쉴 필요가 없음
         const allDone = store.activeExercises().every((e) => store.view(store.state.selected, e).done);
         if (after.setsDone > before.setsDone && !allDone) document.dispatchEvent(new Event('workout:set-checked'));
@@ -407,7 +289,7 @@ export function mountToday(root, store) {
         const before = view();
         actions.toggle(ex.id);
         soundFor(before, view());
-        autoStart(before, view());
+        workbar.autoStart(before, view());
       });
       // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
       holdStep(r.minus, () => step(-unit.inc), () => step(-unit.big));
@@ -513,7 +395,7 @@ export function mountToday(root, store) {
     }
 
     updateLoginNote(state);
-    renderWork();
+    workbar.render();
 
     // 저장 문구(오류 포함)가 있으면 주차 안내 자리에 보여 줌
     const st = $('#status', root);

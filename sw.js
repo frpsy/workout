@@ -45,6 +45,7 @@ const ASSETS = [
   './js/ui/tip.js',
   './js/ui/today.js',
   './js/ui/weather.js',
+  './js/ui/workbar.js',
   './js/vendor/firebase.js',
   './js/view.js',
   './js/weather.js',
