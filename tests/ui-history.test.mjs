@@ -2,15 +2,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addDays, todayStr } from '../js/dates.js';
-import { fullDays, setup, history } from './helpers/ui-env.mjs';
+import { fullDays, pickDate, setup, history } from './helpers/ui-env.mjs';
 
 const at = (date, h, m) => new Date(`${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`).getTime();
 
-test('기록: 5주 달력(35칸)과 달성·연속·종목별 꾸준함이 한 화면에 보임', () => {
+test('기록: 기본은 이번 주 한 줄만 보이고, 달성·연속·종목별 꾸준함이 한 화면에 보임', () => {
   const rest = [0, 6];
   const { root, render, store } = setup(history, { days: fullDays(5), config: { startDate: addDays(todayStr(), -40), restDays: rest } });
-  assert.equal(root.querySelectorAll('#cal .cal-row').length, 5, '5주 한 달력');
-  assert.equal(root.querySelectorAll('#cal button.cell').length, 35);
+  assert.equal(root.querySelectorAll('#cal .cal-row').length, 1, '이번 주 한 줄');
+  assert.equal(root.querySelectorAll('#cal button.cell').length, 7);
+  assert.equal(root.querySelector('#calTitle').textContent, '이번 주');
+  assert.equal(root.querySelector('#calPrev').hidden, true, '달 이동 버튼은 펼쳤을 때만');
   assert.match(root.querySelector('#calSub').textContent, /날짜를 누르면 그날 기록이 아래에 보입니다/);
   assert.match(root.querySelector('#tallyText').textContent, /모두 마친 날 5일/);
   assert.deepEqual([...root.querySelectorAll('#summary dt')].map((e) => e.textContent), ['현재 연속', '최고 연속', '30일 달성률']);
@@ -18,9 +20,6 @@ test('기록: 5주 달력(35칸)과 달성·연속·종목별 꾸준함이 한 �
   const per = root.querySelectorAll('#perEx li');
   assert.equal(per.length, 3, '종목마다 한 줄');
   assert.match(per[0].textContent, /푸시업.*연속 5일 · 최고 5일/);
-  const restCells = root.querySelectorAll('button.cell.rest').length;
-  assert.ok(restCells >= 8 && restCells <= 10, `쉬는 날 칸 수 ${restCells}`);
-  assert.ok(root.querySelectorAll('button.cell.wkstart').length >= 4, '목표 주차 시작 표시');
 
   // 저장 문구처럼 기록·설정과 무관한 변화에는 달력을 다시 그리지 않음
   const before = root.querySelector('#cal button.cell');
@@ -30,6 +29,35 @@ test('기록: 5주 달력(35칸)과 달성·연속·종목별 꾸준함이 한 �
   store.state.daysRev++;
   render(store.state);
   assert.notEqual(root.querySelector('#cal button.cell'), before, '기록이 바뀌면 다시 그림');
+});
+
+test('기록: 한 달 보기를 누르면 달 단위 달력(그 달 밖은 빈 칸), ‹ › 로 달을 옮기고 이번 달을 넘어 갈 수 없음', () => {
+  const t0 = todayStr();
+  const start = addDays(t0, -70); // 두세 달 전부터 기록
+  const { root } = setup(history, { days: fullDays(5), config: { startDate: start, restDays: [0] } });
+  const toggle = root.querySelector('#calToggle');
+  toggle.click();
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  assert.equal(toggle.textContent, '이번 주만');
+  const m = Number(t0.slice(5, 7));
+  assert.equal(root.querySelector('#calTitle').textContent, `${t0.slice(0, 4)}년 ${m}월`);
+  const dates = [...root.querySelectorAll('#cal button.cell')].map((b) => b.dataset.date);
+  assert.ok(dates.length >= 28 && dates.length <= 31, `그 달 날짜 칸 ${dates.length}`);
+  assert.ok(dates.every((d) => d.slice(0, 7) === t0.slice(0, 7)), '다른 달 날짜는 칸이 비어 있음');
+  assert.ok(root.querySelectorAll('#cal .cell.blank').length > 0 || dates.length === 28);
+  assert.equal(root.querySelector('#calNext').disabled, true, '이번 달 다음은 없음');
+  assert.equal(root.querySelector('#calPrev').hidden, false);
+  root.querySelector('#calPrev').click();
+  const prev = new Date(Number(t0.slice(0, 4)), m - 2, 1);
+  assert.equal(root.querySelector('#calTitle').textContent, `${prev.getFullYear()}년 ${prev.getMonth() + 1}월`);
+  assert.equal(root.querySelector('#calNext').disabled, false);
+  root.querySelector('#calNext').click();
+  assert.equal(root.querySelector('#calNext').disabled, true);
+  for (let i = 0; i < 6; i++) if (!root.querySelector('#calPrev').disabled) root.querySelector('#calPrev').click();
+  assert.equal(root.querySelector('#calPrev').disabled, true, '기록이 시작된 달까지만 거슬러 감');
+  toggle.click();
+  assert.equal(root.querySelector('#calTitle').textContent, '이번 주', '접으면 다시 이번 주');
+  assert.equal(root.querySelectorAll('#cal .cal-row').length, 1);
 });
 
 test('기록: 처음엔 오늘 카드, 날짜를 누르면 그 자리에서 그날 총 시간·시각·종목별 기록·소감이 보임(오늘 탭의 고르는 날은 그대로)', () => {
@@ -45,7 +73,7 @@ test('기록: 처음엔 오늘 카드, 날짜를 누르면 그 자리에서 그�
   };
   const { root, store } = setup(history, { days });
   assert.match(root.querySelector('#dayCard .sec').textContent, /오늘/, '처음엔 오늘');
-  root.querySelector(`#cal button.cell[data-date="${d}"]`).click();
+  pickDate(root, d);
   const card = root.querySelector('#dayCard');
   assert.match(card.querySelector('.sec').textContent, new RegExp(`${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일`));
   assert.match(card.querySelector('.log-total').textContent, /총 42분/);
@@ -62,12 +90,12 @@ test('기록: 기록이 없는 날은 안내, 시각이 없는 예전 날은 시
   const days = fullDays(2);
   days[t0] = { ...days[t0], note: { feel: '<b>굵게</b>', thanks: '' } };
   const { root } = setup(history, { days });
-  root.querySelector(`#cal button.cell[data-date="${empty}"]`).click();
+  pickDate(root, empty);
   assert.match(root.querySelector('#dayCard .sub').textContent, /기록이 없습니다/);
-  root.querySelector(`#cal button.cell[data-date="${addDays(t0, -1)}"]`).click();
+  pickDate(root, addDays(t0, -1));
   assert.equal(root.querySelector('#dayCard .log-total').textContent, '시간 기록 없음');
   assert.equal(root.querySelector('#dayCard .log-time'), null);
-  root.querySelector(`#cal button.cell[data-date="${t0}"]`).click();
+  pickDate(root, t0);
   assert.match(root.querySelector('#dayCard .note-line').textContent, /<b>굵게<\/b>/, '태그를 글자로 보여 줌');
   assert.equal(root.querySelector('#dayCard .note-line b.note-x'), null);
 });
@@ -78,7 +106,7 @@ test('기록: 카드의 고치기 버튼은 그날을 고르고 오늘 탭으로
   const { root, store } = setup(history, { days: fullDays(3) });
   let to = null;
   document.addEventListener('workout:goto-tab', (ev) => { to = ev.detail; }, { once: true });
-  root.querySelector(`#cal button.cell[data-date="${d}"]`).click();
+  pickDate(root, d);
   root.querySelector('#dayCard [data-edit]').click();
   assert.equal(store.state.selected, d);
   assert.equal(to, 'today');

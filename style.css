@@ -840,6 +840,32 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 #planBox > summary { min-height: 0; margin-bottom: 12px; }
 
 /* 달력 */
+.cal-bar { display: flex; justify-content: space-between; align-items: center; gap: var(--gap); margin-bottom: 8px; }
+.cal-bar .sec { margin: 0; }
+.cal-nav { display: flex; align-items: center; gap: var(--gap-xs); }
+.calbtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--ctrl-line);
+  border-radius: var(--r-ctrl);
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+.calbtn::after { content: ''; position: absolute; inset: -4px; } /* 누르는 영역 44px */
+.calbtn:disabled { opacity: 0.4; cursor: default; }
+.calbtn[hidden] { display: none; }
+.calbtn:active:not(:disabled) { background: var(--accent-soft); }
+.cell.blank { height: 44px; }
 .cal-head, .cal-row {
   display: grid;
   grid-template-columns: 34px repeat(7, minmax(0, 1fr));
