@@ -329,3 +329,17 @@ test('오늘: 세트를 일부만 마치면 완료 버튼이 진행(2/3)을 보�
   assert.equal(row.querySelector('[data-f="frac"]').textContent, '');
   store.actions.flushAll();
 });
+
+test('오늘: 지난 날 기록을 고치며 세트를 체크해도 휴식 타이머를 시작하라는 알림은 가지 않음', () => {
+  const { store, root } = setup(today);
+  let sent = 0;
+  const on = () => sent++;
+  document.addEventListener('workout:set-checked', on);
+  root.querySelector('.row [data-set="1"]').click();
+  assert.equal(sent, 1, '오늘은 알림이 감');
+  store.actions.select(addDays(todayStr(), -1));
+  root.querySelector('.row [data-set="1"]').click();
+  assert.equal(sent, 1, '지난 날은 알림이 가지 않음');
+  document.removeEventListener('workout:set-checked', on);
+  store.actions.flushAll();
+});

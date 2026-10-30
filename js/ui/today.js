@@ -65,7 +65,7 @@ export function mountToday(root, store) {
           <button type="button" class="wsec" id="wPause" hidden>중지</button>
           <button type="button" class="wbtn" id="wBtn">▶ 운동 시작</button>
           <button type="button" class="wsec wcancel" id="wCancel" hidden>취소</button>
-          <button type="button" class="wsec wcancel wreset" id="wReset" hidden>초기화</button>
+          <button type="button" class="wsec wcancel wreset" id="wReset" hidden aria-label="기록된 운동시간 지우기">시간 초기화</button>
         </div>
       </div>
       <div class="prog">
@@ -219,7 +219,8 @@ export function mountToday(root, store) {
         workbar.autoStart(before, after);
         // 세트를 새로 마쳤으면(되돌린 게 아니면) 휴식 타이머에 알림. 모든 운동을 끝냈으면 쉴 필요가 없음
         const allDone = store.activeExercises().every((e) => store.view(store.state.selected, e).done);
-        if (after.setsDone > before.setsDone && !allDone) document.dispatchEvent(new Event('workout:set-checked'));
+        // 지난 날 기록을 고치는 중에는 쉴 일이 없으므로 휴식을 시작하지 않음
+        if (after.setsDone > before.setsDone && !allDone && store.state.selected === store.state.today) document.dispatchEvent(new Event('workout:set-checked'));
       });
       r.check.addEventListener('click', () => {
         haptic();
