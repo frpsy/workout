@@ -91,6 +91,7 @@ tests/                node --test 테스트 (계산·저장 형식·store·저�
 scripts/build-artifact.mjs           claude.ai용 단일 파일 빌드
 scripts/update-sw.mjs                sw.js 미리 저장 목록·캐시 이름 자동 생성
 scripts/build-firebase.mjs           Firebase SDK 묶음 만들기
+scripts/screenshots.mjs              디자인 리팩토링용 화면 비교(기준 커밋과 픽셀 단위)
 firestore.rules                      Firestore 보안 규칙
 ```
 
@@ -112,6 +113,9 @@ npm test                 # 테스트
 npm run sw               # sw.js 미리 저장 목록 갱신
 npm run build:artifact   # dist/artifact.html 생성
 npx serve .              # 로컬 확인 (모듈 스크립트라 file://로는 안 열림)
+npm run shots            # 화면 비교: 지금 폴더 vs origin/main (다른 커밋은 -- --base <커밋>)
 ```
+
+`npm run shots`는 화면이 바뀌면 안 되는 스타일 정리를 확인할 때 씁니다. 폭 390·320px(키 640px), 밝은·어두운 테마, 오늘(기본·요약·상세·모두 마침)·기록·설정 화면을 첫 화면과 전체로 찍습니다(40장). 시각(2026-10-28 수요일 저녁, 서울)·난수·5주치 기록을 고정하고 Firebase·날씨 요청은 막습니다. 결과는 `shots/`(`base/`·`head/`·`diff/`, 커밋 안 함)에 남고 다른 그림이 있으면 종료 코드 1입니다. Playwright 크로미움이 필요합니다(`npx playwright install chromium`).
 
 PR마다 GitHub Actions(`.github/workflows/ci.yml`)가 테스트와 아티팩트 빌드를 돌리고, `main`에 머지하면 GitHub Pages에 자동 배포합니다 (Settings → Pages → Source: GitHub Actions).
