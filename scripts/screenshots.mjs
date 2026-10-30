@@ -32,7 +32,8 @@ const SCENES = [
   { name: 'today-compact', hash: '', view: 'compact' },
   { name: 'today-detail', hash: '', view: 'detail' },
   { name: 'today-done', hash: '', view: 'normal', allDone: true }, // 마무리 칸
-  { name: 'record', hash: '#record', view: 'detail' },
+  { name: 'log', hash: '#log', view: 'detail' },
+  { name: 'stats', hash: '#stats', view: 'detail' },
   { name: 'settings', hash: '#settings', view: 'normal' },
   { name: 'today-running', hash: '', view: 'normal', clicks: ['#wBtn', '#tGo'] }, // 운동 중·휴식 타이머 실행
   { name: 'today-paused', hash: '', view: 'normal', clicks: ['#wBtn', '#wPause'] },

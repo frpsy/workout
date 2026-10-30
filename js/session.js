@@ -80,10 +80,10 @@ export function createSession({ now = Date.now } = {}) {
       write(cur);
     },
 
-    /** 끝내고 { date, sec }를 돌려줌 (시작한 적이 없으면 null). 중지해 둔 시간은 빼고, 1초 미만은 1초로 */
+    /** 끝내고 { date, sec, s, e }를 돌려줌 (시작한 적이 없으면 null). sec은 중지해 둔 시간을 빼고 1초 미만은 1초로, s·e는 시작·종료 시각(ms) */
     stop() {
       if (!cur) return null;
-      const out = { date: cur.date, sec: Math.max(1, Math.round(activeMs() / 1000)) };
+      const out = { date: cur.date, sec: Math.max(1, Math.round(activeMs() / 1000)), s: cur.startAt, e: now() };
       cur = null;
       write(null);
       return out;

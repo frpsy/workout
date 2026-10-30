@@ -98,7 +98,7 @@ export function mountWorkbar(root, store) {
     if (session.running) {
       ticking(false);
       const done = session.stop();
-      if (done) actions.addWorkSec(done.date, done.sec);
+      if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e });
       playSound('stop');
     } else {
       startWork();

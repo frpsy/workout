@@ -1,4 +1,4 @@
-// 이번 주 달력(맨 위에 바로 보임), 자세히(달성·연속, 종목별 꾸준함, 지난 4주 — 접어 두고 펼쳤을 때만 그림)
+// 통계 탭: 이번 주 달력(맨 위에 바로 보임), 자세히(달성·연속, 종목별 꾸준함, 지난 4주 — 접어 두고 펼쳤을 때만 그림)
 
 import { addDays, diffDays, labelMD, mondayOf, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
@@ -9,8 +9,6 @@ import { $, esc } from './dom.js';
 const WEEKS = 5; // 달력 전체 주 수: 이번 주만 맨 위에 바로, 앞의 4주는 자세히 안에
 const RECENT = 1;
 const MAX_PIPS = 6;
-const NOTES_SHOWN = 10; // 마무리 기록은 최근 10개까지
-const NOTES_FIRST = 3; // 처음에는 최근 3개만, '더 보기'로 나머지
 
 const HEAD = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목', '금', '토', '일'].map((x) => `<span>${x}</span>`).join('') + '</div>';
 
@@ -28,11 +26,6 @@ export function mountHistory(root, store) {
           <dl class="totals" id="summary"></dl>
           <p class="tallytext" id="tallyText"></p>
           <p class="tallytext" id="workText"></p>
-        </section>
-        <section id="notesSec" hidden>
-          <h2 class="sec">마무리 기록</h2>
-          <ul class="notes" id="notes"></ul>
-          <button type="button" class="notes-more" id="notesMore" hidden></button>
         </section>
         <section>
           <h2 class="sec">종목별 꾸준함</h2>
@@ -61,7 +54,6 @@ export function mountHistory(root, store) {
 
   let key = '';
   let last = null;
-  let notesAll = false;
 
   /** w주 전(0=가장 오래된 주 … WEEKS-1=이번 주)부터 n주 */
   function calHtml(state, ctx, from, to) {
@@ -118,32 +110,6 @@ export function mountHistory(root, store) {
       ? `운동시간 오늘 <b>${secOf(today) ? fmtKo(secOf(today)) : '없음'}</b> · 최근 7일 <b>${fmtKo(week)}</b> <span class="nowrap">(하루 평균 ${fmtKo(Math.round(week / active))})</span>`
       : '운동시간은 오늘 탭의 ▶ 운동 시작·■ 종료로 잴 수 있습니다.';
 
-    /* 마무리 기록: 운동 소감·감사한 일 (최근 것부터) */
-    const notes = Object.keys(days)
-      .filter((d) => d <= today && days[d].note && ((days[d].note.feel || '').trim() || (days[d].note.thanks || '').trim()))
-      .sort()
-      .reverse()
-      .slice(0, NOTES_SHOWN);
-    $('#notesSec', root).hidden = !notes.length;
-    const shown = notesAll ? notes : notes.slice(0, NOTES_FIRST);
-    const moreBtn = $('#notesMore', root);
-    moreBtn.hidden = notes.length <= NOTES_FIRST;
-    moreBtn.textContent = notesAll ? '접기' : `더 보기 (${notes.length - NOTES_FIRST}개)`;
-    moreBtn.setAttribute('aria-expanded', String(notesAll));
-    $('#notes', root).innerHTML = shown
-      .map((d) => {
-        const n = days[d].note;
-        const feel = (n.feel || '').trim();
-        const thanks = (n.thanks || '').trim();
-        return (
-          `<li><span class="note-date">${labelMD(d)}</span>` +
-          (feel ? `<p class="note-line"><b>소감</b> ${esc(feel)}</p>` : '') +
-          (thanks ? `<p class="note-line"><b>감사</b> ${esc(thanks)}</p>` : '') +
-          '</li>'
-        );
-      })
-      .join('');
-
     /* 연속·달성률 (모든 운동을 마친 날 기준) */
     const opts = { rest, startDate: config.startDate };
     const cur = currentStreak(days, today, exs, rest);
@@ -175,12 +141,6 @@ export function mountHistory(root, store) {
       })
       .join('');
   }
-
-  $('#notesMore', root).addEventListener('click', () => {
-    notesAll = !notesAll;
-    key = '';
-    if (last) render(last);
-  });
 
   // 펼치면 그때 그림 (접혀 있는 동안은 계산하지 않음)
   $('#moreBox', root).addEventListener('toggle', () => {

@@ -5,9 +5,10 @@ import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LEVELS, LIMITS, SCHEMA_V
 import { isDateStr } from './dates.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-const RESERVED = new Set(['date', 'v', 'entries', 'workSec', 'level', 'note']);
+const RESERVED = new Set(['date', 'v', 'entries', 'workSec', 'sessions', 'level', 'note']);
 const MAX_WORK_SEC = 86400; // 하루 총 운동시간 상한(24시간)
 export const NOTE_MAX = 200; // 운동 소감·감사한 일 글자 수 상한
+export const MAX_SESSIONS = 20; // 하루에 남기는 운동 구간(시작·종료) 수 상한
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const inRange = (v, [lo, hi]) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -93,6 +94,17 @@ export function normalizeNote(raw) {
   return feel || thanks ? note : null;
 }
 
+/** 운동 구간 [{ s: 시작 시각(ms), e: 종료 시각(ms), sec: 중지한 시간을 뺀 운동 초 }] — 잘못된 값은 버리고 시작 순으로 */
+export function normalizeSessions(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (const v of raw) {
+    if (!isObj(v) || !inRange(v.s, [1, 4e12]) || !inRange(v.e, [1, 4e12]) || v.e < v.s || !inRange(v.sec, [1, MAX_WORK_SEC])) continue;
+    out.push({ s: Math.round(v.s), e: Math.round(v.e), sec: Math.round(v.sec) });
+  }
+  return out.sort((a, b) => a.s - b.s).slice(-MAX_SESSIONS);
+}
+
 /** v1은 운동 기록이 문서 최상위에, v2는 entries 안에 있습니다. */
 export function normalizeDay(raw) {
   const entries = {};
@@ -111,13 +123,15 @@ export function normalizeDay(raw) {
     entries[id] = e;
   }
   const note = normalizeNote(raw.note);
-  return { entries, ...(workSec ? { workSec } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
+  const sessions = normalizeSessions(raw.sessions);
+  return { entries, ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeDay(date, day) {
-  // workSec: 그날 총 운동시간(초), note: 운동 소감·감사한 일. 없으면 필드도 두지 않음
+  // workSec: 그날 총 운동시간(초), sessions: 운동 구간(시작·종료 시각), note: 운동 소감·감사한 일. 없으면 필드도 두지 않음
   const note = normalizeNote(day.note);
-  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
+  const sessions = normalizeSessions(day.sessions);
+  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeConfig(config) {

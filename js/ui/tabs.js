@@ -1,9 +1,9 @@
-// 아래 탭(오늘 / 기록 / 설정): 세 화면을 가로로 나란히 두고 한 화면씩 넘기는 구성.
+// 아래 탭(오늘 / 기록 / 통계 / 설정): 네 화면을 가로로 나란히 두고 한 화면씩 넘기는 구성.
 // 화면을 옆으로 밀면 옆 화면이 함께 따라오고, 손을 떼면 가까운 화면에 붙습니다(브라우저 기본 가로 스크롤·스냅이라 휴대폰 관성 그대로).
-// 화면마다 세로 스크롤 위치를 따로 기억하고, 주소 뒤 #record 처럼 현재 탭을 남겨 새로고침·뒤로 가기에도 같은 탭이 열립니다.
+// 화면마다 세로 스크롤 위치를 따로 기억하고, 주소 뒤 #stats 처럼 현재 탭을 남겨 새로고침·뒤로 가기에도 같은 탭이 열립니다.
 
-export const TABS = ['today', 'record', 'settings'];
-const ALIAS = { '': 'today' };
+export const TABS = ['today', 'log', 'stats', 'settings'];
+const ALIAS = { '': 'today', record: 'stats' }; // 예전 주소 #record(달력·달성)는 이름이 바뀐 통계로
 
 export const tabFromHash = (hash) => {
   const name = String(hash || '').replace(/^#/, '');
@@ -13,7 +13,7 @@ export const tabFromHash = (hash) => {
 const SETTLE_MS = 120; // 스크롤이 멈춘 뒤 이만큼 지나면 넘김이 끝난 것으로 봄(scrollend가 없는 브라우저용)
 
 /**
- * nav: 탭 버튼이 든 요소(button[data-tab]), pager: 가로로 넘기는 틀(안에 .page[data-tab] 세 개).
+ * nav: 탭 버튼이 든 요소(button[data-tab]), pager: 가로로 넘기는 틀(안에 .page[data-tab] 네 개).
  * 다른 화면에서 'workout:goto-tab' 이벤트(detail: 탭 이름)로도 탭을 바꿀 수 있음.
  */
 export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
@@ -24,7 +24,7 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
   let current = null;
   let committed = null; // 주소에 남긴 탭
 
-  // 탭 위 짧은 막대: 가로 스크롤 위치(0 = 오늘 … 2 = 설정)에 맞춰 버튼 가운데 사이를 미끄러짐
+  // 탭 위 짧은 막대: 가로 스크롤 위치(0 = 오늘 … 3 = 설정)에 맞춰 버튼 가운데 사이를 미끄러짐
   const ind = nav.querySelector('.tab-ind');
   const buttons = TABS.map((name) => nav.querySelector(`button[data-tab="${name}"]`));
   // 버튼 가운데 위치는 미리 재 둠: 미는 동안 매 프레임 다시 재면(강제 레이아웃) 막대가 뚝뚝 끊김
@@ -61,7 +61,7 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
     }
   }
 
-  /** 화면 쪽 표시까지 바꿈(세 화면 전체에 영향을 줘 무거움): 넘김이 멈췄을 때·버튼으로 옮길 때만 */
+  /** 화면 쪽 표시까지 바꿈(네 화면 전체에 영향을 줘 무거움): 넘김이 멈췄을 때·버튼으로 옮길 때만 */
   let shown = null;
   function mark(name) {
     select(name);
@@ -76,7 +76,7 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
       else page.setAttribute('inert', '');
       page.setAttribute('aria-hidden', String(tab !== name));
     });
-    // 기록·설정 탭은 안의 접힌 항목을 펼쳐 둠 (탭 하나가 곧 그 내용이므로)
+    // 오늘 밖의 탭은 안의 접힌 항목을 펼쳐 둠 (탭 하나가 곧 그 내용이므로)
     const page = pages[TABS.indexOf(name)];
     if (name !== 'today' && page) page.querySelectorAll('details').forEach((d) => (d.open = true));
   }

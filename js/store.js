@@ -2,7 +2,7 @@
 
 import { LEVELS, LIMITS, UNITS } from './config.js';
 import { isDateStr, todayStr } from './dates.js';
-import { NOTE_MAX, normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
+import { MAX_SESSIONS, NOTE_MAX, normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
 import { createTargetResolver } from './progression.js';
 
 const SAVE_DELAY = 350;
@@ -237,11 +237,14 @@ export function createStore(adapter) {
       commitDay(date);
     },
 
-    /** 운동 스톱워치를 끝냈을 때: 그날 총 운동시간(초)에 더함 */
-    addWorkSec(date, sec) {
+    /** 운동 스톱워치를 끝냈을 때: 그날 총 운동시간(초)에 더하고, 시작·종료 시각(ms)이 있으면 운동 구간으로 남김 */
+    addWorkSec(date, sec, span = null) {
       if (!state.ready || !isDateStr(date) || !Number.isFinite(sec) || sec <= 0) return;
       const day = ensureDay(date);
       day.workSec = Math.min(86400, (day.workSec || 0) + Math.round(sec));
+      if (span && Number.isFinite(span.s) && Number.isFinite(span.e) && span.e >= span.s) {
+        day.sessions = [...(day.sessions || []), { s: span.s, e: span.e, sec: Math.round(sec) }].slice(-MAX_SESSIONS);
+      }
       commitDay(date);
     },
 
@@ -260,6 +263,7 @@ export function createStore(adapter) {
       const day = state.days[date];
       if (!state.ready || !day || !day.workSec) return;
       delete day.workSec;
+      delete day.sessions;
       commitDay(date);
     },
 

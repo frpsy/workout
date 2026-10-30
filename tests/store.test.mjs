@@ -204,3 +204,22 @@ test('운동 소감·감사한 일: 쓰는 대로 저장하고, 둘 다 지우�
   store.actions.setNote('2999-01-01', { feel: '미래' });
   assert.equal(store.state.days['2999-01-01'], undefined, '앞날에는 쓰지 않음');
 });
+
+test('운동 구간: 스톱워치 종료마다 시작·종료 시각이 남고, 시간 초기화하면 함께 지워짐', async (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const ad = fakeAdapter();
+  const store = createStore(ad);
+  const d = todayStr();
+  store.actions.addWorkSec(d, 600, { s: 1_000, e: 700_000 });
+  store.actions.addWorkSec(d, 60, { s: 2_000_000, e: 2_060_000 });
+  store.actions.addWorkSec(d, 30); // 시각이 없으면 총 시간에만 더함
+  assert.deepEqual(store.state.days[d].sessions, [{ s: 1_000, e: 700_000, sec: 600 }, { s: 2_000_000, e: 2_060_000, sec: 60 }]);
+  assert.equal(store.state.days[d].workSec, 690);
+  mock.timers.tick(400);
+  await tick();
+  assert.equal(ad.saved.days.at(-1)[1].sessions.length, 2, '저장 문서에 들어감');
+  store.actions.clearWorkSec(d);
+  assert.equal(store.state.days[d].sessions, undefined);
+  assert.equal(store.state.days[d].workSec, undefined);
+});
