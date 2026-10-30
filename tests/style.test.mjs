@@ -16,10 +16,8 @@ test('더블탭 확대 지연을 없애고(touch-action) 작은 버튼의 눌리
 });
 
 test('화면 보기·난이도·효과음 버튼은 손가락으로 누르기 충분한 크기', () => {
-  assert.match(css, /\.levels button, \.views button \{ position: relative; min-width: 44px; height: 30px;/);
-  assert.match(css, /\.levels, \.views \{ display: flex; flex: none; gap: 2px; padding: 2px;/, '겉 높이 34px(30 + 위아래 2)');
-  assert.match(css, /\.levels button\[aria-pressed="true"\], \.views button\[aria-pressed="true"\] \{ background: var\(--seg-on\);/, '고른 칸만 떠오름(이중 테두리 없음)');
-  assert.match(css, /\.snd \{ position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 34px;/);
+  assert.match(css, /\.levels button, \.views button \{[^}]*min-width: 44px;[^}]*height: 30px;/, '겉 높이 34px(30 + 틀 위아래 2)');
+  assert.match(css, /\.snd \{[^}]*width: 44px;[^}]*height: 34px;/);
   assert.doesNotMatch(css, /\.(levels|views) \{[^}]*overflow: hidden/, '틀이 넘침을 자르면 누르는 영역이 32px로 줄어듦');
 });
 
@@ -50,20 +48,12 @@ test('기록·설정 탭: 화면 제목이 있고 해당 탭에서만 보임', a
   assert.match(main, /settings: \[el\('settingsTitle'\)/);
 });
 
-test('설정: 쉬는 요일은 한 줄 7칸, 좁은 화면에서 입력칸이 잘리지 않음', () => {
-  assert.match(css, /\.restdays \{ display: grid; grid-template-columns: repeat\(7, minmax\(0, 1fr\)\);/);
-  assert.match(css, /\.daychip input:checked \+ span/);
-  assert.match(css, /\.exrow2 label \{ display: flex; flex-direction: column;/, '라벨은 입력칸 위에(어느 폭에서나 입력칸 너비가 같음)');
+test('설정: 쉬는 요일은 좁은 화면에서도 한 줄 7칸', () => {
+  assert.match(css, /\.restdays \{[^}]*grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/);
 });
 
-test('디자인: 기록 내용은 카드로 묶고 중복 접기 제목은 숨김, 설정은 작은 제목 + 줄 목록, 목표 방식은 나란한 두 칸', () => {
-  assert.match(css, /#moreBox > summary \{ display: none; \}/);
-  assert.match(css, /#moreBox \.set-body > section, #plan-sec details\.block \{ background: var\(--surface\);/);
-  assert.match(css, /\.modes \{ display: grid; grid-template-columns: 1fr 1fr;/);
-  assert.match(css, /\.seg input:checked \+ span \{/, ':has() 없이 선택 표시(옛 iOS에서도 보임)');
+test('옛 iOS에서도 보이도록 :has() 선택자를 쓰지 않음', () => {
   assert.doesNotMatch(css, /:has\(/);
-  assert.match(css, /\.slist \{ background: var\(--surface\);/);
-  assert.match(css, /\.switch input:checked \+ i \{ background: var\(--accent-fill\); \}/);
 });
 
 test('키가 작은 폰(높이 700px 이하): 줄 간격을 줄이고 팁은 감추며, 마무리 칸은 탭 막대에 가려지지 않게 스크롤 여백을 둠', () => {

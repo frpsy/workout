@@ -7,5 +7,5 @@ export default [
   { files: ['js/**/*.js', 'scripts/firebase-entry.js'], languageOptions: { globals: globals.browser } },
   { files: ['sw.js'], languageOptions: { globals: globals.serviceworker } },
   { files: ['scripts/**/*.mjs', 'tests/**/*.mjs', 'eslint.config.js'], languageOptions: { globals: globals.node } },
-  { files: ['tests/ui.test.mjs'], languageOptions: { globals: globals.browser } },
+  { files: ['tests/ui-*.test.mjs', 'tests/helpers/*.mjs'], languageOptions: { globals: globals.browser } },
 ];
