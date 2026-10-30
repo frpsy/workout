@@ -35,7 +35,27 @@ export function mountWorkbar(root, store) {
     }
   }
 
+  // 오늘 체크한 세트·완료가 하나도 없게 되돌아가면(모두 초기화) 재던 시간도 버리고 기록된 운동시간도 지움
+  let prevProgress = null; // { date, any }
+  function resetTimeIfCleared() {
+    const state = store.state;
+    if (!state.ready) return;
+    const any = store.activeExercises().some((e) => {
+      const v = store.view(state.selected, e);
+      return v.done || v.setsDone > 0;
+    });
+    const was = prevProgress && prevProgress.date === state.selected && prevProgress.any;
+    prevProgress = { date: state.selected, any };
+    if (!was || any || state.selected !== state.today) return;
+    if (session.running) {
+      ticking(false);
+      session.cancel();
+    }
+    actions.clearWorkSec(state.today);
+  }
+
   function renderWork() {
+    resetTimeIfCleared();
     const state = store.state;
     const running = session.running;
     const paused = session.paused;
