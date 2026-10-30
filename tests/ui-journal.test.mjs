@@ -139,12 +139,13 @@ test('마무리: 마지막 종목을 막 체크하면 칸을 화면으로 끌어
     store.actions.toggle('squat'); // 되돌렸다 다시 마치면 다시 이동
     assert.equal(calls.length, 2);
 
-    // 다른 탭(마무리가 속한 화면이 숨겨짐)에서는 이동하지 않음
+    // 다른 탭을 보는 중(오늘 화면이 inert)에는 이동하지 않음
     calls.length = 0;
     store.actions.toggle('squat');
-    root.hidden = true;
+    root.parentElement.setAttribute('inert', '');
     store.actions.toggle('squat');
     assert.equal(calls.length, 0);
+    root.parentElement.removeAttribute('inert');
     store.actions.flushAll();
   } finally {
     proto.scrollIntoView = orig;
