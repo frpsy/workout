@@ -80,3 +80,11 @@ export function setupFull() {
   store.subscribe(render);
   return { store, root };
 }
+
+/** 달력에서 그 날짜를 누름(이번 주 밖이면 한 달 보기로 펼치고, 다른 달이면 ‹로 옮김) */
+export function pickDate(root, date) {
+  const cell = () => root.querySelector(`#cal button.cell[data-date="${date}"]`);
+  if (!cell()) root.querySelector('#calToggle').click();
+  for (let i = 0; i < 24 && !cell(); i++) root.querySelector('#calPrev').click();
+  cell().click();
+}

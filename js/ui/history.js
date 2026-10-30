@@ -1,13 +1,12 @@
-// 기록 탭: 5주 달력 → 날짜를 누르면 바로 아래 카드에 그날 기록(총 시간·시각·운동 내용·소감), 그 아래에 달성·연속과 종목별 꾸준함
+// 기록 탭: 기본은 이번 주 한 줄 달력, ‘한 달 보기’로 펼치면 달 단위 달력(‹ › 버튼으로 달 이동) → 날짜를 누르면 바로 아래 카드에 그날 기록(총 시간·시각·운동 내용·소감), 그 아래에 달성·연속과 종목별 꾸준함
 
 import { UNITS } from '../config.js';
-import { addDays, diffDays, dowName, labelMD, mondayOf, pad, parse, shortMD } from '../dates.js';
+import { addDays, diffDays, dowName, fmt, labelMD, mondayOf, pad, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
 import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent } from '../stats.js';
 import { fmtKo } from '../session.js';
 import { $, esc } from './dom.js';
 
-const WEEKS = 5; // 달력 주 수(이번 주 포함)
 const MAX_PIPS = 6;
 
 const clock = (ms) => {
@@ -15,11 +14,24 @@ const clock = (ms) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+const CHEV = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
+
+const monthOf = (d) => `${d.slice(0, 7)}-01`;
+const addMonths = (m, n) => fmt(new Date(parse(m).getFullYear(), parse(m).getMonth() + n, 1));
+
 const HEAD = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목', '금', '토', '일'].map((x) => `<span>${x}</span>`).join('') + '</div>';
 
 export function mountHistory(root, store) {
   root.innerHTML = `
     <section aria-label="달력">
+      <div class="cal-bar">
+        <h2 class="sec" id="calTitle">이번 주</h2>
+        <span class="cal-nav">
+          <button type="button" class="calbtn" id="calPrev" aria-label="이전 달" hidden>${CHEV('M15 5l-7 7 7 7')}</button>
+          <button type="button" class="calbtn" id="calNext" aria-label="다음 달" hidden>${CHEV('M9 5l7 7-7 7')}</button>
+          <button type="button" class="calbtn calfold" id="calToggle" aria-expanded="false" aria-controls="cal">한 달 보기</button>
+        </span>
+      </div>
       <div id="cal" class="cal"></div>
       <p class="sub" id="calSub"></p>
     </section>
@@ -37,13 +49,31 @@ export function mountHistory(root, store) {
     </section>`;
 
   let picked = null; // 달력에서 누른 날(없으면 오늘). 오늘 탭에서 고치는 날(store.state.selected)과는 별개
+  let expanded = false; // 기본은 이번 주만, ‘한 달 보기’로 달 단위 달력
+  let month = null; // 펼친 달력이 보여 주는 달의 1일(없으면 이번 달)
+  const redraw = () => {
+    key = '';
+    if (last) render(last);
+  };
+  $('#calToggle', root).addEventListener('click', () => {
+    expanded = !expanded;
+    if (expanded && !month && last) month = monthOf(picked || last.today); // 펼치면 고른 날이 있는 달부터
+    redraw();
+  });
+  $('#calPrev', root).addEventListener('click', () => {
+    month = addMonths(month, -1);
+    redraw();
+  });
+  $('#calNext', root).addEventListener('click', () => {
+    month = addMonths(month, 1);
+    redraw();
+  });
 
   $('#cal', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button.cell');
     if (!b || b.disabled) return;
     picked = b.dataset.date;
-    key = '';
-    if (last) render(last);
+    redraw();
   });
   $('#dayCard', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-edit]');
@@ -58,18 +88,20 @@ export function mountHistory(root, store) {
   let key = '';
   let last = null;
 
-  /** from~to주(0=가장 오래된 주 … WEEKS-1=이번 주) */
-  function calHtml(state, ctx, from, to) {
+  /** 월요일 weeks 줄(각 줄 7칸). inMonth가 있으면 그 달 밖의 칸은 비워 둠 */
+  function calHtml(state, ctx, weeks, inMonth = null) {
     const { days, today, config } = state;
     const { exs, ids, rest } = ctx;
     const selected = picked || today;
-    const start = addDays(mondayOf(today), -7 * (WEEKS - 1));
     let h = HEAD;
-    for (let w = from; w < to; w++) {
-      const ws = addDays(start, w * 7);
+    for (const ws of weeks) {
       h += `<div class="cal-row"><span class="wk">${shortMD(ws)}</span>`;
       for (let i = 0; i < 7; i++) {
         const d = addDays(ws, i);
+        if (inMonth && monthOf(d) !== inMonth) {
+          h += '<span class="cell blank" aria-hidden="true"></span>';
+          continue;
+        }
         const day = days[d];
         const n = doneCount(day, ids);
         const full = isComplete(day, exs, d);
@@ -83,6 +115,14 @@ export function mountHistory(root, store) {
       h += '</div>';
     }
     return h;
+  }
+
+  /** 그 달이 걸친 주들의 월요일 */
+  function weeksOfMonth(m) {
+    const last = fmt(new Date(parse(m).getFullYear(), parse(m).getMonth() + 1, 0));
+    const out = [];
+    for (let w = mondayOf(m); w <= last; w = addDays(w, 7)) out.push(w);
+    return out;
   }
 
   function renderStats(state, ctx) {
@@ -173,17 +213,39 @@ export function mountHistory(root, store) {
     );
   }
 
+  function renderCal(state, ctx) {
+    const { today, days, config } = state;
+    const toggle = $('#calToggle', root);
+    toggle.textContent = expanded ? '이번 주만' : '한 달 보기';
+    toggle.setAttribute('aria-expanded', String(expanded));
+    $('#calPrev', root).hidden = !expanded;
+    $('#calNext', root).hidden = !expanded;
+    if (!expanded) {
+      $('#calTitle', root).textContent = '이번 주';
+      $('#cal', root).innerHTML = calHtml(state, ctx, [mondayOf(today)]);
+      return;
+    }
+    if (!month || month > monthOf(today)) month = monthOf(today);
+    const first = monthOf(Object.keys(days).concat(config.startDate).sort()[0]); // 기록이 시작된 달까지만 거슬러 감
+    month = month < first ? first : month;
+    const m = parse(month);
+    $('#calTitle', root).textContent = `${m.getFullYear()}년 ${m.getMonth() + 1}월`;
+    $('#calPrev', root).disabled = month <= first;
+    $('#calNext', root).disabled = month >= monthOf(today);
+    $('#cal', root).innerHTML = calHtml(state, ctx, weeksOfMonth(month), month);
+  }
+
   function render(state) {
     last = state;
     // 기록·설정·날짜·고른 날이 바뀌었을 때만 다시 그림 (저장 상태 문구 같은 변화에는 그대로 둠)
-    const next = `${state.daysRev}:${state.configRev}:${state.today}:${picked || ''}`;
+    const next = `${state.daysRev}:${state.configRev}:${state.today}:${picked || ''}:${expanded}:${month || ''}`;
     if (next === key) return;
     key = next;
     if (picked && picked > state.today) picked = null; // 자정 지나 날짜가 바뀐 경우 등
 
     const exs = store.activeExercises();
     const ctx = { exs, ids: exs.map((e) => e.id), rest: new Set(state.config.restDays || []) };
-    $('#cal', root).innerHTML = calHtml(state, ctx, 0, WEEKS);
+    renderCal(state, ctx);
     $('#dayCard', root).innerHTML = dayCardHtml(state, ctx, picked || state.today);
     renderStats(state, ctx);
   }
