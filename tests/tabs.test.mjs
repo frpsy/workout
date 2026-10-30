@@ -149,3 +149,40 @@ test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래
   assert.equal(value('#timer', 'bottom', { raw: true, media: '@media (max-height: 700px)' }), 'var(--tabbar-h)');
   assert.equal(value('.savebar.dirty', 'bottom', { raw: true }), 'calc(var(--tabbar-h) + 1px)');
 });
+
+test('탭 위 짧은 막대: 화면을 미는 만큼 옆 탭 버튼 쪽으로 따라 움직임', () => {
+  const dom = new JSDOM(
+    `<!doctype html><body><main id="pager">
+      <div class="page" data-tab="today"></div><div class="page" data-tab="record"></div><div class="page" data-tab="settings"></div>
+    </main><nav id="nav"><i class="tab-ind"></i><button data-tab="today"></button><button data-tab="record"></button><button data-tab="settings"></button></nav></body>`,
+    { url: 'http://localhost/' },
+  );
+  const w = dom.window;
+  const doc = w.document;
+  const pager = doc.getElementById('pager');
+  let left = 0;
+  Object.defineProperty(pager, 'clientWidth', { value: W });
+  Object.defineProperty(pager, 'scrollLeft', { get: () => left, set: (v) => { left = v; } });
+  pager.scrollTo = (o) => { left = o.left; };
+  // 버튼 세 개가 130px씩 나란히(가운데 65 · 195 · 325), 막대 폭 28px
+  doc.querySelectorAll('nav button').forEach((b, i) => {
+    Object.defineProperty(b, 'offsetLeft', { value: i * 130 });
+    Object.defineProperty(b, 'offsetWidth', { value: 130 });
+  });
+  const ind = doc.querySelector('.tab-ind');
+  Object.defineProperty(ind, 'offsetWidth', { value: 28 });
+  mountTabs(doc.getElementById('nav'), pager, { win: w, doc });
+  assert.equal(ind.style.transform, 'translateX(51px)', '처음엔 오늘 버튼 가운데(65 − 14)');
+  left = W / 4; // 오늘 → 기록 사이 1/4
+  pager.dispatchEvent(new w.Event('scroll'));
+  assert.equal(ind.style.transform, 'translateX(83.5px)', '65 + 130 × 0.25 − 14');
+  left = 2 * W;
+  pager.dispatchEvent(new w.Event('scroll'));
+  assert.equal(ind.style.transform, 'translateX(311px)', '설정 버튼 가운데(325 − 14)');
+});
+
+test('탭 표시 막대는 하나만 두고 tabs.js가 위치를 정함', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /<nav class="tabbar"[^>]*>\s*<i class="tab-ind" aria-hidden="true"><\/i>/);
+  assert.equal(value('.tab-ind', 'position'), 'absolute');
+});

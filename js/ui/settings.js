@@ -4,9 +4,18 @@ import { DEFAULT_SETS, LIMITS, PRESETS, UNITS } from '../config.js';
 import { DOW, todayStr } from '../dates.js';
 import { newExerciseId, validateConfig } from '../model.js';
 import { canPlayInSilentMode, isSilentModeOn, playSound, setSilentMode } from '../sound.js';
+import { VERSION } from '../version.js';
 import { $, esc } from './dom.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
+
+/** 설정 맨 아래 판 표시: '버전 3c80ef6 · 10월 30일 14:24' (배포 전 개발 중이면 '개발판') */
+export function versionLabel({ sha, builtAt } = {}) {
+  const d = builtAt ? new Date(builtAt) : null;
+  if (!sha || sha === 'dev' || !d || Number.isNaN(d.getTime())) return '개발판';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `버전 ${sha} · ${d.getMonth() + 1}월 ${d.getDate()}일 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export function mountSettings(root, store) {
   const { actions } = store;
@@ -84,7 +93,9 @@ export function mountSettings(root, store) {
         <button type="button" class="btn ghost" id="resetCfg">되돌리기</button>
         <span class="dirty-note" id="dirtyNote" hidden>저장하지 않은 변경이 있습니다</span>
       </div>
-    </section>`;
+    </section>
+
+    <p class="app-version" id="appVersion">${esc(versionLabel(VERSION))}</p>`;
 
   const el = (id) => $('#' + id, root);
 
