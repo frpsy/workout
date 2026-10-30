@@ -27,7 +27,8 @@ const progress = splash ? createProgress(splash) : null;
 async function boot() {
   const adapter = await createStorage({ onStep: (id) => progress && progress.step(id) });
   if (progress) progress.step('data');
-  const store = createStore(adapter);
+  // 오늘은 낮 3시부터 저녁 사이클을 먼저 보여 줌(눌러서 언제든 바꿀 수 있음)
+  const store = createStore(adapter, { cycleFor: () => (new Date().getHours() >= 15 ? 2 : 1) });
 
   mountTip(document.getElementById('tip'));
   mountWeather(document.getElementById('weather')); // 받지 못하면 그냥 숨김(오프라인 등)

@@ -5,7 +5,7 @@ import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LEVELS, LIMITS, SCHEMA_V
 import { isDateStr } from './dates.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-const RESERVED = new Set(['date', 'v', 'entries', 'workSec', 'sessions', 'level', 'note']);
+const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note']);
 const MAX_WORK_SEC = 86400; // 하루 총 운동시간 상한(24시간)
 export const NOTE_MAX = 200; // 운동 소감·감사한 일 글자 수 상한
 export const MAX_SESSIONS = 20; // 하루에 남기는 운동 구간(시작·종료) 수 상한
@@ -94,25 +94,19 @@ export function normalizeNote(raw) {
   return feel || thanks ? note : null;
 }
 
-/** 운동 구간 [{ s: 시작 시각(ms), e: 종료 시각(ms), sec: 중지한 시간을 뺀 운동 초 }] — 잘못된 값은 버리고 시작 순으로 */
+/** 운동 구간 [{ s: 시작 시각(ms), e: 종료 시각(ms), sec: 중지한 시간을 뺀 운동 초, c: 2(저녁 사이클일 때만) }] — 잘못된 값은 버리고 시작 순으로 */
 export function normalizeSessions(raw) {
   if (!Array.isArray(raw)) return [];
   const out = [];
   for (const v of raw) {
     if (!isObj(v) || !inRange(v.s, [1, 4e12]) || !inRange(v.e, [1, 4e12]) || v.e < v.s || !inRange(v.sec, [1, MAX_WORK_SEC])) continue;
-    out.push({ s: Math.round(v.s), e: Math.round(v.e), sec: Math.round(v.sec) });
+    out.push({ s: Math.round(v.s), e: Math.round(v.e), sec: Math.round(v.sec), ...(v.c === 2 ? { c: 2 } : {}) });
   }
   return out.sort((a, b) => a.s - b.s).slice(-MAX_SESSIONS);
 }
 
-/** v1은 운동 기록이 문서 최상위에, v2는 entries 안에 있습니다. */
-export function normalizeDay(raw) {
+function normalizeEntries(src) {
   const entries = {};
-  if (!isObj(raw)) return { entries };
-  const workSec = inRange(raw.workSec, [1, MAX_WORK_SEC]) ? Math.round(raw.workSec) : 0;
-  // 보통은 기본값이라 저장하지 않음
-  const level = raw.level === 'easy' || raw.level === 'hard' ? raw.level : undefined;
-  const src = isObj(raw.entries) ? raw.entries : raw;
   for (const [id, v] of Object.entries(src)) {
     if (RESERVED.has(id) || !ID_RE.test(id) || !isObj(v)) continue;
     const e = { done: !!v.done };
@@ -122,16 +116,28 @@ export function normalizeDay(raw) {
     if (!e.done && inRange(v.setsDone, LIMITS.sets)) e.setsDone = Math.round(v.setsDone); // 세트별로 체크한 개수(아직 다 안 마친 날)
     entries[id] = e;
   }
+  return entries;
+}
+
+/** 하루 기록: entries는 아침 사이클, pm은 저녁 사이클(하루에 두 번 할 때만 있음). v1은 운동 기록이 문서 최상위에 있습니다. */
+export function normalizeDay(raw) {
+  if (!isObj(raw)) return { entries: {} };
+  const workSec = inRange(raw.workSec, [1, MAX_WORK_SEC]) ? Math.round(raw.workSec) : 0;
+  // 보통은 기본값이라 저장하지 않음
+  const level = raw.level === 'easy' || raw.level === 'hard' ? raw.level : undefined;
+  const src = isObj(raw.entries) ? raw.entries : raw;
+  const entries = normalizeEntries(src);
+  const pm = isObj(raw.pm) ? normalizeEntries(raw.pm) : {};
   const note = normalizeNote(raw.note);
   const sessions = normalizeSessions(raw.sessions);
-  return { entries, ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
+  return { entries, ...(Object.keys(pm).length ? { pm } : {}), ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeDay(date, day) {
   // workSec: 그날 총 운동시간(초), sessions: 운동 구간(시작·종료 시각), note: 운동 소감·감사한 일. 없으면 필드도 두지 않음
   const note = normalizeNote(day.note);
   const sessions = normalizeSessions(day.sessions);
-  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
+  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(day.pm && Object.keys(day.pm).length ? { pm: clone(day.pm) } : {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeConfig(config) {

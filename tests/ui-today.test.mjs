@@ -343,3 +343,25 @@ test('오늘: 지난 날 기록을 고치며 세트를 체크해도 휴식 타�
   document.removeEventListener('workout:set-checked', on);
   store.actions.flushAll();
 });
+
+test('오늘: 아침·저녁 버튼으로 사이클을 바꾸며 체크하면 각각 따로 기록되고 사이클별 완료 수가 보임', () => {
+  const { store, root } = setup(today);
+  const t0 = todayStr();
+  const btn = (c) => root.querySelector(`#cycles [data-cycle="${c}"]`);
+  assert.equal(btn(1).getAttribute('aria-pressed'), 'true', '기본은 아침');
+  root.querySelector('.row [data-f="check"]').click();
+  assert.equal(btn(1).querySelector('small').textContent, '1/3');
+  assert.equal(btn(2).querySelector('small').textContent, '0/3');
+  btn(2).click();
+  assert.equal(btn(2).getAttribute('aria-pressed'), 'true');
+  assert.equal(root.querySelector('#progText').textContent, '0/3 완료', '저녁은 처음부터');
+  assert.equal(root.querySelector('.row').classList.contains('done'), false);
+  root.querySelector('.row [data-f="check"]').click();
+  assert.equal(root.querySelector('.row').classList.contains('done'), true);
+  const day = store.state.days[t0];
+  assert.equal(day.entries.push.done, true);
+  assert.equal(day.pm.push.done, true);
+  btn(1).click();
+  assert.equal(root.querySelector('#progText').textContent, '1/3 완료', '아침으로 돌아오면 아침 기록');
+  store.actions.flushAll();
+});

@@ -3,7 +3,10 @@
 import { addDays, parse } from './dates.js';
 
 export const entryOf = (day, id) => (day && day.entries ? day.entries[id] : undefined);
-export const isDone = (day, id) => !!(entryOf(day, id) && entryOf(day, id).done);
+/** 저녁 사이클(day.pm)의 종목 기록 */
+export const pmEntryOf = (day, id) => (day && day.pm ? day.pm[id] : undefined);
+/** 하루에 두 번(아침·저녁) 할 수 있어, 둘 중 한 번이라도 마쳤으면 그 종목은 한 것으로 봅니다 */
+export const isDone = (day, id) => !!((entryOf(day, id) && entryOf(day, id).done) || (pmEntryOf(day, id) && pmEntryOf(day, id).done));
 
 export function doneCount(day, ids) {
   return ids.reduce((n, id) => n + (isDone(day, id) ? 1 : 0), 0);

@@ -68,6 +68,10 @@ export function mountToday(root, store) {
           <button type="button" class="wsec wcancel wreset" id="wReset" hidden aria-label="기록된 운동시간 지우기">시간 초기화</button>
         </div>
       </div>
+      <div class="levels cycles" id="cycles" role="group" aria-label="운동 사이클">
+        <button type="button" data-cycle="1" aria-pressed="true"><span>아침</span> <small></small></button>
+        <button type="button" data-cycle="2" aria-pressed="false"><span>저녁</span> <small></small></button>
+      </div>
       <div class="prog">
         <div class="levels" id="levels" role="group" aria-label="오늘 난이도">
           ${LEVEL_ORDER.map((k) => `<button type="button" data-level="${k}" aria-pressed="false">${LEVELS[k].label}</button>`).join('')}
@@ -105,6 +109,10 @@ export function mountToday(root, store) {
   mountSoundToggle(root);
   const viewSwitch = mountViewSwitch(root, () => {
     if (rows.size) render(store.state); // 안내 줄(상세)을 바로 반영
+  });
+  $('#cycles', root).addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-cycle]');
+    if (b && !b.disabled) actions.setCycle(Number(b.dataset.cycle));
   });
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
@@ -324,6 +332,15 @@ export function mountToday(root, store) {
     const off = selected !== today;
     $('#back', root).hidden = !off;
     if (off) $('#backText', root).textContent = `${labelMD(selected)} 기록을 고치는 중입니다`;
+
+    // 아침·저녁 사이클: 고른 쪽을 표시하고, 각 사이클에서 마친 종목 수를 함께 보여 줌
+    for (const b of $('#cycles', root).children) {
+      const c = Number(b.dataset.cycle);
+      const n = exs.filter((e) => store.view(selected, e, res, c).done).length;
+      b.setAttribute('aria-pressed', String(c === state.cycle));
+      b.querySelector('small').textContent = exs.length ? `${n}/${exs.length}` : '';
+      b.disabled = !state.ready;
+    }
 
     // 오늘 난이도 3단계
     const level = (state.days[selected] && state.days[selected].level) || 'normal';
