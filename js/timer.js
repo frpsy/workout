@@ -1,5 +1,7 @@
 // 운동 사이 휴식 타이머의 상태. 종료 시각(endAt)으로 계산해, 화면이 꺼졌다 켜져도 정확합니다.
 
+import { readJson, writeJson } from './local-store.js';
+
 export const MIN_SEC = 15;
 export const MAX_SEC = 600;
 export const STEP_SEC = 15;
@@ -14,12 +16,7 @@ export const clampDuration = (n) => (Number.isFinite(n) ? Math.max(MIN_SEC, Math
 export const fmt = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
 function readSaved() {
-  try {
-    const v = JSON.parse(localStorage.getItem(KEY) || '{}');
-    return v && typeof v === 'object' ? v : {};
-  } catch {
-    return {};
-  }
+  return readJson(KEY);
 }
 
 /** 마지막으로 정한 시간은 이 브라우저에만 남깁니다. */
@@ -33,11 +30,7 @@ export function loadAuto() {
 }
 
 function save(patch) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify({ ...readSaved(), ...patch }));
-  } catch {
-    /* 저장이 막힌 브라우저에서는 다음에 기본값으로 시작할 뿐입니다 */
-  }
+  writeJson(KEY, { ...readSaved(), ...patch });
 }
 const saveDuration = (duration) => save({ duration });
 

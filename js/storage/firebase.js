@@ -2,27 +2,15 @@
 // 설정이 없거나 불러오지 못하면 null을 돌려주고, 호출한 쪽이 브라우저 저장으로 넘어갑니다.
 // 로그인 전에는 브라우저 저장을 그대로 쓰되 로그인 버튼(account.signIn)을 함께 줍니다.
 
+import { readText, writeText } from '../local-store.js';
 import { createDbAdapter } from './claude-db.js';
 
 const AUTH_WAIT = 5000;
 const PROBE_WAIT = 6000; // 이보다 오래 걸리면 오프라인으로 보고 기기에 저장된 값으로 엽니다
 const OK_KEY = 'workout-check:account-ok'; // 이 기기에서 이 계정의 기록을 정상으로 읽어 본 적이 있으면 그 uid
 
-const knownGood = (uid) => {
-  try {
-    return localStorage.getItem(OK_KEY) === uid;
-  } catch {
-    return false;
-  }
-};
-const markGood = (uid, ok) => {
-  try {
-    if (ok) localStorage.setItem(OK_KEY, uid);
-    else localStorage.removeItem(OK_KEY);
-  } catch {
-    /* 저장이 막힌 브라우저: 매번 확인하고 열 뿐입니다 */
-  }
-};
+const knownGood = (uid) => readText(OK_KEY) === uid;
+const markGood = (uid, ok) => writeText(OK_KEY, ok ? uid : null);
 
 /**
  * @param config        firebaseConfig

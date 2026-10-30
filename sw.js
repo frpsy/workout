@@ -21,6 +21,7 @@ const ASSETS = [
   './js/config.js',
   './js/dates.js',
   './js/firebase-config.js',
+  './js/local-store.js',
   './js/main.js',
   './js/model.js',
   './js/progression.js',

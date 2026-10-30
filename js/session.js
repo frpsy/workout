@@ -1,24 +1,14 @@
 // 운동 스톱워치: 시작하면 시간이 흐르고, 종료하면 잰 시간을 그날 총 운동시간에 더합니다.
 // 시작한 시각을 이 브라우저에 남겨 두어, 새로고침하거나 앱을 닫았다 열어도 이어서 잴 수 있습니다.
 
+import { readJson, writeJson, writeText } from './local-store.js';
+
 const KEY = 'workout-check:session';
 const MAX_RESUME_MS = 12 * 3600 * 1000; // 이보다 오래된 시작 기록은 잊은 것으로 보고 버림
 
-const read = () => {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || 'null');
-  } catch {
-    return null;
-  }
-};
-const write = (v) => {
-  try {
-    if (v) localStorage.setItem(KEY, JSON.stringify(v));
-    else localStorage.removeItem(KEY);
-  } catch {
-    /* 저장이 막힌 브라우저에서는 이 화면을 연 동안만 잴 수 있습니다 */
-  }
-};
+// 저장이 막힌 브라우저에서는 이 화면을 연 동안만 잴 수 있습니다
+const read = () => readJson(KEY, null);
+const write = (v) => (v ? writeJson(KEY, v) : writeText(KEY, null));
 
 /** 1:05, 1:02:05 */
 export function fmtClock(sec) {
