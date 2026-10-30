@@ -84,8 +84,8 @@ export function mountWorkbar(root, store) {
     pauseBtn.textContent = paused ? '재개' : '중지';
     pauseBtn.classList.toggle('resume', paused); // 멈춰 있으면 '재개'를 눈에 띄게
     pauseBtn.setAttribute('aria-label', paused ? '운동 시간 이어서 재기' : '운동 시간 잠시 멈추기');
-    // 재지 않는 동안, 선택한 날에 기록된 운동시간이 있으면 초기화 버튼이 보임
-    resetBtn.hidden = running || !total;
+    // 재지 않는 동안, 오늘 기록된 운동시간이 있으면 초기화 버튼이 보임 (지난 날에는 두지 않음)
+    resetBtn.hidden = running || !total || state.selected !== state.today;
     root.querySelector('.headline').classList.toggle('working', running);
     holdScreen(running && !paused);
   }

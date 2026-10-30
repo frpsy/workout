@@ -131,6 +131,11 @@ test('오늘: 운동 취소는 바로 기록 없이 버려지고, 기록된 운�
   $$('#wBtn').click(); // 종료 → 1분 30초 기록
   assert.equal(store.state.days[todayStr()].workSec, 90);
   assert.equal($$('#wReset').hidden, false);
+  store.actions.select(addDays(todayStr(), -1));
+  store.actions.addWorkSec(addDays(todayStr(), -1), 60);
+  assert.equal($$('#wReset').hidden, true, '지난 날에는 초기화 버튼이 없음');
+  store.actions.goToday();
+  assert.equal($$('#wReset').hidden, false);
   $$('#wReset').click(); // 확인 없이 바로 지움
   assert.equal(store.state.days[todayStr()].workSec, undefined, '운동시간이 지워짐');
   assert.equal($$('#wTime').textContent, '');
