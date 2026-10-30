@@ -15,13 +15,3 @@ export function haptic() {
     /* 지원하지 않는 기기 */
   }
 }
-
-/** 클립보드 복사. 실패하면 false */
-export async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
-}
