@@ -56,6 +56,9 @@
   --gap-md: 10px;
   --gap-lg: 12px;
   --gutter: 16px; /* 화면 좌우 여백(저장 줄이 끝까지 닿도록 같은 값을 씀) */
+  /* 아래 탭 막대: 버튼 50px + 테두리 1px + 아래 여백. 아이폰 홈 표시줄 영역(34px)은 12px 덜 써서 22px만 둠(표시줄과 글자가 겹치지 않는 선), 없는 기기는 8px */
+  --tabbar-pad: max(calc(env(safe-area-inset-bottom, 0px) - 12px), 8px);
+  --tabbar-h: calc(51px + var(--tabbar-pad));
 
   /* 모서리 */
   --r-ctrl: 12px; /* 버튼·입력칸 */
@@ -163,7 +166,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
   padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
   padding-top: 8px;
-  padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); /* 아래 탭 막대 높이만큼 */
+  padding-bottom: calc(var(--tabbar-h) + 7px); /* 아래 탭 막대 높이만큼 */
   display: flex;
   flex-direction: column;
   gap: var(--gap-md);
@@ -641,7 +644,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 
 /* 오늘의 마무리: 운동 소감·감사한 일 */
 .journal {
-  scroll-margin-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  scroll-margin-bottom: calc(var(--tabbar-h) + 21px);
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
@@ -1057,7 +1060,7 @@ tr.cur td { background: var(--accent-soft); }
 /* 저장하지 않은 변경이 있으면 저장 줄을 탭 막대 바로 위에 붙임 */
 .savebar.dirty {
   position: sticky;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--tabbar-h) + 1px);
   z-index: 2;
   margin: 0 calc(-1 * var(--gutter));
   padding: 10px var(--gutter);
@@ -1078,12 +1081,12 @@ tr.cur td { background: var(--accent-soft); }
   justify-content: center;
   background: var(--surface);
   border-top: 1px solid var(--line);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  padding-bottom: var(--tabbar-pad);
 }
 .tabbar button {
   flex: 1;
   max-width: 186px;
-  height: 52px;
+  height: 50px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1192,7 +1195,7 @@ tr.cur td { background: var(--accent-soft); }
   .timer { height: 44px; }
   #timer { /* 종목이 많아 넘쳐도 휴식 타이머는 탭 막대 위에 */
     position: sticky;
-    bottom: calc(63px + env(safe-area-inset-bottom, 0px));
+    bottom: var(--tabbar-h);
     z-index: 3;
     border-radius: var(--r-card);
     box-shadow: 0 8px 0 var(--bg), var(--shadow-float);
