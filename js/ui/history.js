@@ -10,6 +10,7 @@ const WEEKS = 5; // 달력 전체 주 수: 이번 주만 맨 위에 바로, 앞�
 const RECENT = 1;
 const MAX_PIPS = 6;
 const NOTES_SHOWN = 10; // 마무리 기록은 최근 10개까지
+const NOTES_FIRST = 3; // 처음에는 최근 3개만, '더 보기'로 나머지
 
 const HEAD = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목', '금', '토', '일'].map((x) => `<span>${x}</span>`).join('') + '</div>';
 
@@ -31,6 +32,7 @@ export function mountHistory(root, store) {
         <section id="notesSec" hidden>
           <h2 class="sec">마무리 기록</h2>
           <ul class="notes" id="notes"></ul>
+          <button type="button" class="notes-more" id="notesMore" hidden></button>
         </section>
         <section>
           <h2 class="sec">종목별 꾸준함</h2>
@@ -59,6 +61,7 @@ export function mountHistory(root, store) {
 
   let key = '';
   let last = null;
+  let notesAll = false;
 
   /** w주 전(0=가장 오래된 주 … WEEKS-1=이번 주)부터 n주 */
   function calHtml(state, ctx, from, to) {
@@ -122,7 +125,12 @@ export function mountHistory(root, store) {
       .reverse()
       .slice(0, NOTES_SHOWN);
     $('#notesSec', root).hidden = !notes.length;
-    $('#notes', root).innerHTML = notes
+    const shown = notesAll ? notes : notes.slice(0, NOTES_FIRST);
+    const moreBtn = $('#notesMore', root);
+    moreBtn.hidden = notes.length <= NOTES_FIRST;
+    moreBtn.textContent = notesAll ? '접기' : `더 보기 (${notes.length - NOTES_FIRST}개)`;
+    moreBtn.setAttribute('aria-expanded', String(notesAll));
+    $('#notes', root).innerHTML = shown
       .map((d) => {
         const n = days[d].note;
         const feel = (n.feel || '').trim();
@@ -167,6 +175,12 @@ export function mountHistory(root, store) {
       })
       .join('');
   }
+
+  $('#notesMore', root).addEventListener('click', () => {
+    notesAll = !notesAll;
+    key = '';
+    if (last) render(last);
+  });
 
   // 펼치면 그때 그림 (접혀 있는 동안은 계산하지 않음)
   $('#moreBox', root).addEventListener('toggle', () => {

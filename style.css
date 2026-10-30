@@ -412,6 +412,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 
 /* 머리말: 날짜(운동 중에는 스톱워치)와 진행 막대 */
 .headline { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); margin-bottom: 6px; }
+.hdate { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .headline h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eyebrow { margin: 0; flex: none; font-size: var(--fs-xs); color: var(--muted); display: flex; align-items: center; gap: var(--gap-sm); }
 .prog { display: flex; align-items: center; gap: var(--gap-lg); }
@@ -424,6 +425,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 /* 운동 스톱워치: 시작·종료, 중지(재개)·취소·초기화 */
 .work { display: flex; align-items: center; gap: var(--gap); min-width: 0; }
 .wtime { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wtime:empty { display: none; }
 .wtime.running {
   font-family: var(--font-num);
   font-size: var(--fs-3xl);
@@ -470,8 +472,6 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .wreset { min-width: 0; padding: 0 8px; font-size: var(--fs-xs); }
 .wbtn::after, .wsec::after { content: ''; position: absolute; inset: -4px 0; } /* 누르는 영역 44px */
 .headline.working h1 { display: none; }
-.headline.working .work { flex: 1; justify-content: space-between; }
-.headline.working .wtime { margin-right: auto; }
 
 /* 안내 줄(지난 날 고치는 중·로그인 권유) */
 .back {
@@ -930,6 +930,20 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   line-height: 1.5;
 }
 .note-line b { margin-right: 6px; }
+.notes-more {
+  display: block;
+  margin: var(--gap-lg) auto 0;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.notes-more[hidden] { display: none; }
 
 /* 종목별 꾸준함 */
 .perex { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }

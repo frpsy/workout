@@ -57,9 +57,11 @@ export function mountToday(root, store) {
   root.innerHTML = `
     <header class="head">
       <div class="headline">
-        <h1 id="dateLabel" tabindex="-1"></h1>
-        <div class="work">
+        <div class="hdate">
+          <h1 id="dateLabel" tabindex="-1"></h1>
           <span class="wtime" id="wTime" aria-live="off"></span>
+        </div>
+        <div class="work">
           <button type="button" class="wsec" id="wPause" hidden>중지</button>
           <button type="button" class="wbtn" id="wBtn">▶ 운동 시작</button>
           <button type="button" class="wsec wcancel" id="wCancel" hidden>취소</button>
