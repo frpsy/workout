@@ -71,3 +71,22 @@ boot().catch((err) => {
   if (progress) progress.fail('화면을 띄우지 못했습니다. 새로고침해 주세요.');
   console.error(err);
 });
+
+// 홈 화면 앱(GitHub Pages 단독 실행): 서비스 워커로 오프라인에서도 열리고, 매번 서버에 새 파일이 있는지 물어 최신 판을 씀.
+// 앱을 다시 볼 때 새 배포가 있으면 새 서비스 워커가 넘겨받으며 한 번 새로 불러옴(운동 시간·타이머·기록은 저장돼 있어 이어짐)
+if ('serviceWorker' in navigator && document.documentElement.classList.contains('standalone')) {
+  const hadController = !!navigator.serviceWorker.controller; // 처음 설치될 때는 새로 불러오지 않음
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloading) return;
+    reloading = true;
+    location.reload();
+  });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) reg.update().catch(() => {});
+      });
+    }).catch(() => {});
+  });
+}

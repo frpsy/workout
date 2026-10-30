@@ -41,3 +41,11 @@ test('update-sw가 목록을 다시 만들고 CACHE를 내용 해시로 정함',
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('홈 화면 앱: 서비스 워커를 등록하고, 다시 볼 때 새 배포를 확인해 넘겨받으면 새로 불러옴', () => {
+  const main = readFileSync(join(root, 'js', 'main.js'), 'utf8');
+  assert.match(main, /navigator\.serviceWorker\.register\('\.\/sw\.js'\)/, '등록이 빠지면 오프라인 실행·최신 판 받기가 모두 멈춤');
+  assert.match(main, /reg\.update\(\)/);
+  assert.match(main, /'controllerchange'[\s\S]*location\.reload\(\)/);
+  assert.match(main, /if \(!hadController \|\| reloading\) return;/, '처음 설치될 때는 새로 불러오지 않음');
+});
