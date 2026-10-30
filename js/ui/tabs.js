@@ -16,7 +16,7 @@ const LOCK_PX = 10; // 이만큼 움직이면 가로(탭 넘기기)인지 세로
 const COMMIT_RATIO = 0.25; // 화면 폭의 이만큼 넘게 밀고 놓으면 넘김
 const FLICK_PX_PER_MS = 0.5; // 짧게 밀어도 이보다 빠르게 튕기면 넘김
 const EDGE_RESIST = 0.3; // 더 갈 탭이 없을 때 따라오는 비율
-const SETTLE_MS = 160; // 놓은 뒤 내보내기·되돌리기 시간
+const SETTLE_MS = 128; // 놓은 뒤 내보내기·되돌리기 시간
 
 /** 입력칸·슬라이더·가로로 스크롤되는 곳에서 시작한 밀기는 탭 전환으로 보지 않음 */
 function swipeable(target, win) {
