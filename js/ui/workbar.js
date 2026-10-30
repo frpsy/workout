@@ -35,7 +35,7 @@ export function mountWorkbar(root, store) {
     }
   }
 
-  // 오늘 체크한 세트·완료가 하나도 없게 되돌아가면(모두 초기화) 재던 시간도 버리고 기록된 운동시간도 지움
+  // 오늘 체크한 세트·완료가 하나도 없게 되돌아가면(모두 초기화) 재던 시간도 버리고 기록된 운동시간도 지우고, 휴식 타이머에도 알림
   let prevProgress = null; // { date, any }
   function resetTimeIfCleared() {
     const state = store.state;
@@ -52,6 +52,7 @@ export function mountWorkbar(root, store) {
       session.cancel();
     }
     actions.clearWorkSec(state.today);
+    document.dispatchEvent(new Event('workout:progress-cleared'));
   }
 
   function renderWork() {
