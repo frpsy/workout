@@ -1,64 +1,68 @@
-// 통계 탭: 이번 주 달력(맨 위에 바로 보임), 자세히(달성·연속, 종목별 꾸준함, 지난 4주 — 접어 두고 펼쳤을 때만 그림)
+// 기록 탭: 5주 달력 → 날짜를 누르면 바로 아래 카드에 그날 기록(총 시간·시각·운동 내용·소감), 그 아래에 달성·연속과 종목별 꾸준함
 
-import { addDays, diffDays, labelMD, mondayOf, parse, shortMD } from '../dates.js';
+import { UNITS } from '../config.js';
+import { addDays, diffDays, dowName, labelMD, mondayOf, pad, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
 import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent } from '../stats.js';
 import { fmtKo } from '../session.js';
 import { $, esc } from './dom.js';
 
-const WEEKS = 5; // 달력 전체 주 수: 이번 주만 맨 위에 바로, 앞의 4주는 자세히 안에
-const RECENT = 1;
+const WEEKS = 5; // 달력 주 수(이번 주 포함)
 const MAX_PIPS = 6;
+
+const clock = (ms) => {
+  const d = new Date(ms);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 const HEAD = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목', '금', '토', '일'].map((x) => `<span>${x}</span>`).join('') + '</div>';
 
 export function mountHistory(root, store) {
   root.innerHTML = `
-    <section aria-label="이번 주">
-      <div id="calRecent" class="cal"></div>
-      <p class="sub cal-hint">날짜를 누르면 그날 기록을 고칠 수 있습니다.</p>
+    <section aria-label="달력">
+      <div id="cal" class="cal"></div>
+      <p class="sub" id="calSub"></p>
     </section>
-    <details class="block" id="moreBox">
-      <summary>기록 자세히</summary>
-      <div class="set-body">
-        <section>
-          <h2 class="sec">달성·연속</h2>
-          <dl class="totals" id="summary"></dl>
-          <p class="tallytext" id="tallyText"></p>
-          <p class="tallytext" id="workText"></p>
-        </section>
-        <section>
-          <h2 class="sec">종목별 꾸준함</h2>
-          <ul class="perex" id="perEx"></ul>
-          <p class="sub">달성률은 최근 30일 중 해야 했던 날(쉬는 요일·시작 전 제외) 대비 마친 날입니다.</p>
-        </section>
-        <section>
-          <h2 class="sec">지난 ${WEEKS - RECENT}주</h2>
-          <div id="calOlder" class="cal"></div>
-          <p class="sub" id="calSub"></p>
-        </section>
-      </div>
-    </details>`;
+    <section class="daycard" id="dayCard" aria-live="polite"></section>
+    <section>
+      <h2 class="sec">달성·연속</h2>
+      <dl class="totals" id="summary"></dl>
+      <p class="tallytext" id="tallyText"></p>
+      <p class="tallytext" id="workText"></p>
+    </section>
+    <section>
+      <h2 class="sec">종목별 꾸준함</h2>
+      <ul class="perex" id="perEx"></ul>
+      <p class="sub">달성률은 최근 30일 중 해야 했던 날(쉬는 요일·시작 전 제외) 대비 마친 날입니다.</p>
+    </section>`;
 
-  function onPick(ev) {
+  let picked = null; // 달력에서 누른 날(없으면 오늘). 오늘 탭에서 고치는 날(store.state.selected)과는 별개
+
+  $('#cal', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button.cell');
     if (!b || b.disabled) return;
-    store.actions.select(b.dataset.date);
+    picked = b.dataset.date;
+    key = '';
+    if (last) render(last);
+  });
+  $('#dayCard', root).addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-edit]');
+    if (!b) return;
+    store.actions.select(b.dataset.edit);
     // 고칠 날을 골랐으면 오늘 탭으로 (탭이 없는 환경에서는 알릴 곳이 없어도 무방)
     document.dispatchEvent(new window.CustomEvent('workout:goto-tab', { detail: 'today' }));
     const title = document.getElementById('dateLabel');
     if (title) title.focus({ preventScroll: true });
-  }
-  $('#calRecent', root).addEventListener('click', onPick);
-  $('#calOlder', root).addEventListener('click', onPick);
+  });
 
   let key = '';
   let last = null;
 
-  /** w주 전(0=가장 오래된 주 … WEEKS-1=이번 주)부터 n주 */
+  /** from~to주(0=가장 오래된 주 … WEEKS-1=이번 주) */
   function calHtml(state, ctx, from, to) {
-    const { days, today, selected, config } = state;
+    const { days, today, config } = state;
     const { exs, ids, rest } = ctx;
+    const selected = picked || today;
     const start = addDays(mondayOf(today), -7 * (WEEKS - 1));
     let h = HEAD;
     for (let w = from; w < to; w++) {
@@ -81,7 +85,7 @@ export function mountHistory(root, store) {
     return h;
   }
 
-  function renderMore(state, ctx) {
+  function renderStats(state, ctx) {
     const { days, today, config } = state;
     const { exs, rest } = ctx;
     const offGrid = parse(config.startDate).getDay() !== 1; // 목표 주차는 시작일 기준 7일 단위
@@ -90,8 +94,7 @@ export function mountHistory(root, store) {
       offGrid ? '왼쪽에 초록 선이 있는 날은 새 목표 주차가 시작되는 날입니다.' : '',
       rest.size ? '흐린 날은 쉬는 요일입니다.' : '',
     ];
-    $('#calOlder', root).innerHTML = calHtml(state, ctx, 0, WEEKS - RECENT);
-    $('#calSub', root).textContent = help.filter(Boolean).join(' ');
+    $('#calSub', root).textContent = ['날짜를 누르면 그날 기록이 아래에 보입니다.', ...help].filter(Boolean).join(' ');
 
     /* 모두 마친 날 수 */
     const complete = completeDayCount(days, exs);
@@ -142,26 +145,47 @@ export function mountHistory(root, store) {
       .join('');
   }
 
-  // 펼치면 그때 그림 (접혀 있는 동안은 계산하지 않음)
-  $('#moreBox', root).addEventListener('toggle', () => {
-    if ($('#moreBox', root).open && last) {
-      key = '';
-      render(last);
-    }
-  });
+  /** 고른 날 기록 카드: 총 시간, 운동 시작–종료 시각, 종목별 한 것, 소감·감사 */
+  function dayCardHtml(state, ctx, date) {
+    const day = state.days[date];
+    const sessions = (day && day.sessions) || [];
+    const total = (day && day.workSec) || 0;
+    const list = state.config.exercises
+      .map((ex) => ({ ex, v: store.view(date, ex) }))
+      .filter(({ ex, v }) => ex.active !== false || v.done || v.setsDone);
+    const rows = list.map(({ ex, v }) => {
+        const unit = (UNITS[ex.unit] || UNITS.reps).label === '초' ? '초' : '';
+        const reps = `${v.count}${unit}`;
+        const val = v.done ? `${reps}${v.setsKnown ? `×${v.sets}` : ''}` : v.setsDone ? `${reps}×${v.setsDone}/${v.sets}` : '–';
+        return `<li class="${v.done ? 'done' : v.setsDone ? 'part' : ''}"><span>${esc(ex.name)}</span><b>${val}</b></li>`;
+    });
+    const any = total || sessions.length || list.some(({ v }) => v.done || v.setsDone);
+    const note = (day && day.note) || {};
+    const rest = ctx.rest.has(parse(date).getDay());
+    return (
+      `<div class="day-head"><h2 class="sec">${labelMD(date)} <small>(${dowName(date)})${date === state.today ? ' · 오늘' : ''}</small></h2>` +
+      `<span class="log-total${total ? '' : ' none'}">${total ? `총 ${fmtKo(total)}` : '시간 기록 없음'}</span></div>` +
+      (sessions.length ? `<p class="log-time">${sessions.map((x) => `${clock(x.s)} – ${clock(x.e)}`).join(', ')}</p>` : '') +
+      (any ? `<ul class="dayex">${rows.join('')}</ul>` : `<p class="sub">${rest ? '쉬는 날입니다.' : '기록이 없습니다.'}</p>`) +
+      (note.feel ? `<p class="note-line"><b>소감</b> ${esc(note.feel)}</p>` : '') +
+      (note.thanks ? `<p class="note-line"><b>감사</b> ${esc(note.thanks)}</p>` : '') +
+      `<button type="button" class="btn ghost sm" data-edit="${date}">${date === state.today ? '오늘 탭에서 체크하기' : '이 날 기록 고치기'}</button>`
+    );
+  }
 
   function render(state) {
     last = state;
-    const open = $('#moreBox', root).open;
-    // 기록·설정·날짜·선택이 바뀌었을 때만 다시 그림 (저장 상태 문구 같은 변화에는 그대로 둠)
-    const next = `${state.daysRev}:${state.configRev}:${state.selected}:${state.today}:${open}`;
+    // 기록·설정·날짜·고른 날이 바뀌었을 때만 다시 그림 (저장 상태 문구 같은 변화에는 그대로 둠)
+    const next = `${state.daysRev}:${state.configRev}:${state.today}:${picked || ''}`;
     if (next === key) return;
     key = next;
+    if (picked && picked > state.today) picked = null; // 자정 지나 날짜가 바뀐 경우 등
 
     const exs = store.activeExercises();
     const ctx = { exs, ids: exs.map((e) => e.id), rest: new Set(state.config.restDays || []) };
-    $('#calRecent', root).innerHTML = calHtml(state, ctx, WEEKS - RECENT, WEEKS);
-    if (open) renderMore(state, ctx);
+    $('#cal', root).innerHTML = calHtml(state, ctx, 0, WEEKS);
+    $('#dayCard', root).innerHTML = dayCardHtml(state, ctx, picked || state.today);
+    renderStats(state, ctx);
   }
   return render;
 }

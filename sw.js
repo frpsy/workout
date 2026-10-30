@@ -38,7 +38,6 @@ const ASSETS = [
   './js/ui/dom.js',
   './js/ui/history.js',
   './js/ui/journal.js',
-  './js/ui/log.js',
   './js/ui/login-note.js',
   './js/ui/plan.js',
   './js/ui/settings.js',
