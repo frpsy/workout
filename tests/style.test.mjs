@@ -80,7 +80,7 @@ test('iOS Safari: 선택칸·날짜칸은 기본 모양 대신 같은 모양, de
 
 test('디자인 값: 글자 크기·그림자 색은 :root 변수로만 정함', () => {
   for (const r of rules) {
-    if (r.selectors.includes(':root')) continue;
+    if (r.selectors.every((sel) => sel.startsWith(':root'))) continue; // 변수를 정의하는 블록(밝은·어두운 테마)
     for (const [prop, v] of Object.entries(r.decls)) {
       if (prop === 'font-size') assert.match(v, /^(var\(--fs-[\w-]+\)|inherit)$/, `${r.selectors} font-size: ${v}`);
       assert.doesNotMatch(v, /rgba\(/, `${r.selectors} ${prop}: 그림자 색은 --shadow-* 변수로`);

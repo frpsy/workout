@@ -13,19 +13,19 @@
 /* ── 디자인 값 ─────────────────────────────────────────── */
 :root {
   /* 색 (어두운 테마 값은 아래 두 블록) */
-  --bg: #F1F4F2;
-  --surface: #FAFBFA;
+  --bg: #EAF1ED;
+  --surface: #FFFFFF;
   --fg: #16221D;
   --muted: #5C6B65;
-  --line: #D3DCD7;
-  --accent: #1F7A5C;
-  --accent-soft: #DDEEE6;
+  --line: #D5E0DA;
+  --accent: #0A7550;
+  --accent-soft: #DCF1E7;
   --on-accent: #FFFFFF;
   --warn: #8A5200;
   --warn-soft: #F6E7CC;
   --err: #B3261E;
   --ctrl-line: #7F8F87; /* 입력칸·스위치 테두리: 배경과 3:1 이상(3.07~3.28) */
-  --accent-fill: #1F7A5C; /* 넓게 칠하는 초록(버튼·완료) */
+  --accent-fill: #0A7550; /* 넓게 칠하는 초록(버튼·완료) */
   --knob: #FFFFFF;
   --seg-on: #FFFFFF; /* 난이도·보기에서 고른 칸 */
   --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235C6B65' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -58,34 +58,38 @@
   --gutter: 16px; /* 화면 좌우 여백(저장 줄이 끝까지 닿도록 같은 값을 씀) */
 
   /* 모서리 */
-  --r-ctrl: 10px; /* 버튼·입력칸 */
-  --r-seg: 8px; /* 난이도·보기 안쪽 칸(바깥 틀 --r-ctrl − 틀 두께 2px) */
-  --r-card: 14px; /* 카드 */
+  --r-ctrl: 12px; /* 버튼·입력칸 */
+  --r-seg: 10px; /* 난이도·보기 안쪽 칸(바깥 틀 --r-ctrl − 틀 두께 2px) */
+  --r-card: 20px; /* 카드 */
   --r-bar: 3px; /* 얇은 진행 막대 */
   --r-pill: 999px;
 
   /* 그림자 (두 테마 같은 값) */
-  --shadow-seg: 0 1px 3px rgba(0, 0, 0, 0.14); /* 난이도·보기에서 고른 칸 */
+  --shadow-seg: 0 1px 4px rgba(0, 0, 0, 0.16); /* 난이도·보기에서 고른 칸 */
   --shadow-knob: 0 1px 3px rgba(0, 0, 0, 0.25); /* 스위치 손잡이 */
   --shadow-icon: 0 6px 20px rgba(0, 0, 0, 0.12); /* 시작 화면 아이콘 */
-  --shadow-float: 0 -6px 12px -4px rgba(0, 0, 0, 0.18); /* 떠 있는 휴식 타이머 */
+  --shadow-card: 0 1px 2px rgba(18, 48, 36, 0.06), 0 6px 18px -6px rgba(18, 48, 36, 0.14); /* 카드 */
+  --shadow-press: 0 4px 12px -2px rgba(10, 117, 80, 0.45); /* 완료 원·주 버튼 */
+  --shadow-float: 0 -8px 16px -6px rgba(0, 0, 0, 0.22); /* 떠 있는 휴식 타이머 */
 }
 /* 어두운 테마: 기기 설정을 따르고, data-theme(claude.ai 아티팩트 뷰어)이 있으면 그것을 따름. 두 블록은 같아야 함(tests/style.test.mjs) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0F1613; --surface: #16201C; --fg: #E5EEE9; --muted: #93A69D; --line: #28372F;
-    --accent: #4DC49A; --accent-soft: #17382C; --on-accent: #081A12;
+    --bg: #0B100E; --surface: #151E1A; --fg: #E8F1EC; --muted: #96AAA0; --line: #26352D;
+    --accent: #55D1A3; --accent-soft: #163B2D; --on-accent: #06180F;
     --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
-    --ctrl-line: #64776D; --accent-fill: #3BA57F; --knob: #E5EEE9; --seg-on: #34453C;
+    --ctrl-line: #64776D; --accent-fill: #3FB387; --knob: #E8F1EC; --seg-on: #34453C;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-press: 0 4px 12px -2px rgba(63, 179, 135, 0.35);
     --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2393A69D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0F1613; --surface: #16201C; --fg: #E5EEE9; --muted: #93A69D; --line: #28372F;
-  --accent: #4DC49A; --accent-soft: #17382C; --on-accent: #081A12;
+  --bg: #0B100E; --surface: #151E1A; --fg: #E8F1EC; --muted: #96AAA0; --line: #26352D;
+  --accent: #55D1A3; --accent-soft: #163B2D; --on-accent: #06180F;
   --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
-  --ctrl-line: #64776D; --accent-fill: #3BA57F; --knob: #E5EEE9; --seg-on: #34453C;
+  --ctrl-line: #64776D; --accent-fill: #3FB387; --knob: #E8F1EC; --seg-on: #34453C;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-press: 0 4px 12px -2px rgba(63, 179, 135, 0.35);
   --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2393A69D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
@@ -118,7 +122,7 @@ body {
   font-size: var(--fs-base);
   line-height: 1.55;
 }
-h1 { margin: 0; font-size: var(--fs-2xl); line-height: 1.25; font-weight: 700; }
+h1 { margin: 0; letter-spacing: -0.02em; font-size: var(--fs-2xl); line-height: 1.25; font-weight: 700; }
 section { min-width: 0; }
 button, input, select { font: inherit; color: inherit; }
 button { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
@@ -181,6 +185,9 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   line-height: 1.6;
 }
 
+/* 카드류: 테두리 위에 옅은 그림자(어두운 테마는 그림자가 거의 없고 테두리가 구분) */
+.journal, .timer, .slist, .exitem, #history > section:first-child, #moreBox .set-body > section, #plan-sec details.block { box-shadow: var(--shadow-card); }
+
 /* 버튼 */
 .link {
   border: 0;
@@ -202,8 +209,9 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   font-weight: 700;
   font-size: var(--fs-base);
   cursor: pointer;
+  box-shadow: var(--shadow-press);
 }
-.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--ctrl-line); }
+.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--ctrl-line); box-shadow: none; }
 .icon {
   min-width: 44px;
   height: 40px;
@@ -382,7 +390,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .eyebrow { margin: 0; flex: none; font-size: var(--fs-xs); color: var(--muted); display: flex; align-items: center; gap: var(--gap-sm); }
 .prog { display: flex; align-items: center; gap: var(--gap-lg); }
 .segs { display: flex; gap: var(--gap-xs); flex: 1; }
-.segs i { display: block; flex: 1; height: 6px; border-radius: var(--r-bar); background: var(--line); }
+.segs i { display: block; flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
 .segs i.on { background: var(--accent); }
 .progtext { font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .progtext.all { color: var(--accent); font-weight: 700; }
@@ -471,8 +479,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
-.row.done { background: var(--accent-soft); border-color: var(--accent-fill); }
+.row.done { background: linear-gradient(135deg, var(--accent-soft), var(--surface) 140%); border-color: var(--accent-fill); }
 .info { grid-area: info; min-width: 0; }
 .name {
   margin: 0;
@@ -526,7 +535,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   height: 48px;
   border-radius: 50%;
   border: 2px solid var(--accent);
-  background: transparent;
+  background: var(--accent-soft);
   color: var(--on-accent);
   display: grid;
   place-items: center;
@@ -544,7 +553,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
-.row.done .check { background: var(--accent-fill); border-color: var(--accent-fill); }
+.row.done .check { background: var(--accent-fill); border-color: var(--accent-fill); box-shadow: var(--shadow-press); }
 .row.done .check svg { opacity: 1; }
 .check.part { border-color: transparent; background: conic-gradient(var(--accent) var(--p, 0%), var(--line) 0) border-box; }
 .check.part::before {
@@ -1066,7 +1075,19 @@ tr.cur td { background: var(--accent-soft); }
   cursor: pointer;
   touch-action: manipulation;
 }
+.tabbar button { position: relative; }
 .tabbar button[aria-selected="true"] { color: var(--accent); }
+.tabbar button[aria-selected="true"]::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 28px;
+  height: 3px;
+  margin-left: -14px;
+  border-radius: 0 0 var(--r-bar) var(--r-bar);
+  background: var(--accent);
+}
 
 /* ── 시작 화면: 아이콘 + 진행 막대. 준비되면 서서히 사라지며 앱으로 전환 ── */
 .splash {
