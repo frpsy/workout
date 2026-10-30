@@ -65,3 +65,22 @@ test('기록: 마무리 기록은 소감·감사를 같은 꼬리표로 보여 �
   const tags = [...root.querySelectorAll('#notes .note-line b')].map((b) => b.textContent);
   assert.deepEqual(tags, ['소감', '감사']);
 });
+
+test('기록: 마무리 기록은 처음 3개만 보이고 더 보기로 나머지를 펼침', () => {
+  const t0 = todayStr();
+  const days = fullDays(8);
+  const keys = Object.keys(days).sort().reverse().filter((d) => d <= t0).slice(0, 5);
+  keys.forEach((d) => { days[d] = { ...days[d], note: { feel: '가뿐함', thanks: '' } }; });
+  const { root } = setup(history, { days });
+  root.querySelector('#moreBox').open = true;
+  root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
+  const more = root.querySelector('#notesMore');
+  assert.equal(root.querySelectorAll('#notes li').length, 3);
+  assert.equal(more.hidden, false);
+  assert.match(more.textContent, /2개/);
+  more.click();
+  assert.equal(root.querySelectorAll('#notes li').length, 5);
+  assert.equal(more.textContent, '접기');
+  more.click();
+  assert.equal(root.querySelectorAll('#notes li').length, 3);
+});
