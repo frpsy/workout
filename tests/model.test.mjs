@@ -112,3 +112,13 @@ test('운동 소감·감사한 일: 줄바꿈·여러 칸 공백은 한 줄로 �
   const day = normalizeDay({ v: 2, entries: {}, note: { feel: '첫 줄\n둘째  줄\r\n', thanks: '\t감사 ' } });
   assert.deepEqual(day.note, { feel: '첫 줄 둘째 줄', thanks: '감사' });
 });
+
+test('운동 구간: 잘못된 값은 버리고 시작 순으로, 하루 20개까지', () => {
+  const ok = { s: 5_000, e: 65_000, sec: 60 };
+  const day = normalizeDay({ entries: {}, sessions: [{ s: 9_000, e: 12_000, sec: 3 }, ok, { s: 10, e: 5, sec: 1 }, { s: 1, e: 2, sec: 0 }, 'x', null] });
+  assert.deepEqual(day.sessions, [ok, { s: 9_000, e: 12_000, sec: 3 }]);
+  assert.equal(normalizeDay({ entries: {}, sessions: 'x' }).sessions, undefined);
+  const many = Array.from({ length: 25 }, (_, i) => ({ s: 1_000 + i, e: 2_000 + i, sec: 1 }));
+  assert.equal(normalizeDay({ entries: {}, sessions: many }).sessions.length, 20);
+  assert.equal(normalizeDay({ entries: {}, sessions: many }).sessions[0].s, 1_005, '오래된 것부터 버림');
+});

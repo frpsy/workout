@@ -54,33 +54,3 @@ test('기록: 자세히에 오늘·최근 7일 운동시간과 하루 평균을 
   none.root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
   assert.match(none.root.querySelector('#workText').textContent, /▶ 운동 시작/, '기록이 없으면 사용법 안내');
 });
-
-test('기록: 마무리 기록은 소감·감사를 같은 꼬리표로 보여 줌', () => {
-  const t0 = todayStr();
-  const days = fullDays(1);
-  days[t0] = { ...days[t0], note: { feel: '가뿐함', thanks: '물 한 잔' } };
-  const { root } = setup(history, { days });
-  root.querySelector('#moreBox').open = true;
-  root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
-  const tags = [...root.querySelectorAll('#notes .note-line b')].map((b) => b.textContent);
-  assert.deepEqual(tags, ['소감', '감사']);
-});
-
-test('기록: 마무리 기록은 처음 3개만 보이고 더 보기로 나머지를 펼침', () => {
-  const t0 = todayStr();
-  const days = fullDays(8);
-  const keys = Object.keys(days).sort().reverse().filter((d) => d <= t0).slice(0, 5);
-  keys.forEach((d) => { days[d] = { ...days[d], note: { feel: '가뿐함', thanks: '' } }; });
-  const { root } = setup(history, { days });
-  root.querySelector('#moreBox').open = true;
-  root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
-  const more = root.querySelector('#notesMore');
-  assert.equal(root.querySelectorAll('#notes li').length, 3);
-  assert.equal(more.hidden, false);
-  assert.match(more.textContent, /2개/);
-  more.click();
-  assert.equal(root.querySelectorAll('#notes li').length, 5);
-  assert.equal(more.textContent, '접기');
-  more.click();
-  assert.equal(root.querySelectorAll('#notes li').length, 3);
-});

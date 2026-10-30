@@ -136,7 +136,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 .warn { color: var(--warn); }
 .spacer { flex: 1; }
 
-/* 탭 세 화면을 가로로 나란히: 밀면 옆 화면이 함께 따라오고, 손을 떼면 한 화면씩 붙음(브라우저 기본 스크롤·관성).
+/* 탭 화면들을 가로로 나란히: 밀면 옆 화면이 함께 따라오고, 손을 떼면 한 화면씩 붙음(브라우저 기본 스크롤·관성).
    화면마다 세로 스크롤이 따로라 탭을 오가도 보던 위치가 남음 */
 .pager {
   position: fixed;
@@ -914,10 +914,39 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   color: var(--muted);
 }
 
-/* 마무리 기록 */
-.notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--gap-lg); }
-.notes li { display: flex; flex-direction: column; gap: 2px; padding-left: 10px; border-left: 3px solid var(--accent-soft); }
-.note-date { font-size: var(--fs-xs); color: var(--muted); }
+/* 기록 탭: 날짜별 카드(총 시간·시각·운동 내용·소감) */
+.loglist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--gap); }
+.logcard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+}
+.log-open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.log-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--gap); }
+.log-date { font-size: var(--fs-base); font-weight: 700; }
+.log-date small { font-size: var(--fs-xs); font-weight: 400; color: var(--muted); }
+.log-total { font-size: var(--fs-sm); font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.log-total.none { font-weight: 400; color: var(--muted); }
+.log-time { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.log-ex { font-size: var(--fs-md); overflow-wrap: anywhere; }
 .note-line { margin: 0; font-size: var(--fs-md); overflow-wrap: anywhere; }
 .note-line b, .jview dt { /* 소감·감사 꼬리표: 오늘·기록 탭 같은 모양 */
   display: inline-block;
@@ -1085,7 +1114,7 @@ tr.cur td { background: var(--accent-soft); }
 .savebar .btn { flex: 1; }
 .dirty-note { flex-basis: 100%; font-size: var(--fs-sm); color: var(--muted); }
 
-/* ── 아래 탭 막대 (오늘 / 기록 / 설정) ─────────────────── */
+/* ── 아래 탭 막대 (오늘 / 기록 / 통계 / 설정) ─────────────────── */
 .tabbar {
   position: fixed;
   left: 0;
@@ -1100,7 +1129,7 @@ tr.cur td { background: var(--accent-soft); }
 }
 .tabbar button {
   flex: 1;
-  max-width: 186px;
+  max-width: 140px;
   height: 50px;
   display: flex;
   flex-direction: column;
@@ -1130,7 +1159,7 @@ tr.cur td { background: var(--accent-soft); }
   will-change: transform;
 }
 /* 스크롤 연동 애니메이션을 지원하면 막대를 브라우저가 스크롤과 같은 단계에서 직접 움직임(손가락과 어긋남·끊김 없음).
-   세 버튼 가운데 위치(--ind-0~2)는 tabs.js가 재서 넣고, 지원하지 않으면 tabs.js가 scroll 이벤트로 옮김 */
+   네 버튼 가운데 위치(--ind-0~3)는 tabs.js가 재서 넣고, 지원하지 않으면 tabs.js가 scroll 이벤트로 옮김 */
 @supports (animation-timeline: --a) and (timeline-scope: --a) {
   body { timeline-scope: --pager; }
   .pager { scroll-timeline: --pager x; }
@@ -1138,8 +1167,9 @@ tr.cur td { background: var(--accent-soft); }
 }
 @keyframes tab-ind {
   from { transform: translate3d(var(--ind-0, 0px), 0, 0); }
-  50% { transform: translate3d(var(--ind-1, 0px), 0, 0); }
-  to { transform: translate3d(var(--ind-2, 0px), 0, 0); }
+  33.333% { transform: translate3d(var(--ind-1, 0px), 0, 0); }
+  66.667% { transform: translate3d(var(--ind-2, 0px), 0, 0); }
+  to { transform: translate3d(var(--ind-3, 0px), 0, 0); }
 }
 
 /* ── 시작 화면: 아이콘 + 진행 막대. 준비되면 서서히 사라지며 앱으로 전환 ── */

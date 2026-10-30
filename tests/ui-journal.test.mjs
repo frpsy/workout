@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addDays, todayStr } from '../js/dates.js';
-import { adapter, createStore, fullDays, mountJournal, setup, history } from './helpers/ui-env.mjs';
+import { adapter, createStore, fullDays, mountJournal, setup, log } from './helpers/ui-env.mjs';
 
 test('마무리: 모두 마친 날에만 소감·감사한 일 칸이 보이고, 쓰는 대로 저장되며 완료하면 접혀 보임', () => {
   const ad = adapter();
@@ -43,17 +43,14 @@ test('마무리: 모두 마친 날에만 소감·감사한 일 칸이 보이고,
   store.actions.flushAll();
 });
 
-test('마무리: 글자는 그대로 보여 주고(HTML로 해석하지 않음) 기록 탭에 최근 것부터 나옴', () => {
+test('마무리: 글자는 그대로 보여 주고(HTML로 해석하지 않음) 기록 탭 카드에 최근 것부터 나옴', () => {
   const t0 = todayStr();
   const t1 = addDays(t0, -1);
   const days = fullDays(2);
   days[t0] = { ...days[t0], note: { feel: '<b>굵게</b>', thanks: '물 한 잔' } };
   days[t1] = { ...days[t1], note: { feel: '', thanks: '친구 전화' } };
-  const { root } = setup(history, { days });
-  root.querySelector('#moreBox').open = true;
-  root.querySelector('#moreBox').dispatchEvent(new Event('toggle'));
-  assert.equal(root.querySelector('#notesSec').hidden, false);
-  const items = [...root.querySelectorAll('#notes li')];
+  const { root } = setup(log, { days });
+  const items = [...root.querySelectorAll('.logcard')];
   assert.equal(items.length, 2);
   assert.match(items[0].textContent, /<b>굵게<\/b>/, '태그를 글자로 보여 줌');
   assert.equal(items[0].querySelector('b.note-x'), null);

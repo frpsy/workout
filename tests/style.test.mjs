@@ -42,9 +42,10 @@ test('앱 이름: 페이지 제목·홈 화면 이름·설치 이름이 모두 R
   assert.ok(manifest.short_name.length <= 12, '홈 화면 아이콘 아래에 잘리지 않을 길이');
 });
 
-test('기록·설정 탭: 화면 제목이 그 탭 화면 안에 있음', () => {
+test('기록·통계·설정 탭: 화면 제목이 그 탭 화면 안에 있음', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /<div class="page" data-tab="record">\s*<div class="wrap">\s*<h1 class="page-title" id="recordTitle">기록<\/h1>/);
+  assert.match(html, /<div class="page" data-tab="log">\s*<div class="wrap">\s*<h1 class="page-title" id="logTitle">기록<\/h1>/);
+  assert.match(html, /<div class="page" data-tab="stats">\s*<div class="wrap">\s*<h1 class="page-title" id="statsTitle">통계<\/h1>/);
   assert.match(html, /<div class="page" data-tab="settings">\s*<div class="wrap">\s*<h1 class="page-title" id="settingsTitle">설정<\/h1>/);
 });
 

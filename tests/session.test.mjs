@@ -8,6 +8,7 @@ function fakeStorage() {
   return m;
 }
 const cleanup = () => delete globalThis.localStorage;
+const trim = ({ date, sec }) => ({ date, sec });
 
 test('표기: 시계(1:05, 1:02:05)와 한글(1시간 5분, 32분, 40초)', () => {
   assert.equal(fmtClock(0), '0:00');
@@ -30,7 +31,9 @@ test('시작하면 시간이 흐르고, 종료하면 시작한 날과 잰 초를
     t += 754_400;
     assert.equal(s.running, true);
     assert.equal(s.elapsed(), 754);
-    assert.deepEqual(s.stop(), { date: '2026-10-26', sec: 754 });
+    const out = s.stop();
+    assert.deepEqual(trim(out), { date: '2026-10-26', sec: 754 });
+    assert.deepEqual([out.s, out.e], [1_000_000, 1_754_400], '시작·종료 시각(ms)도 돌려줌');
     assert.equal(s.running, false);
     assert.equal(s.elapsed(), 0);
   } finally {
@@ -47,7 +50,7 @@ test('시작을 두 번 눌러도 처음 시각을 유지하고, 1초 미만도 
     t += 10_000;
     s.start('2026-10-27');
     t += 20_000;
-    assert.deepEqual(s.stop(), { date: '2026-10-26', sec: 30 });
+    assert.deepEqual(trim(s.stop()), { date: '2026-10-26', sec: 30 });
     s.start('2026-10-26');
     t += 100;
     assert.equal(s.stop().sec, 1);
@@ -66,7 +69,7 @@ test('새로고침·재실행 뒤에도 이어서 재고, 12시간이 넘은 오
     const b = createSession({ now: () => t }); // 다시 연 화면
     assert.equal(b.running, true);
     assert.equal(b.elapsed(), 90);
-    assert.deepEqual(b.stop(), { date: '2026-10-26', sec: 90 });
+    assert.deepEqual(trim(b.stop()), { date: '2026-10-26', sec: 90 });
     assert.equal(m.size, 0, '종료하면 저장된 시작 기록도 지움');
 
     const c = createSession({ now: () => t });
@@ -109,7 +112,7 @@ test('중지·재개: 중지해 둔 시간은 빼고 잼, 중지 중에는 시�
     t += 7_000;
     s.resume();
     t += 4_000;
-    assert.deepEqual(s.stop(), { date: '2026-10-26', sec: 20 }, '여러 번 중지해도 잰 시간만 합산 (10+5+1+4)');
+    assert.deepEqual(trim(s.stop()), { date: '2026-10-26', sec: 20 }, '여러 번 중지해도 잰 시간만 합산 (10+5+1+4)');
   } finally {
     cleanup();
   }
@@ -124,7 +127,7 @@ test('중지한 채 종료하면 멈춘 시점까지만 기록', () => {
     t += 30_000;
     s.pause();
     t += 600_000;
-    assert.deepEqual(s.stop(), { date: '2026-10-26', sec: 30 });
+    assert.deepEqual(trim(s.stop()), { date: '2026-10-26', sec: 30 });
   } finally {
     cleanup();
   }

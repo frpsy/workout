@@ -15,6 +15,7 @@ export const { mountToday } = await import('../../js/ui/today.js');
 export const { mountHistory } = await import('../../js/ui/history.js');
 export const { mountSettings } = await import('../../js/ui/settings.js');
 export const { mountTimer } = await import('../../js/ui/timer.js');
+export const { mountLog } = await import('../../js/ui/log.js');
 export const { mountJournal } = await import('../../js/ui/journal.js');
 
 // 세트를 체크하면 스톱워치가 저절로 시작되므로, 테스트가 끝날 때 남은 1초 타이머를 모두 멈춰 다음 테스트에 새지 않게 함
@@ -61,7 +62,7 @@ export function fullDays(n) {
 }
 
 export function setup(mount, opts) {
-  document.body.innerHTML = '<div id="today"></div><div id="history"></div><div id="settings"></div>';
+  document.body.innerHTML = '<div id="today"></div><div id="log"></div><div id="history"></div><div id="settings"></div>';
   const store = createStore(adapter(opts));
   const root = document.getElementById(mount.id);
   const render = mount.fn(root, store);
@@ -70,6 +71,7 @@ export function setup(mount, opts) {
 }
 
 export const today = { id: 'today', fn: (r, s) => mountToday(r, s) };
+export const log = { id: 'log', fn: (r, s) => mountLog(r, s) };
 export const history = { id: 'history', fn: (r, s) => mountHistory(r, s) };
 
 export function setupFull() {
