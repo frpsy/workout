@@ -63,6 +63,9 @@ js/
   view.js             화면 보기 3단계(요약/기본/상세) 저장
   timer.js            휴식 타이머 상태 (종료 시각 기준)
   ui/tabs.js          아래 탭 전환
+  ui/sound-ui.js      효과음 켜기/끄기 버튼과 상태 변화별 소리
+  ui/view-switch.js   화면 보기 3단계 버튼
+  ui/login-note.js    로그인 권유 안내(나중에 → 7일 숨김)
   ui/workbar.js       머리말 운동 스톱워치(시작·종료·중지·취소·초기화, 자동 시작, 화면 켜짐 유지)
   boot-progress.js    시작 화면 진행 막대
   tips.js             운동 팁 30개

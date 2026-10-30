@@ -1,13 +1,14 @@
 // 머리말(날짜·진행)과 오늘의 운동 체크 행
 
 import { LEVEL_ORDER, LEVELS, UNITS } from '../config.js';
-import { addDays, dowName, labelMD, diffDays } from '../dates.js';
+import { dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
-import { readJson, writeJson } from '../local-store.js';
 import { currentStreak } from '../stats.js';
-import { loadView, saveView, VIEW_LABEL, VIEW_ORDER } from '../view.js';
-import { isSoundOn, playSound, setSoundOn } from '../sound.js';
+import { VIEW_LABEL, VIEW_ORDER } from '../view.js';
 import { $, esc, haptic } from './dom.js';
+import { mountLoginNote } from './login-note.js';
+import { mountSoundToggle, soundFor } from './sound-ui.js';
+import { mountViewSwitch } from './view-switch.js';
 import { mountWorkbar } from './workbar.js';
 
 const CHECK_SVG =
@@ -99,50 +100,9 @@ export function mountToday(root, store) {
 
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
 
-  /* ---------- 효과음 켜기/끄기 ---------- */
-
-  const SPEAKER = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/>';
-  function renderSound() {
-    const on = isSoundOn();
-    const b = $('#sndBtn', root);
-    b.innerHTML = on ? `${SPEAKER}<path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>` : `${SPEAKER}<path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>`;
-    b.setAttribute('aria-pressed', String(on));
-    b.setAttribute('aria-label', on ? '효과음 켜짐 (누르면 끄기)' : '효과음 꺼짐 (누르면 켜기)');
-  }
-  $('#sndBtn', root).addEventListener('click', () => {
-    setSoundOn(!isSoundOn());
-    renderSound();
-    playSound('set'); // 켰을 때 소리가 나는지 바로 확인 (끄면 조용)
-  });
-  renderSound();
-
-  /** 종목 상태가 바뀐 뒤 효과음: 세트 체크 / 종목 완료 / 모두 완료 / 되돌림 */
-  function soundFor(before, after) {
-    if (after.done && !before.done) {
-      const all = store.activeExercises().every((e) => store.view(store.state.selected, e).done);
-      playSound(all ? 'all' : 'done');
-    } else if (after.setsDone > before.setsDone) playSound('set', after.setsDone);
-    else if (after.setsDone < before.setsDone) playSound('undo');
-  }
-
-  /* ---------- 화면 보기 3단계: 요약 / 기본 / 상세 ---------- */
-
-  let view = loadView();
-  function applyView(next, { user = false } = {}) {
-    view = next;
-    document.documentElement.dataset.view = view;
-    for (const b of $('#views', root).children) b.setAttribute('aria-pressed', String(b.dataset.view === view));
-    // 상세는 자세히·앞으로 4주를 펼쳐서 보여 줌 (직접 고른 때와 처음 열 때)
-    if (view === 'detail') for (const id of ['moreBox', 'planBox']) {
-      const box = document.getElementById(id);
-      if (box) box.open = true;
-    }
-    if (user) saveView(view);
+  mountSoundToggle(root);
+  const viewSwitch = mountViewSwitch(root, () => {
     if (rows.size) render(store.state); // 안내 줄(상세)을 바로 반영
-  }
-  $('#views', root).addEventListener('click', (ev) => {
-    const b = ev.target.closest('button[data-view]');
-    if (b && b.dataset.view !== view) applyView(b.dataset.view, { user: true });
   });
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
@@ -150,32 +110,7 @@ export function mountToday(root, store) {
   });
 
   const workbar = mountWorkbar(root, store);
-
-  /**
-   * 이 브라우저에만 저장 중이고(로그인 전) 기록이 쌓였으면 Google 로그인을 권하는 안내.
-   * '나중에'를 누르면 7일 동안 숨김 (이 브라우저에만 기억).
-   */
-  const NUDGE_KEY = 'workout-check:login-nudge';
-  const NUDGE_MIN_DAYS = 3;
-  const NUDGE_SNOOZE_DAYS = 7;
-  const readSnooze = () => readJson(NUDGE_KEY).snoozeUntil || '';
-  function updateLoginNote(state) {
-    const account = state.adapter.account;
-    const recorded = Object.values(state.days).filter((d) => Object.values(d.entries || {}).some((e) => e.done)).length;
-    const due = state.ready && state.adapter.kind === 'local' && !!account && !!account.signIn && !account.signOut && recorded >= NUDGE_MIN_DAYS && !(readSnooze() && state.today < readSnooze());
-    $('#loginNote', root).hidden = !due;
-  }
-  $('#loginGo', root).addEventListener('click', () => {
-    document.dispatchEvent(new window.CustomEvent('workout:goto-tab', { detail: 'settings' }));
-    const box = document.getElementById('acctBox');
-    if (box) {
-      box.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-    }
-  });
-  $('#loginLater', root).addEventListener('click', () => {
-    writeJson(NUDGE_KEY, { snoozeUntil: addDays(store.state.today, NUDGE_SNOOZE_DAYS) });
-    updateLoginNote(store.state);
-  });
+  const renderLoginNote = mountLoginNote(root, store);
 
   /* ---------- 초 단위 운동 스톱워치 (한 번에 한 종목) ---------- */
 
@@ -278,7 +213,7 @@ export function mountToday(root, store) {
         const before = view();
         actions.setProgress(ex.id, before.setsDone === i ? i - 1 : i);
         const after = view();
-        soundFor(before, after);
+        soundFor(store, before, after);
         workbar.autoStart(before, after);
         // 세트를 새로 마쳤으면(되돌린 게 아니면) 휴식 타이머에 알림. 모든 운동을 끝냈으면 쉴 필요가 없음
         const allDone = store.activeExercises().every((e) => store.view(store.state.selected, e).done);
@@ -288,7 +223,7 @@ export function mountToday(root, store) {
         haptic();
         const before = view();
         actions.toggle(ex.id);
-        soundFor(before, view());
+        soundFor(store, before, view());
         workbar.autoStart(before, view());
       });
       // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
@@ -365,7 +300,7 @@ export function mountToday(root, store) {
       if (setDiff) parts.push(`세트 ${setDiff > 0 ? '+' : ''}${setDiff}`);
       r.delta.textContent = parts.join(' · ');
       r.delta.classList.toggle('over', diff > 0 || setDiff > 0);
-      r.hint.textContent = view === 'detail' ? hintFor(r.ex, res, state) : '';
+      r.hint.textContent = viewSwitch.current === 'detail' ? hintFor(r.ex, res, state) : '';
     }
 
     const segs = $('#segs', root);
@@ -394,7 +329,7 @@ export function mountToday(root, store) {
       b.disabled = !state.ready;
     }
 
-    updateLoginNote(state);
+    renderLoginNote(state);
     workbar.render();
 
     // 저장 문구(오류 포함)가 있으면 주차 안내 자리에 보여 줌
@@ -405,6 +340,6 @@ export function mountToday(root, store) {
     st.classList.toggle('err', state.status.error);
   }
 
-  applyView(view);
+  viewSwitch.apply(viewSwitch.current);
   return render;
 }
