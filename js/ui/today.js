@@ -3,6 +3,7 @@
 import { LEVEL_ORDER, LEVELS, UNITS } from '../config.js';
 import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
+import { readJson, writeJson } from '../local-store.js';
 import { createSession, fmtClock, fmtKo } from '../session.js';
 import { currentStreak } from '../stats.js';
 import { loadView, saveView, VIEW_LABEL, VIEW_ORDER } from '../view.js';
@@ -275,13 +276,7 @@ export function mountToday(root, store) {
   const NUDGE_KEY = 'workout-check:login-nudge';
   const NUDGE_MIN_DAYS = 3;
   const NUDGE_SNOOZE_DAYS = 7;
-  const readSnooze = () => {
-    try {
-      return (JSON.parse(localStorage.getItem(NUDGE_KEY) || '{}') || {}).snoozeUntil || '';
-    } catch {
-      return '';
-    }
-  };
+  const readSnooze = () => readJson(NUDGE_KEY).snoozeUntil || '';
   function updateLoginNote(state) {
     const account = state.adapter.account;
     const recorded = Object.values(state.days).filter((d) => Object.values(d.entries || {}).some((e) => e.done)).length;
@@ -296,11 +291,7 @@ export function mountToday(root, store) {
     }
   });
   $('#loginLater', root).addEventListener('click', () => {
-    try {
-      localStorage.setItem(NUDGE_KEY, JSON.stringify({ snoozeUntil: addDays(store.state.today, NUDGE_SNOOZE_DAYS) }));
-    } catch {
-      /* 저장이 막힌 브라우저에서는 안내가 계속 보일 뿐입니다 */
-    }
+    writeJson(NUDGE_KEY, { snoozeUntil: addDays(store.state.today, NUDGE_SNOOZE_DAYS) });
     updateLoginNote(store.state);
   });
 

@@ -59,6 +59,7 @@ js/
   dates.js            날짜 유틸 (현지 시간 YYYY-MM-DD)
   progression.js      주차별 목표 계산 (LEVEL_RULES에 방식 추가 가능)
   stats.js            완료·연속·달성률 계산 (쉬는 요일 반영)
+  local-store.js      이 브라우저에 작은 설정·상태 읽고 쓰기(저장이 막혀도 예외 없음)
   view.js             화면 보기 3단계(요약/기본/상세) 저장
   timer.js            휴식 타이머 상태 (종료 시각 기준)
   ui/tabs.js          아래 탭 전환

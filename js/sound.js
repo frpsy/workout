@@ -1,6 +1,8 @@
 // 효과음: 파일 없이 Web Audio로 짧은 소리를 만들어 냅니다. 켜고 끄는 설정은 이 브라우저에 기억합니다.
 // 소리는 사용자가 누른 순간에만 낼 수 있으므로, 누르는 동작 안에서 play()를 부르세요.
 
+import { readText, writeText } from './local-store.js';
+
 const KEY = 'workout-check:sound';
 const SILENT_KEY = 'workout-check:sound-silent'; // 아이폰 무음 모드에서도 소리 내기
 
@@ -27,19 +29,11 @@ const SOUNDS = {
 let ctx = null;
 
 export function isSoundOn() {
-  try {
-    return localStorage.getItem(KEY) !== 'off';
-  } catch {
-    return true;
-  }
+  return readText(KEY) !== 'off';
 }
 
 export function setSoundOn(on) {
-  try {
-    localStorage.setItem(KEY, on ? 'on' : 'off');
-  } catch {
-    /* 저장이 막힌 브라우저에서는 다음에 켜진 상태로 시작할 뿐입니다 */
-  }
+  writeText(KEY, on ? 'on' : 'off');
 }
 
 /** 무음 모드에서도 소리를 낼 수 있는 브라우저인지 (Audio Session API: iOS Safari 등) */
@@ -48,11 +42,7 @@ export function canPlayInSilentMode() {
 }
 
 export function isSilentModeOn() {
-  try {
-    return localStorage.getItem(SILENT_KEY) === 'on';
-  } catch {
-    return false;
-  }
+  return readText(SILENT_KEY) === 'on';
 }
 
 /** 오디오 세션 종류를 정함: 'playback'이면 아이폰 무음 스위치를 켜도 소리가 남(다른 앱 음악은 멈출 수 있음) */
@@ -66,11 +56,7 @@ function applySession() {
 }
 
 export function setSilentMode(on) {
-  try {
-    localStorage.setItem(SILENT_KEY, on ? 'on' : 'off');
-  } catch {
-    /* 저장이 막힌 브라우저 */
-  }
+  writeText(SILENT_KEY, on ? 'on' : 'off');
   applySession();
   // 이미 만든 오디오는 이전 세션 종류로 열려 있으니 닫고, 다음에 누를 때 새로 만듦
   if (ctx) {

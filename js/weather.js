@@ -1,6 +1,8 @@
 // 내일 날씨: Open-Meteo(키 없이 쓰는 무료 예보)에서 하루치 요약만 받아 한 줄로 보여 줍니다.
 // 위치는 기본 서울, 사용자가 누르면 '내 위치'로 바꿉니다(좌표는 이 브라우저에만 저장).
 
+import { readJson, writeJson } from './local-store.js';
+
 export const SEOUL = { lat: 37.5665, lon: 126.978 };
 const KEY = 'workout-check:weather';
 const TTL_MS = 3 * 60 * 60 * 1000; // 같은 위치는 3시간 동안 다시 받지 않음
@@ -42,20 +44,8 @@ export function formatLine(w) {
 
 const sameSpot = (a, b) => Math.abs(a.lat - b.lat) < 0.05 && Math.abs(a.lon - b.lon) < 0.05;
 
-function readSaved() {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || '{}') || {};
-  } catch {
-    return {};
-  }
-}
-function writeSaved(patch) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify({ ...readSaved(), ...patch }));
-  } catch {
-    /* 저장이 막혀도 날씨는 보임 */
-  }
-}
+const readSaved = () => readJson(KEY);
+const writeSaved = (patch) => writeJson(KEY, { ...readSaved(), ...patch });
 
 /** 저장해 둔 '내 위치'(없으면 null) */
 export function savedPlace() {
