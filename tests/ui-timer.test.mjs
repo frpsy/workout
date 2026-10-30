@@ -84,6 +84,32 @@ test('오늘+타이머: 세트를 체크하면 휴식이 자동으로 시작되�
   localStorage.removeItem('workout-check:timer');
 });
 
+test('오늘+타이머: 오늘 체크를 모두 되돌리면 쉬는 중이던 휴식도 멈추고, 일부만 되돌리면 그대로', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  localStorage.removeItem('workout-check:timer');
+  const { store, root } = setup(today);
+  const timerRoot = document.createElement('div');
+  document.body.appendChild(timerRoot);
+  mountTimer(timerRoot);
+  const go = () => timerRoot.querySelector('#tGo');
+  const time = () => timerRoot.querySelector('#tTime').textContent;
+  const row = root.querySelector('.row');
+
+  row.querySelector('[data-set="1"]').click();
+  row.querySelector('[data-set="2"]').click();
+  mock.timers.tick(10_000);
+  row.querySelector('[data-set="2"]').click(); // 한 칸만 되돌림: 1세트는 남음
+  assert.equal(go().textContent, '중지', '일부만 되돌리면 휴식은 계속');
+  row.querySelector('[data-set="1"]').click(); // 체크가 하나도 없음
+  assert.equal(go().textContent, '시작', '모두 되돌리면 휴식이 멈춤');
+  assert.equal(time(), '1:00', '멈추면 정한 시간으로 돌아감');
+  mock.timers.tick(70_000);
+  assert.equal(timerRoot.querySelector('#timerBar').classList.contains('done'), false, '멈춘 뒤에는 끝남 알림도 없음');
+  store.actions.flushAll();
+  localStorage.removeItem('workout-check:timer');
+});
+
 test('자동 휴식 설정: 기본 켜짐, 끄면 이 브라우저에 기억', async () => {
   localStorage.removeItem('workout-check:timer');
   const { loadAuto, loadDuration, createTimer } = await import('../js/timer.js');
