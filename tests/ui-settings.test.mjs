@@ -95,3 +95,16 @@ test('설정: 계정이 있으면 로그인·로그아웃 버튼을 보여 주�
   assert.equal(root.querySelector('#acctBtn').hidden, true, '계정 기능이 없으면 버튼 없음');
   assert.match(root.querySelector('#acctText').textContent, /저장 중/, '저장 위치만 한 줄로');
 });
+
+test('설정 맨 아래에 앱 판 표시: 배포판은 커밋 번호와 배포 시각, 개발 중에는 개발판', async () => {
+  const { versionLabel } = await import('../js/ui/settings.js');
+  const at = new Date(2026, 9, 30, 14, 24); // 지역 시각 10월 30일 14:24
+  assert.equal(versionLabel({ sha: '3c80ef6', builtAt: at.toISOString() }), '버전 3c80ef6 · 10월 30일 14:24');
+  assert.equal(versionLabel({ sha: 'dev', builtAt: '' }), '개발판');
+  assert.equal(versionLabel({ sha: 'abc1234', builtAt: '엉뚱' }), '개발판');
+  const root = document.createElement('div');
+  const store = createStore(adapter());
+  store.subscribe(mountSettings(root, store));
+  assert.equal(root.querySelector('#appVersion').textContent, '개발판');
+  store.actions.flushAll();
+});

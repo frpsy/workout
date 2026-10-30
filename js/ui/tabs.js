@@ -24,6 +24,20 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
   let current = null;
   let committed = null; // 주소에 남긴 탭
 
+  // 탭 위 짧은 막대: 가로 스크롤 위치(0 = 오늘 … 2 = 설정)에 맞춰 버튼 가운데 사이를 미끄러짐
+  const ind = nav.querySelector('.tab-ind');
+  const buttons = TABS.map((name) => nav.querySelector(`button[data-tab="${name}"]`));
+  function placeIndicator() {
+    if (!ind || buttons.some((b) => !b)) return;
+    const pos = Math.min(TABS.length - 1, Math.max(0, pager.scrollLeft / width()));
+    const i = Math.floor(pos);
+    const center = (b) => b.offsetLeft + b.offsetWidth / 2;
+    const a = center(buttons[i]);
+    const b = center(buttons[Math.min(i + 1, TABS.length - 1)]);
+    const x = a + (b - a) * (pos - i) - ind.offsetWidth / 2;
+    ind.style.transform = `translateX(${Math.round(x * 10) / 10}px)`;
+  }
+
   /** 탭 막대·접근성 표시를 바꿈. 넘기는 도중에도 가까운 화면을 따라 바로 바뀜 */
   function mark(name) {
     if (name === current) return;
@@ -83,6 +97,7 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
     commit(nearest());
   };
   pager.addEventListener('scroll', () => {
+    placeIndicator();
     mark(nearest());
     clearTimeout(settleTimer);
     settleTimer = setTimeout(settled, SETTLE_MS);
@@ -92,6 +107,7 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
   // 화면 크기가 바뀌면(돌리기 등) 보던 화면에 다시 맞춤
   win.addEventListener('resize', () => {
     if (current) pager.scrollLeft = TABS.indexOf(current) * width();
+    placeIndicator();
   });
   win.addEventListener('popstate', () => go(tabFromHash(win.location.hash), { push: false }));
   doc.addEventListener('workout:goto-tab', (ev) => go(ev.detail));
@@ -109,7 +125,11 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
     if (page) page.scrollTop = 0;
   };
   fromAddress();
-  win.addEventListener('load', fromAddress, { once: true });
+  placeIndicator();
+  win.addEventListener('load', () => {
+    fromAddress();
+    placeIndicator(); // 글꼴이 늦게 와 버튼 폭이 바뀌어도 맞춤
+  }, { once: true });
   committed = current;
   return { show: go, get current() { return current; } };
 }

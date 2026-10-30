@@ -1003,6 +1003,7 @@ tr.cur td { background: var(--accent-soft); }
 .sval { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--fs-md); }
 .pair { display: flex; gap: var(--gap); min-width: 0; }
 .pair select { min-width: 0; }
+.app-version { margin: 4px 0 0; text-align: center; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; } /* 설정 맨 아래 판 표시 */
 .btn.sm { flex: none; height: 40px; padding: 0 16px; font-size: var(--fs-md); }
 .set-body { margin: 8px 0 12px; display: flex; flex-direction: column; gap: var(--gap-lg); }
 .inline { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; font-size: var(--fs-md); }
@@ -1101,18 +1102,18 @@ tr.cur td { background: var(--accent-soft); }
   cursor: pointer;
   touch-action: manipulation;
 }
-.tabbar button { position: relative; }
 .tabbar button[aria-selected="true"] { color: var(--accent); }
-.tabbar button[aria-selected="true"]::before {
-  content: '';
+/* 고른 탭 위의 짧은 막대: 화면을 미는 만큼 옆 탭 쪽으로 따라 움직임(위치는 tabs.js가 정함) */
+.tab-ind {
   position: absolute;
   top: -1px;
-  left: 50%;
+  left: 0;
   width: 28px;
   height: 3px;
-  margin-left: -14px;
   border-radius: 0 0 var(--r-bar) var(--r-bar);
   background: var(--accent);
+  pointer-events: none;
+  will-change: transform;
 }
 
 /* ── 시작 화면: 아이콘 + 진행 막대. 준비되면 서서히 사라지며 앱으로 전환 ── */

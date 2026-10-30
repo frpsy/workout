@@ -2,6 +2,7 @@
 // 사용: node scripts/update-sw.mjs [폴더] [--hash]
 //   폴더  : 기본은 저장소 루트. CI에서는 배포용 _site를 넘깁니다.
 //   --hash: 파일 내용으로 CACHE 이름을 정해, 파일이 바뀐 배포마다 캐시가 새로 만들어지게 합니다.
+//           GITHUB_SHA(CI가 넣어 줌)가 있으면 js/version.js에 커밋 번호와 배포 시각도 적습니다(설정 맨 아래 표시).
 
 import { createHash } from 'node:crypto';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
@@ -27,7 +28,15 @@ export async function assetList(root) {
   return files;
 }
 
-export async function updateServiceWorker(root, { hash = false } = {}) {
+/** js/version.js에 판 정보를 적음 (캐시 이름을 정하기 전에 해야 바뀐 판이 캐시 이름에도 반영됨) */
+export async function stampVersion(root, { sha, builtAt }) {
+  const path = join(root, 'js', 'version.js');
+  const src = await readFile(path, 'utf8');
+  await writeFile(path, src.replace(/export const VERSION = \{[^}]*\};/, `export const VERSION = ${JSON.stringify({ sha: String(sha).slice(0, 7), builtAt })};`));
+}
+
+export async function updateServiceWorker(root, { hash = false, version = null } = {}) {
+  if (version) await stampVersion(root, version);
   const files = await assetList(root);
   const path = join(root, 'sw.js');
   let src = await readFile(path, 'utf8');
@@ -45,6 +54,8 @@ export async function updateServiceWorker(root, { hash = false } = {}) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const root = args.find((a) => !a.startsWith('--')) || join(dirname(fileURLToPath(import.meta.url)), '..');
-  const files = await updateServiceWorker(root, { hash: args.includes('--hash') });
+  const hash = args.includes('--hash');
+  const version = hash && process.env.GITHUB_SHA ? { sha: process.env.GITHUB_SHA, builtAt: new Date().toISOString() } : null;
+  const files = await updateServiceWorker(root, { hash, version });
   console.log(`sw.js: ${files.length + 1} entries`);
 }

@@ -50,6 +50,7 @@ const ASSETS = [
   './js/ui/weather.js',
   './js/ui/workbar.js',
   './js/vendor/firebase.js',
+  './js/version.js',
   './js/view.js',
   './js/weather.js',
 ];

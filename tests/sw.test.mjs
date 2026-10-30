@@ -49,3 +49,21 @@ test('홈 화면 앱: 서비스 워커를 등록하고, 다시 볼 때 새 배�
   assert.match(main, /'controllerchange'[\s\S]*location\.reload\(\)/);
   assert.match(main, /if \(!hadController \|\| reloading\) return;/, '처음 설치될 때는 새로 불러오지 않음');
 });
+
+test('배포 판 표시: CI가 js/version.js에 커밋 번호(7자리)와 배포 시각을 적고, 판이 바뀌면 캐시 이름도 바뀜', async () => {
+  const { updateServiceWorker } = await import('../scripts/update-sw.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'wc-ver-'));
+  try {
+    for (const f of ['index.html', 'style.css', 'sw.js', 'manifest.webmanifest']) cpSync(join(root, f), join(dir, f));
+    for (const d of ['icons', 'fonts', 'js']) cpSync(join(root, d), join(dir, d), { recursive: true });
+    await updateServiceWorker(dir, { hash: true });
+    const plain = readFileSync(join(dir, 'sw.js'), 'utf8').match(/const CACHE = '([^']+)'/)[1];
+    await updateServiceWorker(dir, { hash: true, version: { sha: '3c80ef62990e70a2', builtAt: '2026-10-30T05:24:00.000Z' } });
+    const ver = readFileSync(join(dir, 'js', 'version.js'), 'utf8');
+    assert.match(ver, /export const VERSION = \{"sha":"3c80ef6","builtAt":"2026-10-30T05:24:00.000Z"\};/);
+    assert.notEqual(readFileSync(join(dir, 'sw.js'), 'utf8').match(/const CACHE = '([^']+)'/)[1], plain);
+    assert.match(readFileSync(join(root, 'js', 'version.js'), 'utf8'), /sha: 'dev'/, '저장소에는 개발판 값을 둠');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
