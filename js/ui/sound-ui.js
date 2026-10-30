@@ -25,7 +25,7 @@ export function mountSoundToggle(root) {
 /** 종목 상태가 바뀐 뒤 효과음: 세트 체크 / 종목 완료 / 모두 완료 / 되돌림 */
 export function soundFor(store, before, after) {
   if (after.done && !before.done) {
-    const all = store.activeExercises().every((e) => store.view(store.state.selected, e).done);
+    const all = store.cycleFinished(); // 나눠서 한 날은 남은 종목을 모두 마쳤을 때
     playSound(all ? 'all' : 'done');
   } else if (after.setsDone > before.setsDone) playSound('set', after.setsDone);
   else if (after.setsDone < before.setsDone) playSound('undo');

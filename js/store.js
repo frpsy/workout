@@ -169,6 +169,25 @@ export function createStore(adapter, { cycleFor = () => 1 } = {}) {
     return box[id];
   }
 
+  /**
+   * 이 사이클에서 해야 할 종목: 다른 사이클에서 이미 마친 종목은 빼고(나눠서 한 경우), 모두 이미 마쳤으면 처음부터 전부.
+   * elsewhere는 다른 사이클에서 이미 마쳐서 이번에는 건너뛰어도 되는 종목 id
+   */
+  function cyclePlan(date = state.selected, cycle = state.cycle, res = resolver()) {
+    const exs = activeExercises();
+    const other = cycle === 1 ? 2 : 1;
+    const elsewhere = new Set(exs.filter((e) => view(date, e, res, other).done && !view(date, e, res, cycle).done).map((e) => e.id));
+    const needed = exs.filter((e) => !elsewhere.has(e.id));
+    return needed.length ? { needed, elsewhere } : { needed: exs, elsewhere: new Set() };
+  }
+
+  /** 이 사이클에서 해야 할 종목을 모두 마쳤는지 (휴식·완료 효과음·종료 버튼 강조의 기준) */
+  function cycleFinished(date = state.selected, cycle = state.cycle) {
+    const res = resolver();
+    const { needed } = cyclePlan(date, cycle, res);
+    return needed.length > 0 && needed.every((e) => view(date, e, res, cycle).done);
+  }
+
   /** 그날 아침·저녁 어느 쪽이든 체크한 세트·완료가 하나라도 있는지 */
   function hasProgress(date) {
     const day = state.days[date];
@@ -358,6 +377,8 @@ export function createStore(adapter, { cycleFor = () => 1 } = {}) {
     state,
     actions,
     view,
+    cyclePlan,
+    cycleFinished,
     hasProgress,
     resolver,
     activeExercises,
