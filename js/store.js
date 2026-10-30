@@ -143,11 +143,24 @@ export function createStore(adapter) {
     return { done, target, count, sets, setsDone, setsKnown: hasSets || !done, level };
   }
 
-  function ensureEntry(date, id) {
+  const findExercise = (id) => state.config.exercises.find((e) => e.id === id);
+
+  function ensureDay(date) {
     if (!state.days[date]) state.days[date] = { entries: {} };
-    const day = state.days[date];
+    return state.days[date];
+  }
+
+  function ensureEntry(date, id) {
+    const day = ensureDay(date);
     if (!day.entries[id]) day.entries[id] = { done: false };
     return day.entries[id];
+  }
+
+  /** 그날 기록을 바꾼 뒤: 저장 예약 + 화면 갱신 */
+  function commitDay(date) {
+    scheduleSave(date);
+    state.daysRev++;
+    emit();
   }
 
   /* ---------- 동작 ---------- */
@@ -155,7 +168,7 @@ export function createStore(adapter) {
   const actions = {
     toggle(id) {
       if (!state.ready) return;
-      const ex = state.config.exercises.find((e) => e.id === id);
+      const ex = findExercise(id);
       if (!ex) return;
       const date = state.selected;
       const v = view(date, ex);
@@ -172,15 +185,13 @@ export function createStore(adapter) {
         entry.target = v.target;
         entry.sets = v.sets;
       }
-      scheduleSave(date);
-      state.daysRev++;
-      emit();
+      commitDay(date);
     },
 
     /** 세트를 n개까지 마쳤다고 체크(0~세트 수). 모두 마치면 종목 완료, 아니면 진행 중 */
     setProgress(id, n) {
       if (!state.ready || !Number.isFinite(n)) return;
-      const ex = state.config.exercises.find((e) => e.id === id);
+      const ex = findExercise(id);
       if (!ex) return;
       const date = state.selected;
       const v = view(date, ex);
@@ -201,60 +212,47 @@ export function createStore(adapter) {
         if (k > 0) entry.setsDone = k;
         else delete entry.setsDone;
       }
-      scheduleSave(date);
-      state.daysRev++;
-      emit();
+      commitDay(date);
     },
 
     setCount(id, n) {
       if (!state.ready) return;
-      const ex = state.config.exercises.find((e) => e.id === id);
+      const ex = findExercise(id);
       if (!ex || !Number.isFinite(n)) return emit();
       const entry = ensureEntry(state.selected, id);
       entry.count = Math.max(LIMITS.count[0], Math.min(LIMITS.count[1], Math.round(n)));
-      scheduleSave(state.selected);
-      state.daysRev++;
-      emit();
+      commitDay(state.selected);
     },
 
     /** 그날 난이도(easy/normal/hard). 아직 완료하지 않은 종목의 목표가 바뀜 */
     setLevel(level) {
       if (!state.ready || !LEVELS[level]) return;
       const date = state.selected;
-      if (!state.days[date]) state.days[date] = { entries: {} };
-      const day = state.days[date];
+      const day = ensureDay(date);
       if ((day.level || 'normal') === level) return;
       if (level === 'normal') delete day.level;
       else day.level = level;
       // 아직 마치지 않은 종목은 고쳐 둔 개수를 지우고 새 목표를 따라가게 함
       for (const e of Object.values(day.entries)) if (!e.done) delete e.count;
-      scheduleSave(date);
-      state.daysRev++;
-      emit();
+      commitDay(date);
     },
 
     /** 운동 스톱워치를 끝냈을 때: 그날 총 운동시간(초)에 더함 */
     addWorkSec(date, sec) {
       if (!state.ready || !isDateStr(date) || !Number.isFinite(sec) || sec <= 0) return;
-      if (!state.days[date]) state.days[date] = { entries: {} };
-      const day = state.days[date];
+      const day = ensureDay(date);
       day.workSec = Math.min(86400, (day.workSec || 0) + Math.round(sec));
-      scheduleSave(date);
-      state.daysRev++;
-      emit();
+      commitDay(date);
     },
 
     /** 운동을 마친 뒤 남기는 소감(feel)과 감사한 일(thanks). 입력하는 대로 저장(잠깐 모아서) */
     setNote(date, { feel = '', thanks = '' } = {}) {
       if (!state.ready || !isDateStr(date) || date > state.today) return;
-      if (!state.days[date]) state.days[date] = { entries: {} };
-      const day = state.days[date];
+      const day = ensureDay(date);
       const cut = (v) => String(v).slice(0, NOTE_MAX);
       if (String(feel).trim() || String(thanks).trim()) day.note = { feel: cut(feel), thanks: cut(thanks) };
       else delete day.note;
-      scheduleSave(date);
-      state.daysRev++;
-      emit();
+      commitDay(date);
     },
 
     /** 그날 기록된 총 운동시간을 지움 */
@@ -262,21 +260,17 @@ export function createStore(adapter) {
       const day = state.days[date];
       if (!state.ready || !day || !day.workSec) return;
       delete day.workSec;
-      scheduleSave(date);
-      state.daysRev++;
-      emit();
+      commitDay(date);
     },
 
     /** 그날 한 세트 수를 직접 고침 */
     setSets(id, n) {
       if (!state.ready) return;
-      const ex = state.config.exercises.find((e) => e.id === id);
+      const ex = findExercise(id);
       if (!ex || !Number.isFinite(n)) return emit();
       const entry = ensureEntry(state.selected, id);
       entry.sets = Math.max(LIMITS.sets[0], Math.min(LIMITS.sets[1], Math.round(n)));
-      scheduleSave(state.selected);
-      state.daysRev++;
-      emit();
+      commitDay(state.selected);
     },
 
     select(date) {
