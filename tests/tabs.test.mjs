@@ -59,11 +59,11 @@ test('탭 전환이 "불러오는 중…" 문구를 다시 띄우지 않음(탭 
 test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래 안전 영역만큼 여백을 직접 둠', async () => {
   const { readFileSync } = await import('node:fs');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
+  const { value } = await import('./helpers/css.mjs');
   assert.ok(html.includes('viewport-fit=cover'));
-  assert.match(css, /\.standalone body \{ padding-top: calc\(env\(safe-area-inset-top, 0px\) \+ 21px\); \}/);
-  assert.match(css, /\.tabbar \{[^}]*padding-bottom: calc\(env\(safe-area-inset-bottom, 0px\) \+ 10px\)/);
-  assert.match(css, /\.wrap \{[^}]*padding-bottom: calc\(70px \+ env\(safe-area-inset-bottom/);
+  assert.equal(value('.standalone body', 'padding-top'), 'calc(env(safe-area-inset-top, 0px) + 21px)');
+  assert.equal(value('.tabbar', 'padding-bottom'), 'calc(env(safe-area-inset-bottom, 0px) + 10px)');
+  assert.equal(value('.wrap', 'padding-bottom'), 'calc(70px + env(safe-area-inset-bottom, 0px))');
 });
 
 test('스와이프: 왼쪽으로 밀면 다음 탭, 오른쪽으로 밀면 이전 탭, 끝에서는 그대로', () => {

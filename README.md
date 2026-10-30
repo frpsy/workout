@@ -53,7 +53,7 @@ Firebase SDK는 `scripts/firebase-entry.js`를 묶어 `js/vendor/firebase.js`로
 
 ```
 index.html            문서 뼈대 (빌드 없이 GitHub Pages에서 그대로 동작)
-style.css             색·글꼴 토큰과 화면 스타일 (밝은/어두운 테마)
+style.css             디자인 값(색·글자 크기·간격·모서리·그림자 변수)과 화면 스타일. 기본 → 공통 부품 → 오늘 → 기록 → 설정 → 탭 막대·시작 화면 → 좁은 화면 → 움직임 순서
 js/
   config.js           기본 운동, 단위, 증가 방식, 추천 종목, 한계값
   dates.js            날짜 유틸 (현지 시간 YYYY-MM-DD)
@@ -87,7 +87,7 @@ js/
   main.js             시작점
 fonts/                직접 포함한 글꼴 (필요한 글자만 추린 woff2, 오프라인·외부 요청 없음)
 sw.js, manifest.webmanifest, icons/   홈 화면 설치·오프라인 (sw.js의 ASSETS에 앱 파일 전체)
-tests/                node --test 테스트 (계산·저장 형식·store·저장소·오프라인 파일 목록, 화면별 jsdom 테스트 ui-*.test.mjs, 공통 환경 helpers/ui-env.mjs)
+tests/                node --test 테스트 (계산·저장 형식·store·저장소·오프라인 파일 목록, 화면별 jsdom 테스트 ui-*.test.mjs, 공통 환경 helpers/ui-env.mjs, style.css 규칙 읽기 helpers/css.mjs)
 scripts/build-artifact.mjs           claude.ai용 단일 파일 빌드
 scripts/update-sw.mjs                sw.js 미리 저장 목록·캐시 이름 자동 생성
 scripts/build-firebase.mjs           Firebase SDK 묶음 만들기
@@ -102,6 +102,7 @@ firestore.rules                      Firestore 보안 규칙
 - **증가 방식 추가**: `js/progression.js`의 `LEVEL_RULES`에 함수 추가 후 설정 화면 라디오 추가
 - **저장소 추가** (예: Firebase로 기기 간 동기화): `js/storage/`에 같은 모양의 어댑터를 만들고 `storage/index.js`의 `createStorage()`에 연결
 - **앱 파일 추가·삭제**: `npm run sw`로 `sw.js`의 `ASSETS`를 다시 만들기 (안 맞으면 `npm test`가 실패). 캐시 이름은 배포할 때 CI가 파일 내용으로 자동으로 정합니다. 글꼴은 `fonts/`에 있고 아티팩트 빌드만 Google Fonts를 씁니다
+- **스타일 고치기**: 글자 크기는 `--fs-*`, 그림자는 `--shadow-*` 변수만 씁니다(`npm test`가 검사). 어두운 테마 색은 `style.css`의 두 블록(기기 설정·`data-theme`)에 똑같이 넣습니다(테스트가 같은지 검사). 화면이 바뀌면 안 되는 정리는 `npm run shots`로 확인합니다
 - **저장 형식 변경**: `SCHEMA_VERSION`을 올리고 `model.js`의 `normalize*`에서 이전 형식을 변환
 
 ## 개발
@@ -116,6 +117,6 @@ npx serve .              # 로컬 확인 (모듈 스크립트라 file://로는 �
 npm run shots            # 화면 비교: 지금 폴더 vs origin/main (다른 커밋은 -- --base <커밋>)
 ```
 
-`npm run shots`는 화면이 바뀌면 안 되는 스타일 정리를 확인할 때 씁니다. 폭 390·320px(키 640px), 밝은·어두운 테마, 오늘(기본·요약·상세·모두 마침)·기록·설정 화면을 첫 화면과 전체로 찍습니다(40장). 시각(2026-10-28 수요일 저녁, 서울)·난수·5주치 기록을 고정하고 Firebase·날씨 요청은 막습니다. 결과는 `shots/`(`base/`·`head/`·`diff/`, 커밋 안 함)에 남고 다른 그림이 있으면 종료 코드 1입니다. Playwright 크로미움이 필요합니다(`npx playwright install chromium`).
+`npm run shots`는 화면이 바뀌면 안 되는 스타일 정리를 확인할 때 씁니다. 폭 390·320px(키 640px), 밝은·어두운 테마, 오늘(기본·요약·상세·모두 마침·운동 중·중지)·기록·설정 화면을 첫 화면과 전체로 찍고(52장), 같은 장면에서 모든 요소(숨은 요소·::before·::after 포함)의 계산된 스타일도 비교합니다. 320px은 움직임 줄이기 설정으로 찍습니다. 시각(2026-10-28 수요일 저녁, 서울)·난수·5주치 기록을 고정하고 Firebase·날씨 요청은 막습니다. 결과는 `shots/`(`base/`·`head/`·`diff/`, 커밋 안 함)에 남고 다른 그림이 있으면 종료 코드 1입니다. Playwright 크로미움이 필요합니다(`npx playwright install chromium`).
 
 PR마다 GitHub Actions(`.github/workflows/ci.yml`)가 테스트와 아티팩트 빌드를 돌리고, `main`에 머지하면 GitHub Pages에 자동 배포합니다 (Settings → Pages → Source: GitHub Actions).

@@ -24,7 +24,7 @@ const NOW = '2026-10-28T19:30:00+09:00'; // 수요일 저녁: 이번 주 달력�
 
 const VIEWPORTS = [
   { name: '390', width: 390, height: 844 }, // 보통 폰
-  { name: '320', width: 320, height: 640 }, // 좁고 키 작은 폰(max-width·max-height 규칙 확인)
+  { name: '320', width: 320, height: 640, reducedMotion: 'reduce' }, // 좁고 키 작은 폰(max-width·max-height 규칙), 움직임 줄이기 설정
 ];
 const SCHEMES = ['light', 'dark'];
 const SCENES = [
@@ -34,6 +34,8 @@ const SCENES = [
   { name: 'today-done', hash: '', view: 'normal', allDone: true }, // 마무리 칸
   { name: 'record', hash: '#record', view: 'detail' },
   { name: 'settings', hash: '#settings', view: 'normal' },
+  { name: 'today-running', hash: '', view: 'normal', clicks: ['#wBtn', '#tGo'] }, // 운동 중·휴식 타이머 실행
+  { name: 'today-paused', hash: '', view: 'normal', clicks: ['#wBtn', '#wPause'] },
 ];
 
 const args = process.argv.slice(2);
@@ -116,7 +118,7 @@ async function capture(launch, origin, outDir, only = null) {
     for (const scheme of SCHEMES) {
       if (only && ![...only].some((k) => k.startsWith(`${vp.name}-${scheme}-`))) continue;
       const browser = await launch(); // 묶음마다 새로 띄워 글꼴 캐시 등 앞 장면의 영향을 없앰
-      const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 2, colorScheme: scheme, serviceWorkers: 'block', locale: 'ko-KR', timezoneId: 'Asia/Seoul' });
+      const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 2, colorScheme: scheme, reducedMotion: vp.reducedMotion || 'no-preference', serviceWorkers: 'block', locale: 'ko-KR', timezoneId: 'Asia/Seoul' });
       for (const scene of SCENES) {
         if (only && !only.has(`${vp.name}-${scheme}-${scene.name}`)) continue;
         const page = await context.newPage();
@@ -136,11 +138,29 @@ async function capture(launch, origin, outDir, only = null) {
           return !s || s.hidden || getComputedStyle(s).display === 'none' || getComputedStyle(s).opacity === '0';
         });
         await page.evaluate(() => Promise.all([...document.fonts].map((f) => f.load()))); // 늦게 쓰이는 굵기까지 모두 받아 둠
+        for (const sel of scene.clicks || []) await page.click(sel);
         await page.waitForTimeout(1200); // 탭 슬라이드·시작 화면 걷힘 등 남은 전환이 끝나도록
+        // 숨은 요소·::before·::after까지 모든 계산된 스타일: 그림에 드러나지 않는 차이(규칙 순서가 바뀌어 덮어쓰기가 달라진 것 등)도 잡음
+        const styles = await page.evaluate(() => {
+          const props = [...getComputedStyle(document.body)].filter((p) => !p.startsWith('--')).sort(); // 변수(--*)는 이름·개수가 바뀌어도 되므로 빼고, 실제로 쓰인 값만 비교. 순서는 정렬로 고정
+          const out = { props, els: {} };
+          const path = (el) => { const p = []; for (let e = el; e && e.nodeType === 1; e = e.parentElement) p.unshift(e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + ':' + [...(e.parentElement ? e.parentElement.children : [])].indexOf(e)); return p.join('>'); };
+          for (const el of document.querySelectorAll('body *:not(svg *)')) {
+            for (const pseudo of [null, '::before', '::after']) {
+              const cs = getComputedStyle(el, pseudo);
+              if (pseudo && cs.content === 'none') continue;
+              out.els[path(el) + (pseudo || '')] = props.map((prop) => cs.getPropertyValue(prop)).join('\u0001');
+            }
+          }
+          return out;
+        });
+        writeFileSync(join(outDir, `${vp.name}-${scheme}-${scene.name}.styles.json`), JSON.stringify(styles));
         // 첫 화면 그대로 한 장, 아래 탭 막대가 끝에 오도록 창을 내용 높이로 늘려 전체 한 장
         const shot = async (kind) => {
           const name = `${vp.name}-${scheme}-${scene.name}-${kind}.png`;
-          await page.screenshot({ path: join(outDir, name), animations: 'disabled', caret: 'hide' });
+          // sticky 휴식 타이머는 따로 합성되는 층이라 글자가 실행마다 한두 픽셀씩 달리 그려짐: 찍는 순간만 보통 흐름으로(이 장면들에서는 붙어 있지 않아 모양이 같음).
+          // position 자체의 변화는 위의 계산된 스타일 비교가 잡음
+          await page.screenshot({ path: join(outDir, name), animations: 'disabled', caret: 'hide', style: '#timer { position: relative !important; }' });
           names.push(name);
         };
         await shot('screen');
@@ -226,6 +246,25 @@ async function main() {
       await check(redo);
     }
 
+    // 계산된 스타일 비교
+    let styleChanged = 0;
+    for (const file of names.filter((n) => n.endsWith('-screen.png')).map((n) => n.replace(/-screen\.png$/, '.styles.json'))) {
+      const a = JSON.parse(readFileSync(join(OUT, 'base', file), 'utf8'));
+      const b = JSON.parse(readFileSync(join(OUT, 'head', file), 'utf8'));
+      const diffs = [];
+      for (const key of new Set([...Object.keys(a.els), ...Object.keys(b.els)])) {
+        if (a.els[key] === b.els[key]) continue;
+        if (!a.els[key] || !b.els[key]) { diffs.push(`${key}: ${a.els[key] ? '사라짐' : '새로 생김'}`); continue; }
+        const va = a.els[key].split('\u0001');
+        const vb = b.els[key].split('\u0001');
+        a.props.forEach((prop, i) => { if (va[i] !== vb[i]) diffs.push(`${key} { ${prop}: ${va[i]} → ${vb[i]} }`); });
+      }
+      if (diffs.length) {
+        styleChanged++;
+        console.log(`스타일 다름  ${file}: ${diffs.length}곳\n    ${diffs.slice(0, 5).join('\n    ')}`);
+      }
+    }
+
     let changed = 0;
     for (const name of names) {
       const r = results[name];
@@ -235,7 +274,8 @@ async function main() {
       }
     }
     console.log(changed ? `\n${names.length}장 중 ${changed}장이 ${baseRef}와 다릅니다. shots/diff/에서 빨간 곳을 확인하세요.` : `${names.length}장 모두 ${baseRef}와 픽셀 단위로 같습니다.`);
-    process.exitCode = changed ? 1 : 0;
+    console.log(styleChanged ? `계산된 스타일이 다른 장면 ${styleChanged}개` : '모든 요소의 계산된 스타일도 같습니다.');
+    process.exitCode = changed || styleChanged ? 1 : 0;
   } finally {
     head.server.close();
     if (base) base.server.close();
