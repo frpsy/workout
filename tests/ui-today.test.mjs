@@ -354,14 +354,43 @@ test('오늘: 아침·저녁 버튼으로 사이클을 바꾸며 체크하면 �
   assert.equal(btn(2).querySelector('small').textContent, '0/3');
   btn(2).click();
   assert.equal(btn(2).getAttribute('aria-pressed'), 'true');
-  assert.equal(root.querySelector('#progText').textContent, '0/3 완료', '저녁은 처음부터');
+  assert.equal(root.querySelector('#progText').textContent, '0/2 완료', '아침에 마친 종목은 빼고 남은 종목만 셈');
   assert.equal(root.querySelector('.row').classList.contains('done'), false);
+  assert.equal(root.querySelector('.row [data-f="where"]').textContent, '아침 완료', '아침에 한 종목에 표시');
+  assert.equal(root.querySelector('.row').classList.contains('elsewhere'), true);
   root.querySelector('.row [data-f="check"]').click();
   assert.equal(root.querySelector('.row').classList.contains('done'), true);
   const day = store.state.days[t0];
   assert.equal(day.entries.push.done, true);
   assert.equal(day.pm.push.done, true);
+  assert.equal(root.querySelector('.row [data-f="where"]').textContent, '', '저녁에도 하면 표시가 사라지고 진행에 셈');
+  assert.equal(root.querySelector('#progText').textContent, '1/3 완료', '둘 다 한 종목이 있어 남은 종목이 없던 건 아님(풀업·스쿼트 남음)');
   btn(1).click();
   assert.equal(root.querySelector('#progText').textContent, '1/3 완료', '아침으로 돌아오면 아침 기록');
   store.actions.flushAll();
+});
+
+test('오늘: 아침에 나눠서 한 날은 저녁에 남은 종목만 마치면 모두 완료·종료 버튼 강조, 둘 다 마친 날은 저녁도 처음부터', () => {
+  const { store, root } = setup(today);
+  const ids = store.activeExercises().map((e) => e.id);
+  const rowCheck = (i) => root.querySelectorAll('.row [data-f="check"]')[i];
+  rowCheck(0).click();
+  rowCheck(1).click(); // 아침: 푸시업·풀업
+  root.querySelector('#cycles [data-cycle="2"]').click();
+  assert.equal(root.querySelector('#progText').textContent, '0/1 완료', '남은 건 스쿼트 하나');
+  assert.equal(store.cycleFinished(), false);
+  rowCheck(2).click(); // 저녁: 스쿼트
+  assert.equal(root.querySelector('#progText').textContent.includes('완료'), true);
+  assert.equal(store.cycleFinished(), true, '남은 종목을 마치면 이 사이클은 끝');
+  assert.equal(root.querySelector('#segs').children.length, 1);
+  // 아침에 모두 마친 날의 저녁은 전부 처음부터
+  const full = setup(today);
+  const c = (i) => full.root.querySelectorAll('.row [data-f="check"]')[i];
+  c(0).click(); c(1).click(); c(2).click();
+  full.root.querySelector('#cycles [data-cycle="2"]').click();
+  assert.equal(full.root.querySelector('#progText').textContent, '0/3 완료');
+  assert.equal(full.root.querySelectorAll('.row.elsewhere').length, 0);
+  assert.equal(ids.length, 3);
+  store.actions.flushAll();
+  full.store.actions.flushAll();
 });

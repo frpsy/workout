@@ -72,7 +72,7 @@ export function mountWorkbar(root, store) {
     // 지난 날을 고치는 중에는 시작 버튼을 숨김 (시간은 늘 오늘 기록으로 들어가므로 헷갈리지 않게)
     btn.hidden = !running && state.selected !== state.today;
     // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
-    const finished = running && state.selected === state.today && store.activeExercises().length > 0 && store.activeExercises().every((e) => store.view(state.selected, e).done);
+    const finished = running && state.selected === state.today && store.cycleFinished();
     btn.classList.toggle('ready', finished);
     btn.setAttribute('aria-label', finished ? '운동을 모두 마쳤습니다. 눌러서 운동을 종료하고 총 운동시간 기록' : running ? '운동 종료하고 총 운동시간 기록' : '운동 시작 (시간이 흐릅니다)');
     // 재는 동안에만 중지·취소가 보임. 재는 중에는 날짜 대신 시간을 크게 보여 줌
