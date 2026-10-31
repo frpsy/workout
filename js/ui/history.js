@@ -195,20 +195,15 @@ export function mountHistory(root, store) {
       .join('');
   }
 
-  /** 고른 날 기록 카드: 총 시간, 운동 시작–종료 시각, 종목별 한 것(아침·저녁 사이클별), 소감·감사 */
+  /** 고른 날 기록 카드: 총 시간, 운동 시작–종료 시각, 종목별 한 것, 소감·감사 */
   function dayCardHtml(state, ctx, date) {
     const day = state.days[date];
     const sessions = (day && day.sessions) || [];
     const total = (day && day.workSec) || 0;
-    const cycles = [1, 2]
-      .map((c) => {
-        const list = state.config.exercises
-          .map((ex) => ({ ex, v: store.view(date, ex, undefined, c) }))
-          .filter(({ ex, v }) => ex.active !== false || v.done || v.setsDone);
-        return { c, list, has: list.some(({ v }) => v.done || v.setsDone) };
-      })
-      .filter((x) => x.has);
-    const labelled = cycles.length > 1 || cycles.some((x) => x.c === 2) || sessions.some((x) => x.c === 2); // 저녁 기록이 있으면 아침·저녁 이름을 붙임
+    const list = state.config.exercises
+      .map((ex) => ({ ex, v: store.view(date, ex) }))
+      .filter(({ ex, v }) => ex.active !== false || v.done || v.setsDone);
+    const has = list.some(({ v }) => v.done || v.setsDone);
     const rowsHtml = (list) =>
       '<ul class="dayex">' +
       list
@@ -222,14 +217,12 @@ export function mountHistory(root, store) {
       '</ul>';
     const note = (day && day.note) || {};
     const rest = ctx.rest.has(parse(date).getDay());
-    const times = sessions.map((x) => `${labelled ? `${x.c === 2 ? '저녁' : '아침'} ` : ''}${clock(x.s)} – ${clock(x.e)}`).join(', ');
+    const times = sessions.map((x) => `${clock(x.s)} – ${clock(x.e)}`).join(', '); // 하루에 여러 번 했으면 구간이 모두 나열됨
     return (
       `<div class="day-head"><h2 class="sec">${labelMD(date)} <small>(${dowName(date)})${date === state.today ? ' · 오늘' : ''}</small></h2>` +
       `<span class="log-total${total ? '' : ' none'}">${total ? `총 ${fmtKo(total)}` : '시간 기록 없음'}</span></div>` +
       (times ? `<p class="log-time">${times}</p>` : '') +
-      (cycles.length
-        ? cycles.map((x) => (labelled ? `<h3 class="day-cycle">${x.c === 2 ? '저녁' : '아침'}</h3>` : '') + rowsHtml(x.list)).join('')
-        : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? '쉬는 날입니다.' : '기록이 없습니다.'}</p>`) +
+      (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? '쉬는 날입니다.' : '기록이 없습니다.'}</p>`) +
       (note.feel ? `<p class="note-line"><b>소감</b> ${esc(note.feel)}</p>` : '') +
       (note.thanks ? `<p class="note-line"><b>감사</b> ${esc(note.thanks)}</p>` : '') +
       `<button type="button" class="btn ghost sm" data-edit="${date}">${date === state.today ? '오늘 탭에서 체크하기' : '이 날 기록 고치기'}</button>`

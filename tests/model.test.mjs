@@ -123,10 +123,10 @@ test('운동 구간: 잘못된 값은 버리고 시작 순으로, 하루 20개�
   assert.equal(normalizeDay({ entries: {}, sessions: many }).sessions[0].s, 1_005, '오래된 것부터 버림');
 });
 
-test('저녁 사이클(pm): 아침과 같은 규칙으로 정리하고, 비어 있으면 두지 않음', () => {
-  const day = normalizeDay({ v: 2, entries: { push: { done: true } }, pm: { push: { done: false, setsDone: 2 }, bad: 'x', pull: { done: true, count: 5, sets: 3 } } });
-  assert.deepEqual(day.pm, { push: { done: false, setsDone: 2 }, pull: { done: true, count: 5, sets: 3 } });
-  assert.equal(normalizeDay({ entries: {}, pm: {} }).pm, undefined);
+test('예전 저녁 기록(pm)은 하루 기록(entries)에 합치고, 운동 구간은 시작 순으로 정리', () => {
+  const day = normalizeDay({ v: 2, entries: { push: { done: true }, pull: { done: false, setsDone: 1 } }, pm: { push: { done: false, setsDone: 2 }, pull: { done: false, setsDone: 2 }, squat: { done: true, count: 5, sets: 3 }, bad: 'x' } });
+  assert.deepEqual(day.entries, { push: { done: true }, pull: { done: false, setsDone: 2 }, squat: { done: true, count: 5, sets: 3 } }, '마친 쪽 우선, 아니면 세트를 더 한 쪽');
+  assert.equal(day.pm, undefined, 'pm은 남기지 않음');
   assert.equal(normalizeDay({ entries: {}, pm: 'x' }).pm, undefined);
-  assert.deepEqual(normalizeDay({ entries: {}, sessions: [{ s: 5, e: 9, sec: 4, c: 2 }, { s: 1, e: 3, sec: 2, c: 7 }] }).sessions, [{ s: 1, e: 3, sec: 2 }, { s: 5, e: 9, sec: 4, c: 2 }]);
+  assert.deepEqual(normalizeDay({ entries: {}, sessions: [{ s: 5, e: 9, sec: 4, c: 2 }, { s: 1, e: 3, sec: 2 }] }).sessions, [{ s: 1, e: 3, sec: 2 }, { s: 5, e: 9, sec: 4 }], '예전 c 표시는 버림');
 });

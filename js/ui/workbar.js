@@ -40,7 +40,7 @@ export function mountWorkbar(root, store) {
   function resetTimeIfCleared() {
     const state = store.state;
     if (!state.ready) return;
-    const any = store.hasProgress(state.selected); // 아침·저녁 어느 쪽이든
+    const any = store.hasProgress(state.selected); 
     const was = prevProgress && prevProgress.date === state.selected && prevProgress.any;
     prevProgress = { date: state.selected, any };
     if (!was || any || state.selected !== state.today) return;
@@ -72,7 +72,7 @@ export function mountWorkbar(root, store) {
     // 지난 날을 고치는 중에는 시작 버튼을 숨김 (시간은 늘 오늘 기록으로 들어가므로 헷갈리지 않게)
     btn.hidden = !running && state.selected !== state.today;
     // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
-    const finished = running && state.selected === state.today && store.cycleFinished();
+    const finished = running && state.selected === state.today && store.allDone();
     btn.classList.toggle('ready', finished);
     btn.setAttribute('aria-label', finished ? '운동을 모두 마쳤습니다. 눌러서 운동을 종료하고 총 운동시간 기록' : running ? '운동 종료하고 총 운동시간 기록' : '운동 시작 (시간이 흐릅니다)');
     // 재는 동안에만 중지·취소가 보임. 재는 중에는 날짜 대신 시간을 크게 보여 줌
@@ -95,7 +95,7 @@ export function mountWorkbar(root, store) {
     if (session.running) {
       ticking(false);
       const done = session.stop();
-      if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e, c: store.state.cycle });
+      if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e });
       playSound('stop');
     } else {
       startWork();
@@ -110,10 +110,9 @@ export function mountWorkbar(root, store) {
   // 오늘 첫 세트를 마치면 '운동 시작'을 대신 눌러 줌 (이미 재는 중이거나, 오늘 이미 시간을 기록했거나, 지난 날을 고치는 중이면 그대로)
   function autoStart(before, after) {
     const state = store.state;
-    // 지금 체크하는 사이클(아침/저녁)에서 이미 운동 시간을 기록했는지 (시각 없는 예전 기록은 아침으로 봄)
+    // 오늘 이미 운동 시간을 기록했으면 자동 시작하지 않음(두 번째 운동은 ▶ 운동 시작을 직접 누름)
     const day = state.days[state.today];
-    const sessions = (day && day.sessions) || [];
-    const recorded = sessions.length ? sessions.some((x) => (x.c || 1) === state.cycle) : !!(day && day.workSec) && state.cycle === 1;
+    const recorded = !!(day && (day.workSec || (day.sessions && day.sessions.length)));
     if (after.setsDone <= before.setsDone || session.running || recorded || state.selected !== state.today || !state.ready) return;
     startWork();
     renderWork();

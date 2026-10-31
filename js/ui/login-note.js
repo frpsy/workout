@@ -14,7 +14,7 @@ const readSnooze = () => readJson(NUDGE_KEY).snoozeUntil || '';
 export function mountLoginNote(root, store) {
   function render(state) {
     const account = state.adapter.account;
-    const recorded = Object.values(state.days).filter((d) => [...Object.values(d.entries || {}), ...Object.values(d.pm || {})].some((e) => e.done)).length;
+    const recorded = Object.values(state.days).filter((d) => Object.values(d.entries || {}).some((e) => e.done)).length;
     const due = state.ready && state.adapter.kind === 'local' && !!account && !!account.signIn && !account.signOut && recorded >= NUDGE_MIN_DAYS && !(readSnooze() && state.today < readSnooze());
     $('#loginNote', root).hidden = !due;
   }
