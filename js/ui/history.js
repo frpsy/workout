@@ -34,7 +34,6 @@ export function mountHistory(root, store) {
       </div>
       <div id="cal" class="cal"></div>
       <p class="tallytext" id="periodText"></p>
-      <p class="sub" id="calSub"></p>
     </section>
     <section class="daycard" id="dayCard" aria-live="polite"></section>
     <section>
@@ -129,12 +128,6 @@ export function mountHistory(root, store) {
   function renderStats(state, ctx) {
     const { days, today, config } = state;
     const { exs, rest } = ctx;
-    const offGrid = parse(config.startDate).getDay() !== 1; // 목표 주차는 시작일 기준 7일 단위
-    const help = [
-      ctx.ids.length <= MAX_PIPS ? `점은 ${exs.map((e) => e.name).join(', ')} 순서입니다.` : '',
-      offGrid ? '왼쪽에 초록 선이 있는 날은 새 목표 주차가 시작되는 날입니다.' : '',
-      rest.size ? '흐린 날은 쉬는 요일입니다.' : '',
-    ];
     /* 지금 보이는 기간(이번 주 또는 펼친 달)의 요약 */
     const m0 = expanded && month ? month : null;
     const from = m0 || mondayOf(today);
@@ -144,7 +137,6 @@ export function mountHistory(root, store) {
     const period = $('#periodText', root);
     period.hidden = !ps.total && !ps.workSec; // 이번 주 첫날처럼 아직 셀 날이 없으면 숨김
     period.innerHTML = [ps.total ? `${label} <b>${ps.done}</b>/${ps.total}일 모두 마침` : '', ps.workSec ? `${ps.total ? '' : `${label} `}운동시간 <b>${fmtKo(ps.workSec)}</b>` : ''].filter(Boolean).join(' · ');
-    $('#calSub', root).textContent = ['날짜를 누르면 그날 기록이 아래에 보입니다.', ...help].filter(Boolean).join(' ');
 
     /* 모두 마친 날 수 */
     const complete = completeDayCount(days, exs);
