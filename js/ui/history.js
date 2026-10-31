@@ -3,7 +3,7 @@
 import { UNITS } from '../config.js';
 import { addDays, diffDays, dowName, fmt, labelMD, mondayOf, pad, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
-import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent } from '../stats.js';
+import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent, periodSummary } from '../stats.js';
 import { fmtKo } from '../session.js';
 import { $, esc } from './dom.js';
 
@@ -33,6 +33,7 @@ export function mountHistory(root, store) {
         </span>
       </div>
       <div id="cal" class="cal"></div>
+      <p class="tallytext" id="periodText"></p>
       <p class="sub" id="calSub"></p>
     </section>
     <section class="daycard" id="dayCard" aria-live="polite"></section>
@@ -134,6 +135,14 @@ export function mountHistory(root, store) {
       offGrid ? '왼쪽에 초록 선이 있는 날은 새 목표 주차가 시작되는 날입니다.' : '',
       rest.size ? '흐린 날은 쉬는 요일입니다.' : '',
     ];
+    /* 지금 보이는 기간(이번 주 또는 펼친 달)의 요약 */
+    const m0 = expanded && month ? month : null;
+    const from = m0 || mondayOf(today);
+    const to = m0 ? fmt(new Date(parse(m0).getFullYear(), parse(m0).getMonth() + 1, 0)) : addDays(from, 6);
+    const ps = periodSummary(days, today, exs, { from, to, rest, startDate: config.startDate });
+    const label = m0 ? `${parse(m0).getMonth() + 1}월` : '이번 주';
+    $('#periodText', root).innerHTML =
+      (ps.total ? `${label} <b>${ps.done}</b>/${ps.total}일 모두 마침` : `${label} 해야 했던 날 없음`) + (ps.workSec ? ` · 운동시간 <b>${fmtKo(ps.workSec)}</b>` : '');
     $('#calSub', root).textContent = ['날짜를 누르면 그날 기록이 아래에 보입니다.', ...help].filter(Boolean).join(' ');
 
     /* 모두 마친 날 수 */

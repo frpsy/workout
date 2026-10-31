@@ -15,6 +15,7 @@ test('기록: 기본은 이번 주 한 줄만 보이고, 달성·연속·종목�
   assert.equal(root.querySelector('#calPrev').hidden, true, '달 이동 버튼은 펼쳤을 때만');
   assert.match(root.querySelector('#calSub').textContent, /날짜를 누르면 그날 기록이 아래에 보입니다/);
   assert.match(root.querySelector('#tallyText').textContent, /모두 마친 날 5일/);
+  assert.match(root.querySelector('#periodText').textContent, /^이번 주 \d+\/\d+일 모두 마침|^이번 주 해야 했던 날 없음/);
   assert.deepEqual([...root.querySelectorAll('#summary dt')].map((e) => e.textContent), ['현재 연속', '최고 연속', '30일 달성률']);
   assert.match(root.querySelector('#summary').textContent, /현재 연속5일/);
   const per = root.querySelectorAll('#perEx li');
@@ -149,4 +150,10 @@ test('기록: 저녁 기록이 있는 날은 아침·저녁 이름을 붙여 사
   // 아침 기록만 있는 날은 이름 없이 그대로
   pickDate(root, addDays(t0, -1));
   assert.equal(root.querySelectorAll('#dayCard .day-cycle').length, 0);
+});
+
+test('기록: 한 달 보기로 펼치면 기간 요약이 그 달 기준으로 바뀜', () => {
+  const { root } = setup(history, { days: fullDays(5), config: { startDate: addDays(todayStr(), -70) } });
+  root.querySelector('#calToggle').click();
+  assert.match(root.querySelector('#periodText').textContent, new RegExp(`^${Number(todayStr().slice(5, 7))}월 \\d+/\\d+일 모두 마침`));
 });

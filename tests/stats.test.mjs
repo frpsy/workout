@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { achievement, bestStreak, completeDayCount, currentStreak, percent } from '../js/stats.js';
+import { achievement, bestStreak, completeDayCount, currentStreak, percent, periodSummary } from '../js/stats.js';
 
 const ids = [{ id: 'a' }, { id: 'b' }];
 const full = { entries: { a: { done: true, count: 10 }, b: { done: true, target: 5 } } };
@@ -76,4 +76,19 @@ test('종목별 연속은 그 종목만 기준', () => {
   assert.equal(currentStreak(days, '2026-10-26', [{ id: 'a' }]), 2);
   assert.equal(currentStreak(days, '2026-10-26', [{ id: 'b' }]), 1);
   assert.equal(currentStreak(days, '2026-10-26', ids), 1);
+});
+
+test('기간 요약: 해야 했던 날 중 모두 마친 날과 운동시간 합계 (쉬는 요일·아직 안 한 오늘·미래 제외)', () => {
+  const days = {
+    '2026-10-26': { ...full, workSec: 600 },
+    '2026-10-27': { ...full, workSec: 300 },
+    '2026-10-29': { ...half },
+  };
+  // 월요일 26일 ~ 일요일 11-01 주, 오늘은 목요일 29일. 일요일(0)은 쉬는 날
+  const r = periodSummary(days, '2026-10-29', ids, { from: '2026-10-26', to: '2026-11-01', rest: new Set([0]), startDate: '2026-10-01' });
+  assert.deepEqual(r, { done: 2, total: 3, workSec: 900, workDays: 2 }, '28일 빼먹음, 오늘(29)은 아직 못 마쳐 제외, 이후는 미래');
+  // 오늘을 마치면 포함
+  assert.deepEqual(periodSummary({ ...days, '2026-10-29': full }, '2026-10-29', ids, { from: '2026-10-26', to: '2026-11-01', startDate: '2026-10-01' }), { done: 3, total: 4, workSec: 900, workDays: 2 });
+  // 시작 전 날은 해야 했던 날이 아님
+  assert.equal(periodSummary(days, '2026-10-29', ids, { from: '2026-10-26', to: '2026-11-01', startDate: '2026-10-28' }).total, 1);
 });
