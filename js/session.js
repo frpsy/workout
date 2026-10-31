@@ -8,7 +8,20 @@ const MAX_RESUME_MS = 12 * 3600 * 1000; // 이보다 오래된 시작 기록은 
 
 // 저장이 막힌 브라우저에서는 이 화면을 연 동안만 잴 수 있습니다
 const read = () => readJson(KEY, null);
-const write = (v) => (v ? writeJson(KEY, v) : writeText(KEY, null));
+const write = (v) => {
+  if (v) writeJson(KEY, v);
+  else writeText(KEY, null);
+  // 기록 탭 등 다른 화면이 ‘운동 중’ 표시를 바로 바꾸도록 알림
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(SESSION_EVENT));
+};
+
+export const SESSION_EVENT = 'workout-session';
+
+/** 지금 재는(중지 포함) 운동이 기록될 날. 없으면 null */
+export function activeSessionDate(now = Date.now()) {
+  const v = read();
+  return v && Number.isFinite(v.startAt) && typeof v.date === 'string' && now - v.startAt >= 0 && now - v.startAt < MAX_RESUME_MS ? v.date : null;
+}
 
 /** 1:05, 1:02:05 */
 export function fmtClock(sec) {
