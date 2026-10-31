@@ -157,3 +157,8 @@ test('기록: 한 달 보기로 펼치면 기간 요약이 그 달 기준으로 
   root.querySelector('#calToggle').click();
   assert.match(root.querySelector('#periodText').textContent, new RegExp(`^${Number(todayStr().slice(5, 7))}월 \\d+/\\d+일 모두 마침`));
 });
+
+test('기록: 이번 주에 아직 셀 날이 없으면(첫날·오늘 아직 안 함) 기간 요약 줄을 숨김', () => {
+  const { root } = setup(history, { days: {}, config: { startDate: todayStr() } });
+  assert.equal(root.querySelector('#periodText').hidden, true);
+});

@@ -110,6 +110,29 @@ test('오늘+타이머: 오늘 체크를 모두 되돌리면 쉬는 중이던 �
   localStorage.removeItem('workout-check:timer');
 });
 
+test('오늘+타이머: 모든 운동을 마치면 쉬는 중이던 휴식도 조용히 멈춤', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  localStorage.removeItem('workout-check:timer');
+  const { store, root } = setup(today);
+  const timerRoot = document.createElement('div');
+  document.body.appendChild(timerRoot);
+  mountTimer(timerRoot);
+  const go = () => timerRoot.querySelector('#tGo');
+  const rows = [...root.querySelectorAll('.row')];
+  const last = rows.at(-1);
+  for (const r of rows.slice(0, -1)) r.querySelector('.check, [data-f="check"]').click(); // 앞 종목은 원형 버튼으로 한꺼번에 완료
+  const sets = last.querySelectorAll('button[data-set]');
+  for (const b of [...sets].slice(0, -1)) b.click(); // 마지막 종목은 마지막 세트 전까지
+  assert.equal(go().textContent, '중지', '세트 사이에는 쉬는 중');
+  sets[sets.length - 1].click(); // 마지막 세트로 모두 완료
+  assert.equal(go().textContent, '시작', '더 쉴 세트가 없으니 휴식이 멈춤');
+  mock.timers.tick(70_000);
+  assert.equal(timerRoot.querySelector('#timerBar').classList.contains('done'), false, '끝남 알림도 없음');
+  store.actions.flushAll();
+  localStorage.removeItem('workout-check:timer');
+});
+
 test('자동 휴식 설정: 기본 켜짐, 끄면 이 브라우저에 기억', async () => {
   localStorage.removeItem('workout-check:timer');
   const { loadAuto, loadDuration, createTimer } = await import('../js/timer.js');

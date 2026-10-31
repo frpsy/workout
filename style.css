@@ -795,6 +795,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 /* 오늘 화면 아래 빈 곳: 내일 날씨 한 줄과 운동 팁(탭 막대 바로 위에 낮게) */
 #bottom { margin-top: auto; display: flex; flex-direction: column; gap: var(--gap-sm); }
 .weather {
+  position: relative;
   display: block;
   width: 100%;
   padding: 2px 4px;
@@ -808,6 +809,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   touch-action: manipulation;
   font-variant-numeric: tabular-nums;
 }
+.weather::after { content: ''; position: absolute; inset: -12px 0 0; } /* 누르는 영역을 위로 넓힘(아래 팁과 겹치지 않게) */
 .tip {
   display: flex;
   align-items: flex-start;
