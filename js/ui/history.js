@@ -4,7 +4,7 @@ import { UNITS } from '../config.js';
 import { addDays, diffDays, dowName, fmt, labelMD, mondayOf, pad, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
 import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent, periodSummary } from '../stats.js';
-import { fmtKo } from '../session.js';
+import { activeSessionDate, fmtKo, SESSION_EVENT } from '../session.js';
 import { $, esc } from './dom.js';
 
 const MAX_PIPS = 6;
@@ -200,6 +200,8 @@ export function mountHistory(root, store) {
     const day = state.days[date];
     const sessions = (day && day.sessions) || [];
     const total = (day && day.workSec) || 0;
+    const live = activeSessionDate() === date; // 재는 중인 운동은 종료해야 합산되므로 ‘운동 중’으로 알림
+    const timeText = total ? `총 ${fmtKo(total)}${live ? ' · 운동 중' : ''}` : live ? '운동 중' : '시간 기록 없음';
     const list = state.config.exercises
       .map((ex) => ({ ex, v: store.view(date, ex) }))
       .filter(({ ex, v }) => ex.active !== false || v.done || v.setsDone);
@@ -220,7 +222,7 @@ export function mountHistory(root, store) {
     const times = sessions.map((x) => `${clock(x.s)} – ${clock(x.e)}`).join(', '); // 하루에 여러 번 했으면 구간이 모두 나열됨
     return (
       `<div class="day-head"><h2 class="sec">${labelMD(date)} <small>(${dowName(date)})${date === state.today ? ' · 오늘' : ''}</small></h2>` +
-      `<span class="log-total${total ? '' : ' none'}">${total ? `총 ${fmtKo(total)}` : '시간 기록 없음'}</span></div>` +
+      `<span class="log-total${total || live ? '' : ' none'}">${timeText}</span></div>` +
       (times ? `<p class="log-time">${times}</p>` : '') +
       (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? '쉬는 날입니다.' : '기록이 없습니다.'}</p>`) +
       (note.feel ? `<p class="note-line"><b>소감</b> ${esc(note.feel)}</p>` : '') +
@@ -251,10 +253,12 @@ export function mountHistory(root, store) {
     $('#cal', root).innerHTML = calHtml(state, ctx, weeksOfMonth(month), month);
   }
 
+  window.addEventListener(SESSION_EVENT, () => last && render(last));
+
   function render(state) {
     last = state;
     // 기록·설정·날짜·고른 날이 바뀌었을 때만 다시 그림 (저장 상태 문구 같은 변화에는 그대로 둠)
-    const next = `${state.daysRev}:${state.configRev}:${state.today}:${picked || ''}:${expanded}:${month || ''}`;
+    const next = `${state.daysRev}:${state.configRev}:${state.today}:${picked || ''}:${expanded}:${month || ''}:${activeSessionDate() || ''}`;
     if (next === key) return;
     key = next;
     if (picked && picked > state.today) picked = null; // 자정 지나 날짜가 바뀐 경우 등

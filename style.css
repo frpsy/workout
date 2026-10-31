@@ -1038,6 +1038,7 @@ tr.cur td { background: var(--accent-soft); }
 .srow:first-child { border-top: 0; }
 .srow.col { flex-direction: column; align-items: stretch; gap: var(--gap); padding: 12px 0; }
 .srow label { color: inherit; font-size: inherit; }
+.srow > label { flex: none; white-space: nowrap; } /* 좁은 화면에서 ‘회복주’ 같은 이름이 두 줄로 깨지지 않게 */
 .srow input[type="date"] { width: 168px; flex: none; }
 .sval { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--fs-md); }
 .pair { display: flex; gap: var(--gap); min-width: 0; }

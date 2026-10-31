@@ -157,3 +157,17 @@ test('기록: 이번 주에 아직 셀 날이 없으면(첫날·오늘 아직 �
   const { root } = setup(history, { days: {}, config: { startDate: todayStr() } });
   assert.equal(root.querySelector('#periodText').hidden, true);
 });
+
+test('기록: 오늘 운동을 재는 중이면 ‘시간 기록 없음’ 대신 ‘운동 중’, 종료·취소하면 바로 다시 그림', async () => {
+  const { createSession } = await import('../js/session.js');
+  const t0 = todayStr();
+  const { root } = setup(history, { days: { [t0]: { entries: { push: { done: true } } } } });
+  const label = () => root.querySelector('#dayCard .log-total');
+  assert.equal(label().textContent, '시간 기록 없음');
+  const s = createSession();
+  s.start(t0);
+  assert.equal(label().textContent, '운동 중');
+  assert.equal(label().classList.contains('none'), false);
+  s.cancel();
+  assert.equal(label().textContent, '시간 기록 없음');
+});
