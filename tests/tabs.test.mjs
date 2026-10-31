@@ -59,7 +59,7 @@ test('탭: 처음엔 오늘 화면, 다른 화면은 inert(탭 키·화면 읽�
   assert.equal(page('today').hasAttribute('inert'), false);
   assert.equal(page('record').hasAttribute('inert'), true);
   assert.equal(page('settings').getAttribute('aria-hidden'), 'true');
-  assert.equal(btn('today').getAttribute('aria-selected'), 'true');
+  assert.equal(btn('today').getAttribute('aria-current'), 'page');
   assert.equal(doc.documentElement.dataset.tab, 'today');
 });
 
@@ -69,9 +69,9 @@ test('탭: 버튼을 누르면 그 화면으로 바로 전환하고(미끄러지
   assert.deepEqual(s.scrolls.at(-1), { left: W, behavior: 'auto' });
   assert.equal(s.tabs.current, 'record');
   assert.equal(s.w.location.hash, '#record');
-  assert.equal(s.btn('record').getAttribute('aria-selected'), 'true');
   assert.equal(s.btn('record').getAttribute('aria-current'), 'page');
-  assert.equal(s.btn('today').getAttribute('aria-selected'), 'false');
+  assert.equal(s.btn('record').getAttribute('aria-current'), 'page');
+  assert.equal(s.btn('today').getAttribute('aria-current'), null);
   assert.equal(s.page('record').hasAttribute('inert'), false);
   assert.equal(s.page('today').hasAttribute('inert'), true);
   assert.equal(s.el('d').open, true, '기록·설정 탭 안의 접힌 항목은 펼쳐 줌');
@@ -104,7 +104,7 @@ test('손으로 넘기기: 미는 동안 가까운 화면을 따라 탭 표시�
   s.drag(2 * W);
   s.pager.dispatchEvent(new s.w.Event('scrollend')); // scrollend가 있는 브라우저는 바로
   assert.equal(s.w.location.hash, '#settings');
-  assert.equal(s.btn('settings').getAttribute('aria-selected'), 'true');
+  assert.equal(s.btn('settings').getAttribute('aria-current'), 'page');
 });
 
 test('뒤로 가기(popstate)는 주소의 탭으로 넘기되 주소를 새로 쌓지 않음', () => {
@@ -197,7 +197,7 @@ test('미는 도중에는 아래 탭 표시만 바꾸고, 화면 쪽 무거운 �
   t.after(() => mock.timers.reset());
   const s = setup();
   s.drag(260);
-  assert.equal(s.btn('record').getAttribute('aria-selected'), 'true', '탭 표시는 바로');
+  assert.equal(s.btn('record').getAttribute('aria-current'), 'page', '탭 표시는 바로');
   assert.equal(s.page('record').hasAttribute('inert'), true, '화면 쪽은 아직 그대로');
   assert.equal(s.doc.documentElement.dataset.tab, 'today');
   s.drag(W);
