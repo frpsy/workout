@@ -4,7 +4,7 @@ import { formatLine, loadTomorrow, savedPlace, savePlace, SEOUL } from '../weath
 import { $ } from './dom.js';
 
 export function mountWeather(root, { getPosition = defaultPosition, fetchFn } = {}) {
-  root.innerHTML = '<button type="button" class="weather" id="wxBtn" hidden><span id="wxText"></span></button>';
+  root.innerHTML = '<button type="button" class="weather empty" id="wxBtn" tabindex="-1"><span id="wxText">&nbsp;</span></button>';
   const btn = $('#wxBtn', root);
   let mine = savedPlace();
 
@@ -12,12 +12,14 @@ export function mountWeather(root, { getPosition = defaultPosition, fetchFn } = 
     const place = mine || SEOUL;
     const w = await loadTomorrow(place, fetchFn ? { fetchFn } : undefined);
     if (!w) {
-      btn.hidden = true;
+      btn.classList.add('empty'); // 숨기되 한 줄 자리는 비워 둠
+      btn.tabIndex = -1;
       return;
     }
     $('#wxText', root).textContent = `내일 ${formatLine(w)} · ${mine ? '내 위치' : '서울'}`;
     btn.setAttribute('aria-label', `내일 날씨 ${formatLine(w)}. ${mine ? '내 위치 기준' : '서울 기준, 누르면 내 위치로 바꿈'}`);
-    btn.hidden = false;
+    btn.classList.remove('empty');
+    btn.tabIndex = 0;
   }
 
   // 한 번 눌러 내 위치를 허용하면 그 좌표로 다음부터 계속 보여 줌. 거절하면 그대로 서울
