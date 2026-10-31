@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 
 function files(dir) {
   return readdirSync(join(root, dir), { withFileTypes: true }).flatMap((d) =>
-    d.isDirectory() ? files(join(dir, d.name)) : [relative(root, join(root, dir, d.name))]
+    d.isDirectory() ? files(join(dir, d.name)) : [relative(root, join(root, dir, d.name)).split('\\').join('/')]
   );
 }
 

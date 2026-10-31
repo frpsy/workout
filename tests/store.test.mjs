@@ -5,6 +5,102 @@ import { createStore } from '../js/store.js';
 
 const tick = () => new Promise((r) => setImmediate(r));
 
+test('설정 서버 응답 전에도 후속 설정을 전송하고 실패한 최신 설정을 보호·재시도', async (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  let receive;
+  const acks = [];
+  const docs = [];
+  const store = createStore(fakeAdapter({
+    subscribe(h) { receive = h; h.onConfig(null); h.onDays({}); },
+    saveConfig(doc) { docs.push(doc); return new Promise((resolve, reject) => acks.push({resolve, reject})); },
+  }));
+  const first = store.actions.saveConfig({ ...store.state.config, startDate: '2026-01-01' });
+  const second = store.actions.saveConfig({ ...store.state.config, startDate: '2026-02-01' });
+  const rejected = assert.rejects(second);
+  await tick();
+  assert.equal(docs.length, 2);
+  acks[0].resolve(); await first;
+  acks[1].reject(new Error('denied')); await rejected;
+  receive.onConfig(docs[0]);
+  assert.equal(store.state.config.startDate, '2026-02-01');
+  assert.equal(store.state.configSaved, false);
+  store.actions.flushAll(); await tick();
+  assert.equal(docs[2].startDate, '2026-02-01');
+  acks[2].resolve(); await tick();
+  assert.equal(store.state.configSaved, true);
+});
+
+test('저장 중 이전 스냅샷·이전 쓰기 완료가 와도 후속 변경은 보존', async (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  let receive;
+  const acks = [];
+  const docs = [];
+  const ad = fakeAdapter({
+    subscribe(h) { receive = h; h.onConfig({}); h.onDays({}); },
+    saveDay(date, doc) { docs.push(doc); return new Promise((resolve) => acks.push(resolve)); },
+  });
+  const store = createStore(ad);
+  const date = todayStr();
+  store.actions.toggle('push');
+  store.actions.flushAll();
+  await tick();
+  receive.onDays({});
+  assert.equal(store.state.days[date].entries.push.done, true);
+  store.actions.toggle('pull');
+  store.actions.flushAll();
+  await tick();
+  acks[0]();
+  await tick();
+  receive.onDays({ [date]: docs[0] });
+  assert.equal(store.state.days[date].entries.pull.done, true, '옛 저장 완료 뒤에도 최신 수정 보호');
+  assert.deepEqual(Object.keys(docs[1].entries), ['push', 'pull']);
+  acks[1]();
+  await tick();
+  assert.equal(store.state.status.text, '저장했습니다');
+});
+
+test('첫 설정 응답이 느려도 기록을 보내며, 동기화 대기 뒤 늦은 실패를 알리고 재시도', async (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  let rejectConfig;
+  let receive;
+  let attempts = 0;
+  const ad = fakeAdapter({
+    synced: true,
+    subscribe(h) { receive = h; h.onConfig(null); h.onDays({}); },
+    saveConfig() { attempts++; return attempts === 1 ? new Promise((resolve, reject) => { rejectConfig = reject; }) : Promise.resolve(); },
+  });
+  const store = createStore(ad);
+  store.actions.toggle('push');
+  store.actions.flushAll();
+  await tick();
+  assert.equal(ad.saved.days.length, 1, '서버 응답 전에도 기기 큐에 전달');
+  mock.timers.tick(4001);
+  assert.match(store.state.status.text, /동기화/);
+  rejectConfig(new Error('denied'));
+  await tick();
+  assert.equal(store.state.status.error, true);
+  assert.equal(store.state.configSaved, false);
+  receive.onDays({});
+  assert.equal(store.state.days[todayStr()].entries.push.done, true, '실패 뒤에도 변경 보호');
+  store.actions.flushAll();
+  await tick();
+  assert.equal(attempts, 2);
+  assert.equal(store.state.configSaved, true);
+  assert.equal(store.state.status.error, false);
+});
+
+test('저장 차단은 기록 유실 경고로 표시', async (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  t.after(() => mock.timers.reset());
+  const store = createStore(fakeAdapter({ saveDay: async () => { throw Object.assign(new Error('blocked'), {code:'storage_unavailable'}); } }));
+  store.actions.toggle('push'); store.actions.flushAll(); await tick();
+  assert.equal(store.state.status.error, true);
+  assert.match(store.state.status.text, /새로고침하면 기록이 사라집니다/);
+});
+
 function fakeAdapter(extra = {}) {
   const saved = { config: [], days: [] };
   return {

@@ -4,6 +4,22 @@ import assert from 'node:assert/strict';
 import { todayStr } from '../js/dates.js';
 import { adapter, createStore, mountSettings, tick } from './helpers/ui-env.mjs';
 
+test('추천 운동을 연속 추가해도 표시한 운동과 실제 추가한 운동이 같음', async () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  for (const name of ['플랭크', '런지', '딥스', '덤벨', '버피']) {
+    const button = [...root.querySelectorAll('#presets button')].find((b) => b.textContent === '+ ' + name);
+    assert.ok(button);
+    button.click();
+    assert.equal(root.querySelector('#exList .exitem:last-child .exname').value, name);
+  }
+  root.querySelector('#saveCfg').click(); await tick();
+  assert.equal(new Set(ad.saved.config.at(-1).exercises.map((e) => e.name)).size, 8);
+});
+
 test('설정: 추천 운동을 추가하고 쉬는 요일을 골라 저장', async () => {
   const ad = adapter();
   document.body.innerHTML = '<div id="settings"></div>';

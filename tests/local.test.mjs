@@ -27,6 +27,13 @@ test('저장 공간 초과는 quota_exceeded 코드로', async () => {
   await assert.rejects(ad.saveDay('2026-10-26', { entries: {} }), { code: 'quota_exceeded' });
 });
 
+test('브라우저 저장 차단은 성공 대신 오류를 반환', async () => {
+  localStorage.setItem = () => { throw new Error('blocked'); };
+  const ad = createLocalAdapter();
+  await assert.rejects(ad.saveDay('2026-10-26', { entries: {} }), { code: 'storage_unavailable' });
+  await assert.rejects(ad.saveConfig({}), { code: 'storage_unavailable' });
+});
+
 test('예전 단일 파일 버전(wk-state) 기록을 읽음', () => {
   localStorage.setItem('wk-state', JSON.stringify({ cfg: { startDate: '2026-10-01' }, days: { '2026-10-01': { push: { done: true } } } }));
   const ad = createLocalAdapter();

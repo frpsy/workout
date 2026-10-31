@@ -7,7 +7,7 @@ import { createDbAdapter } from './claude-db.js';
 
 const AUTH_WAIT = 5000;
 const PROBE_WAIT = 6000; // 이보다 오래 걸리면 오프라인으로 보고 기기에 저장된 값으로 엽니다
-const OK_KEY = 'workout-check:account-ok'; // 이 기기에서 이 계정의 기록을 정상으로 읽어 본 적이 있으면 그 uid
+const OK_KEY = 'workout-check:account-ready:v2'; // 이전 실패를 정상으로 표시했던 계정도 한 번 다시 확인
 
 const knownGood = (uid) => readText(OK_KEY) === uid;
 const markGood = (uid, ok) => writeText(OK_KEY, ok ? uid : null);
@@ -94,7 +94,32 @@ export async function createFirebaseStorage({ config, createLocal, readLocal, lo
   }
 
   if (current) {
-    await migrateLocal(db, readLocal, current);
+    const migration = migrateLocal(db, readLocal, current, user.uid);
+    try {
+      const migrated = await withTimeout(migration, PROBE_WAIT);
+      if (!migrated) {
+        // SDK에 이미 들어간 이전 작업을 계속 사용합니다. 브라우저 저장으로 전환하면
+        // 늦게 끝난 이전 작업과 이후 편집이 서로 다른 저장소에 남을 수 있습니다.
+        const adapter = open();
+        const subscribe = adapter.subscribe;
+        adapter.subscribe = (handlers) => {
+          const off = subscribe(handlers);
+          migration.then(() => markGood(user.uid, true)).catch(() => {
+            markGood(user.uid, false);
+            if (handlers.onError) handlers.onError({ code: 'migration_failed' });
+          });
+          return off;
+        };
+        return adapter;
+      }
+    } catch {
+      markGood(user.uid, false);
+      return {
+        ...createLocal(),
+        label: '계정으로 기록을 옮기지 못해 이 브라우저에 저장합니다. 연결을 확인하고 새로고침하면 다시 시도합니다.',
+        account,
+      };
+    }
     markGood(user.uid, true); // 서버에서 정상으로 읽었음 (오프라인·시간 초과로 읽지 못한 경우는 표시하지 않음)
   }
   return open();
@@ -107,16 +132,22 @@ function withTimeout(promise, ms) {
 }
 
 /** 계정에 기록이 하나도 없고 이 브라우저에 기록이 있으면 한 번 옮겨 둡니다(브라우저 기록은 지우지 않음). */
-async function migrateLocal(db, readLocal, [cfg, days]) {
-  try {
-    const local = readLocal && readLocal();
-    if (!local || !db.setMany) return;
-    if (cfg.exists || !days.empty) return;
-    const map = {};
-    if (local.config) map['config/main'] = local.config;
-    for (const [date, doc] of Object.entries(local.days)) map['days/' + date] = doc;
-    if (Object.keys(map).length) await db.setMany(map);
-  } catch {
-    /* 오프라인 등: 다음에 접속할 때 다시 시도합니다 */
+async function migrateLocal(db, readLocal, [cfg, days], uid) {
+  const local = readLocal && readLocal();
+  if (!local) return true;
+  const key = 'workout-check:migration:' + uid;
+  const retrying = readText(key) === 'pending';
+  if (!retrying && (cfg.exists || !days.empty)) return true;
+  if (!db.setMany) throw new Error('migration unavailable');
+  writeText(key, 'pending');
+  // 일부 배치만 성공했어도 이미 있는 계정 기록을 덮어쓰지 않고 나머지를 이어서 옮김.
+  const existing = new Set((days.docs || []).map((d) => d.id));
+  const map = {};
+  for (const [date, doc] of Object.entries(local.days || {})) {
+    if (!existing.has(date)) map['days/' + date] = doc;
   }
+  if (!cfg.exists && local.config) map['config/main'] = local.config;
+  if (Object.keys(map).length) await db.setMany(map);
+  writeText(key, null);
+  return true;
 }

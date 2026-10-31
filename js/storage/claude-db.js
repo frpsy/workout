@@ -11,6 +11,9 @@ export function createDbAdapter(db, { kind, label, account }) {
 
   // 한 문서에는 한 번에 하나씩만 쓰도록 순서를 맞춥니다.
   function enqueue(path, fn) {
+    // Firestore는 호출 순서대로 로컬에 반영하고 오프라인 큐를 영구 보관합니다.
+    // 서버 확인을 기다리면 후속 기록이 메모리에만 남으므로 즉시 전달합니다.
+    if (kind === 'firebase') return fn();
     const prev = chains.get(path) || Promise.resolve();
     const next = prev.catch(() => {}).then(fn);
     chains.set(path, next);

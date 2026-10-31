@@ -41,7 +41,7 @@ export function createLocalAdapter() {
   const data = { config: (loaded && loaded.config) || null, days: (loaded && loaded.days) || {} };
 
   function write() {
-    if (!available) return;
+    if (!available) throw Object.assign(new Error('브라우저 저장 차단'), { code: 'storage_unavailable' });
     try {
       localStorage.setItem(KEY, JSON.stringify(data));
     } catch (err) {
