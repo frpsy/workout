@@ -13,7 +13,14 @@ test('기록: 기본은 이번 주 한 줄만 보이고, 달성·연속·종목�
   assert.equal(root.querySelectorAll('#cal button.cell').length, 7);
   assert.equal(root.querySelector('#calTitle').textContent, '이번 주');
   assert.equal(root.querySelector('#calPrev').hidden, true, '달 이동 버튼은 펼쳤을 때만');
-  assert.equal(root.querySelector('#calSub'), null, '달력 아래 안내 문구는 없음');
+  const sub = root.querySelector('#calSub');
+  assert.equal(sub.hidden, true, '안내 문구는 i 버튼을 누를 때만 보임');
+  root.querySelector('#calInfo').click();
+  assert.equal(sub.hidden, false);
+  assert.equal(root.querySelector('#calInfo').getAttribute('aria-expanded'), 'true');
+  assert.match(sub.textContent, /날짜를 누르면 그날 기록이 아래에 보입니다/);
+  root.querySelector('#calInfo').click();
+  assert.equal(sub.hidden, true);
   assert.match(root.querySelector('#tallyText').textContent, /모두 마친 날 5일/);
   assert.match(root.querySelector('#periodText').textContent, /^이번 주 \d+\/\d+일 모두 마침|^이번 주 해야 했던 날 없음/);
   assert.deepEqual([...root.querySelectorAll('#summary dt')].map((e) => e.textContent), ['현재 연속', '최고 연속', '30일 달성률']);
