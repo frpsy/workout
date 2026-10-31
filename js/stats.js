@@ -82,3 +82,26 @@ export function achievement(days, today, exs, { rest, startDate, window = 30 } =
 
 /** 퍼센트(반올림). 해야 했던 날이 없으면 null */
 export const percent = ({ done, total }) => (total ? Math.round((done / total) * 100) : null);
+
+/**
+ * from~to(양끝 포함) 기간의 요약: 해야 했던 날 중 모두 마친 날, 운동시간 합계, 운동시간을 잰 날 수.
+ * 해야 했던 날은 achievement와 같은 기준(시작 전·쉬는 요일·아직 하지 않은 오늘·미래는 뺌)입니다.
+ */
+export function periodSummary(days, today, exs, { from, to, rest, startDate }) {
+  let done = 0;
+  let total = 0;
+  let workSec = 0;
+  let workDays = 0;
+  const end = to < today ? to : today;
+  for (let d = from; d <= end; d = addDays(d, 1)) {
+    const sec = (days[d] && days[d].workSec) || 0;
+    workSec += sec;
+    if (sec) workDays++;
+    if ((startDate && d < startDate) || isRest(d, rest) || !requiredOn(exs, d).length) continue;
+    const ok = isComplete(days[d], exs, d);
+    if (d === today && !ok) continue;
+    total++;
+    if (ok) done++;
+  }
+  return { done, total, workSec, workDays };
+}
