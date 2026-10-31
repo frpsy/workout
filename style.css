@@ -821,7 +821,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   cursor: pointer;
   touch-action: manipulation;
 }
+.tip { min-height: calc(16px + 3em); } /* 위아래 여백 + 두 줄: 팁 길이가 달라도 높이가 변하지 않게 고정 */
 .tip svg { flex: none; margin-top: 2px; color: var(--accent); }
+.tip span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; } /* 두 줄을 넘는 문장은 … 로 자름 */
 
 /* ── 기록 탭 ───────────────────────────────────────────── */
 .page-title { margin: 6px 0 2px; font-size: var(--fs-3xl); } /* 기록·설정 탭 제목 */
