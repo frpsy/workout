@@ -73,7 +73,7 @@ test('화면: 서울 기준 한 줄이 보이고, 누르면 내 위치로 바뀌
   const calls = [];
   await mountWeather(root, { fetchFn: okFetch(sample(), calls), getPosition: async () => null });
   const btn = root.querySelector('#wxBtn');
-  assert.equal(btn.hidden, false);
+  assert.equal(btn.classList.contains('empty'), false);
   assert.equal(root.querySelector('#wxText').textContent, '내일 ⛅ 구름 조금 12°/22° · 비 20% · 서울');
   btn.click();
   await new Promise((r) => setTimeout(r, 5));
@@ -91,5 +91,5 @@ test('화면: 서울 기준 한 줄이 보이고, 누르면 내 위치로 바뀌
 test('화면: 날씨를 받지 못하면 줄을 숨김', async () => {
   const root = doc.getElementById('weather');
   await mountWeather(root, { fetchFn: async () => { throw new Error('offline'); } });
-  assert.equal(root.querySelector('#wxBtn').hidden, true);
+  assert.equal(root.querySelector('#wxBtn').classList.contains('empty'), true, '받지 못하면 비워 두되 자리는 유지');
 });

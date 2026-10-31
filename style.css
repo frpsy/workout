@@ -803,6 +803,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   touch-action: manipulation;
   font-variant-numeric: tabular-nums;
 }
+.weather.empty { visibility: hidden; } /* 받아오는 동안·받지 못했을 때도 한 줄 자리를 비워 둬, 나타날 때 화면이 밀리지 않게 */
 .weather::after { content: ''; position: absolute; inset: -12px 0 0; } /* 누르는 영역을 위로 넓힘(아래 팁과 겹치지 않게) */
 .tip {
   display: flex;
