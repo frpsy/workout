@@ -26,6 +26,7 @@ export function mountHistory(root, store) {
     <section aria-label="달력">
       <div class="cal-bar">
         <h2 class="sec" id="calTitle">이번 주</h2>
+        <button type="button" class="infobtn" id="calInfo" aria-label="달력 보는 법" aria-expanded="false" aria-controls="calSub">i</button>
         <span class="cal-nav">
           <button type="button" class="calbtn" id="calPrev" aria-label="이전 달" hidden>${CHEV('M15 5l-7 7 7 7')}</button>
           <button type="button" class="calbtn" id="calNext" aria-label="다음 달" hidden>${CHEV('M9 5l7 7-7 7')}</button>
@@ -34,6 +35,7 @@ export function mountHistory(root, store) {
       </div>
       <div id="cal" class="cal"></div>
       <p class="tallytext" id="periodText"></p>
+      <p class="sub" id="calSub" hidden></p>
     </section>
     <section class="daycard" id="dayCard" aria-live="polite"></section>
     <section>
@@ -55,6 +57,11 @@ export function mountHistory(root, store) {
     key = '';
     if (last) render(last);
   };
+  $('#calInfo', root).addEventListener('click', () => {
+    const open = $('#calSub', root).hidden; // 숨겨져 있으면 펼침
+    $('#calSub', root).hidden = !open;
+    $('#calInfo', root).setAttribute('aria-expanded', String(open));
+  });
   $('#calToggle', root).addEventListener('click', () => {
     expanded = !expanded;
     if (expanded && !month && last) month = monthOf(picked || last.today); // 펼치면 고른 날이 있는 달부터
@@ -128,6 +135,15 @@ export function mountHistory(root, store) {
   function renderStats(state, ctx) {
     const { days, today, config } = state;
     const { exs, rest } = ctx;
+    const offGrid = parse(config.startDate).getDay() !== 1; // 목표 주차는 시작일 기준 7일 단위
+    $('#calSub', root).textContent = [
+      '날짜를 누르면 그날 기록이 아래에 보입니다.',
+      ctx.ids.length <= MAX_PIPS ? `점은 ${exs.map((e) => e.name).join(', ')} 순서입니다.` : '',
+      offGrid ? '왼쪽에 초록 선이 있는 날은 새 목표 주차가 시작되는 날입니다.' : '',
+      rest.size ? '흐린 날은 쉬는 요일입니다.' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
     /* 지금 보이는 기간(이번 주 또는 펼친 달)의 요약 */
     const m0 = expanded && month ? month : null;
     const from = m0 || mondayOf(today);
