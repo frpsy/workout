@@ -1,7 +1,6 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { addDays, todayStr } from '../js/dates.js';
-import { isComplete, isDone } from '../js/stats.js';
+import { todayStr } from '../js/dates.js';
 import { createStore } from '../js/store.js';
 
 const tick = () => new Promise((r) => setImmediate(r));
@@ -225,59 +224,11 @@ test('운동 구간: 스톱워치 종료마다 시작·종료 시각이 남고, 
   assert.equal(store.state.days[d].workSec, undefined);
 });
 
-test('저녁 사이클: 아침·저녁 기록이 따로 쌓이고, 통계는 둘 중 한 번이라도 한 종목을 한 것으로 봄', async (t) => {
-  mock.timers.enable({ apis: ['setTimeout'] });
-  t.after(() => mock.timers.reset());
-  const ad = fakeAdapter();
-  const store = createStore(ad);
-  const d = todayStr();
-  const ex = store.activeExercises();
-  assert.equal(store.state.cycle, 1, '기본은 아침');
-  store.actions.toggle(ex[0].id); // 아침: 첫 종목
-  store.actions.setCycle(2);
-  store.actions.toggle(ex[1].id); // 저녁: 둘째 종목
-  store.actions.setProgress(ex[2].id, 1); // 저녁: 셋째 종목 일부
-  const day = store.state.days[d];
-  assert.deepEqual(Object.keys(day.entries), [ex[0].id], '아침 기록은 entries');
-  assert.deepEqual(Object.keys(day.pm).sort(), [ex[1].id, ex[2].id].sort(), '저녁 기록은 pm');
-  assert.equal(store.view(d, ex[0]).done, false, '저녁 화면에서는 아침에 한 종목이 안 한 것으로 보임');
-  assert.equal(store.view(d, ex[0], undefined, 1).done, true);
-  assert.equal(isDone(day, ex[0].id) && isDone(day, ex[1].id), true, '통계는 둘 중 한 번이라도 한 종목을 합쳐서 봄');
-  assert.equal(isComplete(day, store.activeExercises(), d), false, '셋째 종목은 아직');
-  store.actions.setProgress(ex[2].id, store.view(d, ex[2]).sets);
-  assert.equal(isComplete(day, store.activeExercises(), d), true, '아침+저녁으로 모든 종목을 마치면 그날 완료');
-  assert.equal(store.hasProgress(d), true);
-  store.actions.setCycle(3); // 잘못된 값은 무시
-  assert.equal(store.state.cycle, 2);
-  mock.timers.tick(400);
-  await tick();
-  assert.ok(ad.saved.days.at(-1)[1].pm, '저장 문서에 pm이 들어감');
-});
-
-test('저녁 사이클: 날짜를 옮기면 그날의 기록이 있는 사이클로, 오늘로 돌아오면 시각 기준 사이클로 시작함', () => {
-  const y = addDays(todayStr(), -1);
-  const ad = fakeAdapter({
-    subscribe({ onConfig, onDays }) {
-      onConfig(null);
-      onDays({ [y]: { v: 2, entries: {}, pm: { push: { done: true } } } });
-      return () => {};
-    },
-  });
-  let evening = false;
-  const store = createStore(ad, { cycleFor: () => (evening ? 2 : 1) });
-  store.actions.select(y);
-  assert.equal(store.state.cycle, 2, '저녁 기록만 있는 날은 저녁부터');
-  evening = true;
-  store.actions.goToday();
-  assert.equal(store.state.cycle, 2, '오늘은 cycleFor 기준');
-  store.actions.select(addDays(todayStr(), -2));
-  assert.equal(store.state.cycle, 1, '기록이 없는 날은 아침');
-});
-
-test('저녁 사이클: 운동 구간에 저녁 표시가 남고, 시간 초기화하면 함께 지워짐', () => {
+test('하루에 여러 번 운동하면 운동 구간이 시각 순으로 쌓이고 시간은 합산됨', () => {
   const store = createStore(fakeAdapter());
   const d = todayStr();
   store.actions.addWorkSec(d, 600, { s: 1_000, e: 700_000 });
-  store.actions.addWorkSec(d, 300, { s: 2_000_000, e: 2_300_000, c: 2 });
-  assert.deepEqual(store.state.days[d].sessions, [{ s: 1_000, e: 700_000, sec: 600 }, { s: 2_000_000, e: 2_300_000, sec: 300, c: 2 }]);
+  store.actions.addWorkSec(d, 300, { s: 2_000_000, e: 2_300_000 });
+  assert.deepEqual(store.state.days[d].sessions, [{ s: 1_000, e: 700_000, sec: 600 }, { s: 2_000_000, e: 2_300_000, sec: 300 }]);
+  assert.equal(store.state.days[d].workSec, 900);
 });

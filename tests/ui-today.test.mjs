@@ -344,53 +344,17 @@ test('오늘: 지난 날 기록을 고치며 세트를 체크해도 휴식 타�
   store.actions.flushAll();
 });
 
-test('오늘: 아침·저녁 버튼으로 사이클을 바꾸며 체크하면 각각 따로 기록되고 사이클별 완료 수가 보임', () => {
+test('오늘: 아침·저녁 버튼은 없고, 모든 운동을 마치면 모두 완료로 셈', () => {
   const { store, root } = setup(today);
-  const t0 = todayStr();
-  const btn = (c) => root.querySelector(`#cycles [data-cycle="${c}"]`);
-  assert.equal(btn(1).getAttribute('aria-pressed'), 'true', '기본은 아침');
-  root.querySelector('.row [data-f="check"]').click();
-  assert.equal(btn(1).querySelector('small').textContent, '1/3');
-  assert.equal(btn(2).querySelector('small').textContent, '0/3');
-  btn(2).click();
-  assert.equal(btn(2).getAttribute('aria-pressed'), 'true');
-  assert.equal(root.querySelector('#progText').textContent, '0/2 완료', '아침에 마친 종목은 빼고 남은 종목만 셈');
-  assert.equal(root.querySelector('.row').classList.contains('done'), false);
-  assert.equal(root.querySelector('.row [data-f="where"]').textContent, '아침 완료', '아침에 한 종목에 표시');
-  assert.equal(root.querySelector('.row').classList.contains('elsewhere'), true);
-  root.querySelector('.row [data-f="check"]').click();
-  assert.equal(root.querySelector('.row').classList.contains('done'), true);
-  const day = store.state.days[t0];
-  assert.equal(day.entries.push.done, true);
-  assert.equal(day.pm.push.done, true);
-  assert.equal(root.querySelector('.row [data-f="where"]').textContent, '', '저녁에도 하면 표시가 사라지고 진행에 셈');
-  assert.equal(root.querySelector('#progText').textContent, '1/3 완료', '둘 다 한 종목이 있어 남은 종목이 없던 건 아님(풀업·스쿼트 남음)');
-  btn(1).click();
-  assert.equal(root.querySelector('#progText').textContent, '1/3 완료', '아침으로 돌아오면 아침 기록');
+  assert.equal(root.querySelector('#cycles'), null, '아침·저녁 버튼 없음');
+  assert.equal(store.allDone(), false);
+  const checks = [...root.querySelectorAll('.row [data-f="check"]')];
+  checks[0].click();
+  checks[1].click();
+  assert.equal(root.querySelector('#progText').textContent, '2/3 완료');
+  assert.equal(store.allDone(), false);
+  checks[2].click();
+  assert.equal(store.allDone(), true);
+  assert.equal(root.querySelector('#segs').children.length, 3);
   store.actions.flushAll();
-});
-
-test('오늘: 아침에 나눠서 한 날은 저녁에 남은 종목만 마치면 모두 완료·종료 버튼 강조, 둘 다 마친 날은 저녁도 처음부터', () => {
-  const { store, root } = setup(today);
-  const ids = store.activeExercises().map((e) => e.id);
-  const rowCheck = (i) => root.querySelectorAll('.row [data-f="check"]')[i];
-  rowCheck(0).click();
-  rowCheck(1).click(); // 아침: 푸시업·풀업
-  root.querySelector('#cycles [data-cycle="2"]').click();
-  assert.equal(root.querySelector('#progText').textContent, '0/1 완료', '남은 건 스쿼트 하나');
-  assert.equal(store.cycleFinished(), false);
-  rowCheck(2).click(); // 저녁: 스쿼트
-  assert.equal(root.querySelector('#progText').textContent.includes('완료'), true);
-  assert.equal(store.cycleFinished(), true, '남은 종목을 마치면 이 사이클은 끝');
-  assert.equal(root.querySelector('#segs').children.length, 1);
-  // 아침에 모두 마친 날의 저녁은 전부 처음부터
-  const full = setup(today);
-  const c = (i) => full.root.querySelectorAll('.row [data-f="check"]')[i];
-  c(0).click(); c(1).click(); c(2).click();
-  full.root.querySelector('#cycles [data-cycle="2"]').click();
-  assert.equal(full.root.querySelector('#progText').textContent, '0/3 완료');
-  assert.equal(full.root.querySelectorAll('.row.elsewhere').length, 0);
-  assert.equal(ids.length, 3);
-  store.actions.flushAll();
-  full.store.actions.flushAll();
 });

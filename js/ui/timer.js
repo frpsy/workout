@@ -127,7 +127,7 @@ export function mountTimer(root) {
     timer.stop();
   };
   document.addEventListener('workout:progress-cleared', quietStop);
-  document.addEventListener('workout:cycle-finished', quietStop);
+  document.addEventListener('workout:all-done', quietStop);
   $('#tTime', root).addEventListener('click', () => timer.nextPreset()); // 30 → 60 → 90초
   $('#tMinus', root).addEventListener('click', () => timer.adjust(-STEP_SEC));
   $('#tPlus', root).addEventListener('click', () => timer.adjust(STEP_SEC));

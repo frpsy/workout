@@ -68,10 +68,6 @@ export function mountToday(root, store) {
           <button type="button" class="wsec wcancel wreset" id="wReset" hidden aria-label="기록된 운동시간 지우기">시간 초기화</button>
         </div>
       </div>
-      <div class="levels cycles" id="cycles" role="group" aria-label="운동 사이클">
-        <button type="button" data-cycle="1" aria-pressed="true"><span>아침</span> <small></small></button>
-        <button type="button" data-cycle="2" aria-pressed="false"><span>저녁</span> <small></small></button>
-      </div>
       <div class="prog">
         <div class="levels" id="levels" role="group" aria-label="오늘 난이도">
           ${LEVEL_ORDER.map((k) => `<button type="button" data-level="${k}" aria-pressed="false">${LEVELS[k].label}</button>`).join('')}
@@ -109,10 +105,6 @@ export function mountToday(root, store) {
   mountSoundToggle(root);
   const viewSwitch = mountViewSwitch(root, () => {
     if (rows.size) render(store.state); // 안내 줄(상세)을 바로 반영
-  });
-  $('#cycles', root).addEventListener('click', (ev) => {
-    const b = ev.target.closest('button[data-cycle]');
-    if (b && !b.disabled) actions.setCycle(Number(b.dataset.cycle));
   });
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
@@ -188,7 +180,7 @@ export function mountToday(root, store) {
       el.className = 'row';
       el.innerHTML = `
         <div class="info">
-          <h2 class="name">${n}<span class="delta" data-f="delta"></span><span class="where" data-f="where"></span></h2>
+          <h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>
           <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" role="group" aria-label="${n} 세트별 체크"></span></p>
         </div>
         <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span></button>
@@ -209,7 +201,7 @@ export function mountToday(root, store) {
         <p class="hint" data-f="hint"></p>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };
-      for (const f of ['target', 'sets', 'pips', 'frac', 'delta', 'where', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
+      for (const f of ['target', 'sets', 'pips', 'frac', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
       const step = (d) => actions.setCount(ex.id, view().count + d);
       // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
@@ -221,25 +213,25 @@ export function mountToday(root, store) {
         haptic();
         const i = Number(b.dataset.set);
         const before = view();
-        const wasDone = store.cycleFinished();
+        const wasDone = store.allDone();
         actions.setProgress(ex.id, before.setsDone === i ? i - 1 : i);
         const after = view();
         soundFor(store, before, after);
         workbar.autoStart(before, after);
         // 세트를 새로 마쳤으면(되돌린 게 아니면) 휴식 타이머에 알림. 모든 운동을 끝냈으면 쉴 필요가 없음
-        const allDone = store.cycleFinished();
+        const allDone = store.allDone();
         // 지난 날 기록을 고치는 중에는 쉴 일이 없으므로 휴식을 시작하지 않음
         if (after.setsDone > before.setsDone && !allDone && store.state.selected === store.state.today) document.dispatchEvent(new Event('workout:set-checked'));
-        notifyFinished(wasDone);
+        notifyAllDone(wasDone);
       });
       r.check.addEventListener('click', () => {
         haptic();
         const before = view();
-        const wasDone = store.cycleFinished();
+        const wasDone = store.allDone();
         actions.toggle(ex.id);
         soundFor(store, before, view());
         workbar.autoStart(before, view());
-        notifyFinished(wasDone);
+        notifyAllDone(wasDone);
       });
       // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
       holdStep(r.minus, () => step(-unit.inc), () => step(-unit.big));
@@ -255,9 +247,9 @@ export function mountToday(root, store) {
     if (!exs.length) box.innerHTML = '<p class="empty">사용 중인 운동이 없습니다. 아래 운동 설정에서 추가해 주세요.</p>';
   }
 
-  /** 오늘 이 사이클의 운동을 방금 모두 마쳤으면 알림(쉬는 중이던 휴식 타이머를 멈추게) */
-  function notifyFinished(wasDone) {
-    if (!wasDone && store.cycleFinished() && store.state.selected === store.state.today) document.dispatchEvent(new Event('workout:cycle-finished'));
+  /** 오늘 운동을 방금 모두 마쳤으면 알림(쉬는 중이던 휴식 타이머를 멈추게) */
+  function notifyAllDone(wasDone) {
+    if (!wasDone && store.allDone() && store.state.selected === store.state.today) document.dispatchEvent(new Event('workout:all-done'));
   }
 
   function render(state) {
@@ -280,16 +272,10 @@ export function mountToday(root, store) {
         : `<span>시작 ${-dayNo + 1}일 전</span>`;
     $('#dateLabel', root).textContent = `${labelMD(selected)} ${dowName(selected)}요일`;
 
-    // 이 사이클에서 해야 할 종목: 다른 사이클에서 이미 마친 종목은 '아침 완료'처럼 표시하고 진행 수에서 뺌
-    const plan = store.cyclePlan(selected, state.cycle, res);
-    const otherName = state.cycle === 1 ? '저녁' : '아침';
     let done = 0;
     for (const r of rows.values()) {
       const v = store.view(selected, r.ex, res);
-      const elsewhere = plan.elsewhere.has(r.ex.id);
-      if (v.done && !elsewhere) done++;
-      r.el.classList.toggle('elsewhere', elsewhere);
-      r.where.textContent = elsewhere ? `${otherName} 완료` : '';
+      if (v.done) done++;
       r.target.textContent = v.target;
       // 세트가 여러 개면 세트마다 체크 버튼(1·2·3), 하나면 기존처럼 완료 버튼만
       const nSets = v.sets;
@@ -330,8 +316,8 @@ export function mountToday(root, store) {
     }
 
     const segs = $('#segs', root);
-    const total = plan.needed.length;
-    if (segs.children.length !== total) segs.innerHTML = plan.needed.map(() => '<i></i>').join('');
+    const total = rows.size;
+    if (segs.children.length !== total) segs.innerHTML = [...rows.keys()].map(() => '<i></i>').join('');
     [...segs.children].forEach((s, i) => s.classList.toggle('on', i < done));
     const all = total > 0 && done === total;
     const pt = $('#progText', root);
@@ -348,15 +334,6 @@ export function mountToday(root, store) {
     const off = selected !== today;
     $('#back', root).hidden = !off;
     if (off) $('#backText', root).textContent = `${labelMD(selected)} 기록을 고치는 중입니다`;
-
-    // 아침·저녁 사이클: 고른 쪽을 표시하고, 각 사이클에서 마친 종목 수를 함께 보여 줌
-    for (const b of $('#cycles', root).children) {
-      const c = Number(b.dataset.cycle);
-      const n = exs.filter((e) => store.view(selected, e, res, c).done).length;
-      b.setAttribute('aria-pressed', String(c === state.cycle));
-      b.querySelector('small').textContent = exs.length ? `${n}/${exs.length}` : '';
-      b.disabled = !state.ready;
-    }
 
     // 오늘 난이도 3단계
     const level = (state.days[selected] && state.days[selected].level) || 'normal';
