@@ -182,7 +182,7 @@ export function mountHistory(root, store) {
       `<div><dt>현재 연속</dt><dd>${cur}<small>일</small></dd></div>` +
       `<div><dt>최고 연속</dt><dd>${best}<small>일</small></dd></div>` +
       `<div><dt>30일 달성률</dt><dd>${p30 === null ? '–' : p30}<small>${p30 === null ? '' : '%'}</small></dd>` +
-      `<dd class="best">${a7.total ? `최근 7일 ${a7.done}/${a7.total}일` : '기록 시작 전'}</dd></div>`;
+      `<dd class="best">${a7.total ? `최근 7일 ${a7.done}/${a7.total}일` : config.startDate > today ? '기록 시작 전' : '아직 셀 날 없음'}</dd></div>`;
 
     /* 종목별: 연속·최고 연속·30일 달성률 (해낸 주만 늘리기면 이번 주 진행도 함께) */
     const adaptive = config.plan.mode === 'adaptive';

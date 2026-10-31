@@ -55,7 +55,6 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
     for (const b of buttons) {
       if (!b) continue;
       const on = b.dataset.tab === name;
-      b.setAttribute('aria-selected', String(on));
       if (on) b.setAttribute('aria-current', 'page');
       else b.removeAttribute('aria-current');
     }

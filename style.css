@@ -359,7 +359,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   border: 0;
   border-radius: var(--r-seg);
   background: transparent;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 75%, var(--fg)); /* 옅은 틀 위에서도 글자 대비 4.5:1 이상 */
   font-size: var(--fs-xs);
   font-weight: 700;
   cursor: pointer;
@@ -582,6 +582,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 }
 .row.done .check { background: var(--accent-fill); border-color: var(--accent-fill); box-shadow: var(--shadow-press); }
 .row.done .check svg { opacity: 1; }
+.row:not(.done) .check:not(.part) svg { opacity: 0.35; color: var(--accent); } /* 빈 원에도 옅은 체크를 보여 누르면 완료라는 것을 알림 */
 .check.part { border-color: transparent; background: conic-gradient(var(--accent) var(--p, 0%), var(--line) 0) border-box; }
 .check.part::before {
   content: '';
@@ -1158,7 +1159,7 @@ tr.cur td { background: var(--accent-soft); }
   cursor: pointer;
   touch-action: manipulation;
 }
-.tabbar button[aria-selected="true"] { color: var(--accent); }
+.tabbar button[aria-current="page"] { color: var(--accent); }
 /* 고른 탭 위의 짧은 막대: 화면을 미는 만큼 옆 탭 쪽으로 따라 움직임(위치는 tabs.js가 정함) */
 .tab-ind {
   position: absolute;
