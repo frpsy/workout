@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { createDbAdapter } from '../js/storage/claude-db.js';
 import { createFirebaseStorage } from '../js/storage/firebase.js';
@@ -49,6 +49,27 @@ function loader({ user, db = fakeDb(), signIn = async () => true, signOut = asyn
 
 const run = (l, readLocal = () => local) => createFirebaseStorage({ config: {}, createLocal: localAdapter, readLocal, load: l.load });
 
+test('이전이 느려도 SDK 큐를 쓰는 계정으로 열고 늦은 이전 실패를 알림', async (t) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  globalThis.localStorage = fakeLocalStorage();
+  t.after(() => { mock.timers.reset(); delete globalThis.localStorage; });
+  const db = fakeDb();
+  let rejectMigration;
+  db.setMany = () => new Promise((resolve, reject) => { rejectMigration = reject; });
+  const opening = run(loader({ user: { uid: 'slow' }, db }));
+  await new Promise((r) => setImmediate(r));
+  mock.timers.tick(6001);
+  const ad = await opening;
+  assert.equal(ad.kind, 'firebase');
+  assert.equal(localStorage.getItem('workout-check:account-ready:v2'), null);
+  let error;
+  ad.subscribe({ onConfig() {}, onDays() {}, onError(e) { error = e; } });
+  rejectMigration(new Error('late denial'));
+  await new Promise((r) => setImmediate(r));
+  assert.equal(error.code, 'migration_failed');
+  assert.equal(localStorage.getItem('workout-check:migration:slow'), 'pending');
+});
+
 test('db 어댑터: 같은 모양으로 저장·구독', async () => {
   const db = fakeDb();
   const ad = createDbAdapter(db, { kind: 'firebase', label: 'x' });
@@ -98,7 +119,7 @@ test('옮길 기록이 없거나 옮기다 실패해도 어댑터는 정상', as
     throw new Error('offline');
   };
   const failed = await run(loader({ user: { uid: 'u', email: '' }, db }));
-  assert.equal(failed.kind, 'firebase');
+  assert.equal(failed.kind, 'local');
 });
 
 test('Firestore 접근이 막혀 있으면(permission-denied) 브라우저 저장으로 열고 로그아웃은 가능', async () => {
@@ -167,6 +188,57 @@ function fakeLocalStorage() {
   return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => void m.set(k, String(v)), removeItem: (k) => void m.delete(k), m };
 }
 
+test('기록 이전 실패 뒤에도 다음 실행에서 다시 시도하고 성공한 뒤에만 빠른 열기', async () => {
+  globalThis.localStorage = fakeLocalStorage();
+  try {
+    let attempts = 0;
+    const db = fakeDb();
+    const setMany = db.setMany;
+    db.setMany = async (map) => { if (++attempts === 1) throw new Error('offline'); await setMany(map); };
+    const l = loader({ user: { uid: 'retry' }, db });
+    const first = await run(l);
+    assert.equal(first.kind, 'local');
+    assert.match(first.label, /다시 시도/);
+    assert.equal(localStorage.getItem('workout-check:account-ready:v2'), null);
+    const second = await run(l);
+    assert.equal(second.kind, 'firebase');
+    assert.equal(attempts, 2);
+    assert.deepEqual(db.data.get('days/2026-10-25'), local.days['2026-10-25']);
+    assert.equal(localStorage.getItem('workout-check:account-ready:v2'), 'retry');
+  } finally { delete globalThis.localStorage; }
+});
+
+test('일부 배치만 이전됐으면 기존 계정 문서는 보존하고 남은 날짜만 이전', async () => {
+  globalThis.localStorage = fakeLocalStorage();
+  try {
+    const db = fakeDb();
+    const setMany = db.setMany;
+    db.setMany = async () => {
+      db.data.set('days/2026-10-25', { entries: { server: { done: true } } });
+      throw new Error('second batch failed');
+    };
+    const l = loader({ user: { uid: 'partial' }, db });
+    assert.equal((await run(l)).kind, 'local');
+    db.setMany = setMany;
+    const more = () => ({ ...local, days: { ...local.days, '2026-10-26': { entries: {} } } });
+    assert.equal((await run(l, more)).kind, 'firebase');
+    assert.ok(db.data.get('days/2026-10-25').entries.server);
+    assert.ok(db.data.has('days/2026-10-26'));
+    assert.equal(localStorage.getItem('workout-check:migration:partial'), null);
+  } finally { delete globalThis.localStorage; }
+});
+
+test('Firebase 어댑터는 서버 확인을 기다리는 동안에도 후속 쓰기를 SDK로 전달', async () => {
+  const calls = [];
+  const acks = [];
+  const ad = createDbAdapter({ doc: (path) => ({ set(doc) { calls.push([path, doc]); return new Promise((r) => acks.push(r)); } }) }, { kind: 'firebase' });
+  const first = ad.saveDay('2026-10-26', { a: 1 });
+  const second = ad.saveDay('2026-10-26', { a: 2 });
+  assert.equal(calls.length, 2);
+  acks.forEach((r) => r());
+  await Promise.all([first, second]);
+});
+
 test('빠른 열기: 정상으로 읽어 본 계정은 다음부터 서버 확인을 기다리지 않고 바로 열림', async () => {
   const ls = fakeLocalStorage();
   globalThis.localStorage = ls;
@@ -175,7 +247,7 @@ test('빠른 열기: 정상으로 읽어 본 계정은 다음부터 서버 확�
     // 처음: 확인하고 열고, 정상이면 표시를 남김
     const first = await run(loader({ user, db: fakeDb({ 'config/main': { v: 2 } }) }));
     assert.equal(first.kind, 'firebase');
-    assert.equal(ls.getItem('workout-check:account-ok'), 'u1');
+    assert.equal(ls.getItem('workout-check:account-ready:v2'), 'u1');
 
     // 다음: 서버 확인(get)을 아예 부르지 않음 (서버가 느려도 기다리지 않는 것)
     const db = fakeDb({ 'config/main': { v: 2 } });
@@ -199,7 +271,7 @@ test('빠른 열기: 나중에 읽기가 막히면 표시를 지워 다음 실�
   const ls = fakeLocalStorage();
   globalThis.localStorage = ls;
   try {
-    ls.setItem('workout-check:account-ok', 'u1');
+    ls.setItem('workout-check:account-ready:v2', 'u1');
     const user = { uid: 'u1', email: 'me@example.com' };
     const db = fakeDb();
     let onErr;
@@ -209,14 +281,14 @@ test('빠른 열기: 나중에 읽기가 막히면 표시를 지워 다음 실�
     ad.subscribe({ onConfig() {}, onDays() {}, onError: () => shown++ });
     onErr(Object.assign(new Error('denied'), { code: 'permission-denied' }));
     assert.equal(shown, 1, '화면에는 그대로 알림');
-    assert.equal(ls.getItem('workout-check:account-ok'), null, '표시를 지움');
+    assert.equal(ls.getItem('workout-check:account-ready:v2'), null, '표시를 지움');
 
     // 다음 실행: 다시 확인하고, 막혀 있으면 브라우저 저장으로
     const blocked = fakeDb();
     blocked.doc = () => ({ get: async () => { throw Object.assign(new Error('denied'), { code: 'permission-denied' }); } });
     const next = await run(loader({ user, db: blocked }));
     assert.equal(next.kind, 'local');
-    assert.equal(ls.getItem('workout-check:account-ok'), null);
+    assert.equal(ls.getItem('workout-check:account-ready:v2'), null);
   } finally {
     delete globalThis.localStorage;
   }
@@ -229,7 +301,7 @@ test('빠른 열기: 오프라인·시간 초과로 확인하지 못한 경우�
     const db = fakeDb();
     db.doc = () => ({ get: async () => { throw Object.assign(new Error('offline'), { code: 'unavailable' }); } });
     await run(loader({ user: { uid: 'u1', email: '' }, db }));
-    assert.equal(ls.getItem('workout-check:account-ok'), null);
+    assert.equal(ls.getItem('workout-check:account-ready:v2'), null);
   } finally {
     delete globalThis.localStorage;
   }

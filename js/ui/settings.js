@@ -93,6 +93,7 @@ export function mountSettings(root, store) {
         <button type="button" class="btn ghost" id="resetCfg">되돌리기</button>
         <span class="dirty-note" id="dirtyNote" hidden>저장하지 않은 변경이 있습니다</span>
       </div>
+      <p class="status" id="configStatus" role="status" aria-live="polite"></p>
     </section>
 
     <p class="app-version" id="appVersion">${esc(versionLabel(VERSION))}</p>`;
@@ -172,8 +173,8 @@ export function mountSettings(root, store) {
     const ids = new Set(draft.exercises.map((e) => e.name));
     const full = draft.exercises.length >= LIMITS.maxExercises;
     el('presets').innerHTML =
-      PRESETS.filter((p) => !ids.has(p.name))
-        .map((p, i) => `<button type="button" class="chip" data-preset="${i}"${full ? ' disabled' : ''}>+ ${esc(p.name)}</button>`)
+      PRESETS.map((p, i) => ({ ...p, index: i })).filter((p) => !ids.has(p.name))
+        .map((p) => `<button type="button" class="chip" data-preset="${p.index}"${full ? ' disabled' : ''}>+ ${esc(p.name)}</button>`)
         .join('') + `<button type="button" class="chip" data-preset="new"${full ? ' disabled' : ''}>+ 직접 추가</button>`;
   }
 
@@ -327,6 +328,8 @@ export function mountSettings(root, store) {
       el('acctHelp').textContent = account.signOut ? state.adapter.label : '로그인하면 이 기기의 기록이 계정으로 옮겨져요';
     }
     el('saveCfg').disabled = !state.ready;
+    el('configStatus').textContent = state.status.text;
+    el('configStatus').classList.toggle('err', state.status.error);
     // 저장소에서 설정이 바뀌었고 편집 중이 아니면 초안 갱신
     if (!draft || (!dirty && lastRev !== state.rev && !root.contains(document.activeElement))) {
       lastRev = state.rev;

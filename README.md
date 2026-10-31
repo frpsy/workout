@@ -110,6 +110,8 @@ firestore.rules                      Firestore 보안 규칙
 
 ## 개발
 
+Node.js 24.12 이상을 사용합니다 (`.nvmrc`: 24, CI도 Node 24).
+
 ```bash
 npm install
 npm run lint             # ESLint

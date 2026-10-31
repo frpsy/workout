@@ -18,10 +18,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 
-const ACK_WAIT = 4000; // 오프라인이면 서버 응답을 기다리지 않고 기기 안에 쌓아 둡니다.
 const BATCH = 400; // Firestore 일괄 쓰기 한도(500) 아래
-
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function mapError(e) {
   if (e && e.code === 'resource-exhausted') return Object.assign(new Error('저장 공간 부족'), { code: 'quota_exceeded' });
@@ -87,9 +84,7 @@ export function connect(config) {
             onSnapshot: (ok, err) => onSnapshot(ref(), (s) => ok(docSnap(s)), err),
             get: async () => docSnap(await getDoc(ref())),
             set(data) {
-              const write = setDoc(ref(), data);
-              write.catch(() => {}); // 기다리지 않은 쓰기의 늦은 실패가 처리되지 않은 오류가 되지 않게
-              return Promise.race([write, wait(ACK_WAIT)]).catch((e) => {
+              return setDoc(ref(), data).catch((e) => {
                 throw mapError(e);
               });
             },
@@ -106,13 +101,14 @@ export function connect(config) {
         async setMany(map) {
           const entries = Object.entries(map);
           try {
+            const commits = [];
             for (let i = 0; i < entries.length; i += BATCH) {
               const batch = writeBatch(fs());
               for (const [path, data] of entries.slice(i, i + BATCH)) batch.set(doc(fs(), p(path)), data);
-              const commit = batch.commit();
-              commit.catch(() => {});
-              await Promise.race([commit, wait(ACK_WAIT)]);
+              commits.push(batch.commit());
             }
+            // 모든 배치를 먼저 SDK에 전달해, 이후 사용자의 편집보다 앞서 큐에 들어가게 합니다.
+            await Promise.all(commits);
           } catch (e) {
             throw mapError(e);
           }

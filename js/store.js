@@ -27,6 +27,12 @@ export function createStore(adapter) {
 
   const listeners = new Set();
   const timers = new Map(); // date -> timeout (아직 저장 안 된 변경)
+  const dirtyDays = new Map(); // 전송 중·실패한 변경도 서버 확인까지 보호
+  const inFlight = new Map();
+  let dayRevision = 0;
+  let configWrite = null;
+  let configDirty = false;
+  let configRevision = 0;
   let statusTimer;
 
   function emit() {
@@ -50,13 +56,15 @@ export function createStore(adapter) {
   function saveFailed(err) {
     const code = err && err.code;
     if (code === 'quota_exceeded') setStatus('저장 공간이 가득 찼습니다. 오래된 기록을 정리해야 합니다.', true);
-    else setStatus('저장하지 못했습니다. 이 페이지에 기록할 권한이 있는지 확인해 주세요.', true);
+    else if (code === 'storage_unavailable') setStatus('이 브라우저는 저장을 막고 있습니다. 새로고침하면 기록이 사라집니다.', true);
+    else setStatus('저장하지 못했습니다. 연결과 기록 권한을 확인해 주세요. 화면을 다시 열면 재시도합니다.', true);
   }
 
   /* ---------- 저장소에서 들어오는 값 ---------- */
 
   adapter.subscribe({
     onConfig(raw) {
+      if (configWrite || configDirty) return;
       state.config = normalizeConfig(raw, state.config.startDate);
       state.configRev++;
       state.configSaved = !!raw;
@@ -68,47 +76,78 @@ export function createStore(adapter) {
       const next = {};
       for (const [date, raw] of Object.entries(rawMap)) if (isDateStr(date)) next[date] = normalizeDay(raw);
       // 저장 대기 중인 날은 화면의 값을 유지
-      for (const date of timers.keys()) if (state.days[date]) next[date] = state.days[date];
+      for (const date of dirtyDays.keys()) if (state.days[date]) next[date] = state.days[date];
       state.days = next;
       state.daysRev++;
       state.loaded.days = true;
       if (state.loaded.config && state.status.text === '불러오는 중…') state.status = { text: '', error: false };
       emit();
     },
-    onError() {
-      setStatus('기록을 불러오지 못했습니다. 새로고침해 주세요.', true);
+    onError(err) {
+      setStatus(err && err.code === 'migration_failed'
+        ? '계정으로 기록을 옮기지 못했습니다. 이 브라우저의 원본은 남아 있습니다. 연결을 확인하고 새로고침해 주세요.'
+        : '기록을 불러오지 못했습니다. 새로고침해 주세요.', true);
     },
   });
 
   /* ---------- 저장 ---------- */
 
-  function persistConfig() {
-    state.configSaved = true;
-    return adapter.saveConfig(serializeConfig(state.config));
+  function persistConfig(force = false) {
+    if (configWrite && !force) return configWrite;
+    const revision = configRevision;
+    const doc = serializeConfig(state.config);
+    configDirty = true;
+    const write = Promise.resolve().then(() => adapter.saveConfig(doc)).then(() => {
+      if (revision === configRevision) {
+        state.configSaved = true;
+        configDirty = false;
+      }
+    }).finally(() => { if (configWrite === write) configWrite = null; });
+    configWrite = write;
+    return configWrite;
   }
 
   function flushDay(date) {
     timers.delete(date);
+    const revision = dirtyDays.get(date);
+    if (revision === undefined || inFlight.get(date) === revision) return;
+    inFlight.set(date, revision);
     const doc = serializeDay(date, state.days[date] || { entries: {} });
+    // 첫 설정의 서버 응답을 기다리지 않고 날짜 기록도 오프라인 큐에 보냄.
+    const pending = adapter.synced ? setTimeout(() => {
+      if (dirtyDays.has(date) && !state.status.error) {
+        state.status = { text: '서버 동기화를 기다리고 있습니다. 연결되면 자동으로 저장됩니다.', error: false };
+        emit();
+      }
+    }, 4000) : null;
     Promise.resolve()
-      .then(() => (state.configSaved ? null : persistConfig()))
-      .then(() => adapter.saveDay(date, doc))
+      .then(() => Promise.all([state.configSaved ? null : persistConfig(), adapter.saveDay(date, doc)]))
       .then(() => {
-        if (!timers.size) setStatus('저장했습니다');
+        if (dirtyDays.get(date) === revision) dirtyDays.delete(date);
+        if (!dirtyDays.size) setStatus('저장했습니다');
       })
-      .catch(saveFailed);
+      .catch(saveFailed)
+      .finally(() => {
+        clearTimeout(pending);
+        if (inFlight.get(date) === revision) inFlight.delete(date);
+      });
   }
 
   function scheduleSave(date) {
+    clearTimeout(statusTimer);
     clearTimeout(timers.get(date));
+    dirtyDays.set(date, ++dayRevision);
     timers.set(date, setTimeout(() => flushDay(date), SAVE_DELAY));
     state.status = { text: '저장 중…', error: false };
   }
 
   // 페이지를 닫기 직전 대기 중인 저장을 바로 보냄
   function flushAll() {
-    for (const [date, t] of timers) {
-      clearTimeout(t);
+    if (configDirty && !configWrite) persistConfig().then(() => {
+      if (!dirtyDays.size) setStatus('설정을 저장했습니다');
+    }).catch(saveFailed);
+    for (const date of dirtyDays.keys()) {
+      clearTimeout(timers.get(date));
       flushDay(date);
     }
   }
@@ -315,15 +354,28 @@ export function createStore(adapter) {
     },
 
     async saveConfig(cfg) {
+      const revision = ++configRevision;
       state.config = normalizeConfig(cfg, state.config.startDate);
+      state.configSaved = false;
+      configDirty = true;
       state.configRev++;
+      clearTimeout(statusTimer);
+      state.status = { text: '설정을 저장 중입니다…', error: false };
       emit();
+      const pending = adapter.synced ? setTimeout(() => {
+        if (!state.status.error && revision === configRevision) {
+          state.status = { text: '서버 동기화를 기다리고 있습니다. 연결되면 자동으로 저장됩니다.', error: false };
+          emit();
+        }
+      }, 4000) : null;
       try {
-        await persistConfig();
-        setStatus('설정을 저장했습니다');
+        await persistConfig(true);
+        if (revision === configRevision) setStatus('설정을 저장했습니다');
       } catch (e) {
         saveFailed(e);
         throw e;
+      } finally {
+        clearTimeout(pending);
       }
     },
 
