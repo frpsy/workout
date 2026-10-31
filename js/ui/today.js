@@ -221,6 +221,7 @@ export function mountToday(root, store) {
         haptic();
         const i = Number(b.dataset.set);
         const before = view();
+        const wasDone = store.cycleFinished();
         actions.setProgress(ex.id, before.setsDone === i ? i - 1 : i);
         const after = view();
         soundFor(store, before, after);
@@ -229,13 +230,16 @@ export function mountToday(root, store) {
         const allDone = store.cycleFinished();
         // 지난 날 기록을 고치는 중에는 쉴 일이 없으므로 휴식을 시작하지 않음
         if (after.setsDone > before.setsDone && !allDone && store.state.selected === store.state.today) document.dispatchEvent(new Event('workout:set-checked'));
+        notifyFinished(wasDone);
       });
       r.check.addEventListener('click', () => {
         haptic();
         const before = view();
+        const wasDone = store.cycleFinished();
         actions.toggle(ex.id);
         soundFor(store, before, view());
         workbar.autoStart(before, view());
+        notifyFinished(wasDone);
       });
       // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
       holdStep(r.minus, () => step(-unit.inc), () => step(-unit.big));
@@ -249,6 +253,11 @@ export function mountToday(root, store) {
       rows.set(ex.id, r);
     }
     if (!exs.length) box.innerHTML = '<p class="empty">사용 중인 운동이 없습니다. 아래 운동 설정에서 추가해 주세요.</p>';
+  }
+
+  /** 오늘 이 사이클의 운동을 방금 모두 마쳤으면 알림(쉬는 중이던 휴식 타이머를 멈추게) */
+  function notifyFinished(wasDone) {
+    if (!wasDone && store.cycleFinished() && store.state.selected === store.state.today) document.dispatchEvent(new Event('workout:cycle-finished'));
   }
 
   function render(state) {

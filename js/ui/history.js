@@ -141,8 +141,9 @@ export function mountHistory(root, store) {
     const to = m0 ? fmt(new Date(parse(m0).getFullYear(), parse(m0).getMonth() + 1, 0)) : addDays(from, 6);
     const ps = periodSummary(days, today, exs, { from, to, rest, startDate: config.startDate });
     const label = m0 ? `${parse(m0).getMonth() + 1}월` : '이번 주';
-    $('#periodText', root).innerHTML =
-      (ps.total ? `${label} <b>${ps.done}</b>/${ps.total}일 모두 마침` : `${label} 해야 했던 날 없음`) + (ps.workSec ? ` · 운동시간 <b>${fmtKo(ps.workSec)}</b>` : '');
+    const period = $('#periodText', root);
+    period.hidden = !ps.total && !ps.workSec; // 이번 주 첫날처럼 아직 셀 날이 없으면 숨김
+    period.innerHTML = [ps.total ? `${label} <b>${ps.done}</b>/${ps.total}일 모두 마침` : '', ps.workSec ? `${ps.total ? '' : `${label} `}운동시간 <b>${fmtKo(ps.workSec)}</b>` : ''].filter(Boolean).join(' · ');
     $('#calSub', root).textContent = ['날짜를 누르면 그날 기록이 아래에 보입니다.', ...help].filter(Boolean).join(' ');
 
     /* 모두 마친 날 수 */

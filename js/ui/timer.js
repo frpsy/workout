@@ -118,15 +118,16 @@ export function mountTimer(root) {
     if (timer.auto && !timer.running) startRest({ quiet: true });
   };
   document.addEventListener('workout:set-checked', onSetChecked);
-  // 오늘 체크를 모두 되돌리면 쉬는 중이던 휴식도 조용히 멈춤
-  const onProgressCleared = () => {
-    if (!root.isConnected) return document.removeEventListener('workout:progress-cleared', onProgressCleared);
+  // 오늘 체크를 모두 되돌리거나 모든 운동을 마치면 쉬는 중이던 휴식도 조용히 멈춤(더 쉴 세트가 없음)
+  const quietStop = (ev) => {
+    if (!root.isConnected) return document.removeEventListener(ev.type, quietStop);
     if (!timer.running) return;
     stopTicking();
     releaseLock();
     timer.stop();
   };
-  document.addEventListener('workout:progress-cleared', onProgressCleared);
+  document.addEventListener('workout:progress-cleared', quietStop);
+  document.addEventListener('workout:cycle-finished', quietStop);
   $('#tTime', root).addEventListener('click', () => timer.nextPreset()); // 30 → 60 → 90초
   $('#tMinus', root).addEventListener('click', () => timer.adjust(-STEP_SEC));
   $('#tPlus', root).addEventListener('click', () => timer.adjust(STEP_SEC));
