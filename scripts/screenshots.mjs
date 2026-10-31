@@ -16,8 +16,9 @@ import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { extname, join, normalize, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(new URL('..', import.meta.url).pathname);
+const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const OUT = join(ROOT, 'shots');
 process.env.TZ = 'Asia/Seoul'; // 기록 날짜를 브라우저(서울 시각)와 맞춤
 const NOW = '2026-10-28T19:30:00+09:00'; // 수요일 저녁: 이번 주 달력에 지난 날과 남은 날이 함께 보임
