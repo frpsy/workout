@@ -64,6 +64,7 @@ export function mountToday(root, store) {
         <div class="work">
           <button type="button" class="wsec" id="wPause" hidden>중지</button>
           <button type="button" class="wbtn" id="wBtn">▶ 운동 시작</button>
+          <button type="button" class="wbtn" id="wAgain" hidden>운동 한 번 더 하기</button>
           <button type="button" class="wsec wcancel" id="wCancel" hidden>취소</button>
           <button type="button" class="wsec wcancel wreset" id="wReset" hidden aria-label="기록된 운동시간 지우기">시간 초기화</button>
         </div>
