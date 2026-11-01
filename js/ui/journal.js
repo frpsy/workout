@@ -102,7 +102,7 @@ export function mountJournal(root, store) {
 
   function render(state) {
     const exs = store.activeExercises();
-    const allDone = exs.length > 0 && exs.every((e) => isDone(state.days[state.selected], e.id)); 
+    const allDone = state.selected === state.today ? store.allDone() : exs.length > 0 && exs.every((e) => isDone(state.days[state.selected], e.id)); 
     const note = noteOf(state, state.selected);
     if (state.selected !== date) {
       date = state.selected;
