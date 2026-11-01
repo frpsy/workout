@@ -167,21 +167,58 @@ test('오늘: 중지해 둔 운동은 앱을 다시 열어도 멈춘 채로 보�
   store.actions.flushAll();
 });
 
-test('오늘: 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼이 강조됨', (t) => {
+test('오늘: 마지막 종목을 완료하면 운동 타이머가 자동 종료되고 기록이 저장됨', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
   const { store, root } = setup(today);
   const btn = root.querySelector('#wBtn');
-  assert.equal(btn.textContent, '▶ 운동 시작', '휴식 타이머의 시작과 구분되는 이름');
-  for (const r of root.querySelectorAll('.row')) r.querySelector('[data-f="check"]').click();
-  assert.equal(btn.textContent, '■ 종료', '첫 체크에서 시간 재기가 저절로 시작됨');
-  assert.ok(btn.classList.contains('ready'), '모두 마치고 재는 중이면 강조');
-  root.querySelector('.row [data-f="check"]').click(); // 하나를 되돌리면 해제
-  assert.ok(!btn.classList.contains('ready'));
-  root.querySelector('.row [data-f="check"]').click();
-  assert.ok(btn.classList.contains('ready'));
-  btn.click(); // 종료
-  assert.ok(!btn.classList.contains('ready'));
+  const rows = [...root.querySelectorAll('.row')];
+  rows[0].querySelector('[data-f="check"]').click(); // 첫 세트 자동 시작
+  assert.equal(btn.textContent, '■ 종료');
+  mock.timers.tick(20_000);
+  for (const row of rows.slice(1, -1)) row.querySelector('[data-f="check"]').click();
+  assert.equal(btn.textContent, '■ 종료', '모든 종목 전에는 타이머 유지');
+  mock.timers.tick(10_000);
+  rows.at(-1).querySelector('[data-f="check"]').click();
+  assert.equal(btn.textContent, '▶ 운동 시작', '마지막 종목 완료 즉시 자동 종료');
+  assert.equal(store.state.days[todayStr()].workSec, 30, '운동 경과 시간 기록');
+  assert.equal(store.state.days[todayStr()].sessions.length, 1, '구간 한 번만 기록');
+  assert.equal(localStorage.getItem('workout-check:session'), null, '진행 중인 세션을 삭제');
+  assert.equal(root.querySelector('.headline').classList.contains('working'), false);
+  mock.timers.tick(30_000);
+  assert.equal(store.state.days[todayStr()].workSec, 30, '완료 뒤 타이머가 계속 흐르지 않음');
+  document.dispatchEvent(new Event('workout:all-done'));
+  assert.equal(store.state.days[todayStr()].sessions.length, 1, '중복 완료 이벤트에 중복 저장되지 않음');
+  store.actions.flushAll();
+});
+
+test('오늘: 마지막 세트 번호로 완료할 때도 타이머가 자동 종료됨', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const rows = [...root.querySelectorAll('.row')];
+  for (const row of rows.slice(1)) row.querySelector('[data-f="check"]').click();
+  const sets = [...rows[0].querySelectorAll('button[data-set]')];
+  sets[0].click();
+  mock.timers.tick(12_000);
+  for (const set of sets.slice(1)) set.click();
+  assert.equal(root.querySelector('#wBtn').textContent, '▶ 운동 시작');
+  assert.equal(store.state.days[todayStr()].workSec, 12);
+  store.actions.flushAll();
+});
+
+test('오늘: 일시중지 상태에서 모두 완료하면 멈춘 시간만 자동 저장됨', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const rows = [...root.querySelectorAll('.row')];
+  rows[0].querySelector('[data-f="check"]').click();
+  mock.timers.tick(15_000);
+  root.querySelector('#wPause').click();
+  mock.timers.tick(20_000);
+  for (const row of rows.slice(1)) row.querySelector('[data-f="check"]').click();
+  assert.equal(root.querySelector('#wBtn').textContent, '▶ 운동 시작');
+  assert.equal(store.state.days[todayStr()].workSec, 15, '일시중지 시간을 제외');
   store.actions.flushAll();
 });
 
