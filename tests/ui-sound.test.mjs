@@ -82,8 +82,7 @@ test('효과음: 앱을 내렸다 올려 오디오가 interrupted로 멈춰 있�
     }
     resume() {
       resumed++;
-      this.state = 'running';
-      return Promise.resolve();
+      return Promise.resolve().then(() => { this.state = 'running'; });
     }
   };
   try {
@@ -92,8 +91,7 @@ test('효과음: 앱을 내렸다 올려 오디오가 interrupted로 멈춰 있�
     playSound('done');
     assert.equal(resumed, 1, 'interrupted도 resume');
     assert.equal(played.length, 0, 'resume() 완료 전에는 재생하지 않음');
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setImmediate(resolve));
     assert.equal(played.length, 3, 'resume 완료 후에 재생');
   } finally {
     delete globalThis.AudioContext;
