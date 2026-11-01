@@ -239,7 +239,7 @@ export function mountHistory(root, store) {
           .map((ex) => {
             const v = round.entries[ex.id];
             const number = v.done ? (v.sets || ex.sets) : v.setsDone;
-            return `<li><span>${esc(ex.name)}</span><b>${number}세트${v.done ? ' 완료' : ''}</b></li>`;
+            return `<li><span>${esc(ex.name)}</span><b>${v.count ?? v.target ?? ex.base}${(UNITS[ex.unit] || UNITS.reps).label} × ${number}세트${v.done ? ' 완료' : ''}</b></li>`;
           }).join('');
         return `<details class="round-details"><summary>${index + 1}회차 ${checked ? '운동 기록' : '진행 전'}</summary>${checked ? `<ul class="dayex">${checked}</ul>` : '<p class="sub">체크한 운동이 없습니다.</p>'}</details>`;
       }).join('') + '</div>' : '';

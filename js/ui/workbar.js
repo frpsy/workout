@@ -23,7 +23,7 @@ export function mountWorkbar(root, store) {
   function resetTimeIfCleared() {
     const state = store.state;
     if (!state.ready) return;
-    const any = store.hasProgress(state.selected); 
+    const any = store.hasProgress(state.selected, { current: true }); 
     const was = prevProgress && prevProgress.date === state.selected && prevProgress.any;
     prevProgress = { date: state.selected, any };
     if (!was || any || state.selected !== state.today) return;
@@ -31,7 +31,8 @@ export function mountWorkbar(root, store) {
       ticking(false);
       session.cancel();
     }
-    actions.clearWorkSec(state.today);
+    // 이전 회차의 운동시간은 보존. 첫 회차를 전부 되돌린 경우에만 일별 기록 제거.
+    if (!state.days[state.today]?.rounds?.length) actions.clearWorkSec(state.today);
     document.dispatchEvent(new Event('workout:progress-cleared'));
   }
 
@@ -55,9 +56,15 @@ export function mountWorkbar(root, store) {
     // 지난 날을 고치는 중에는 시작 버튼을 숨김 (시간은 늘 오늘 기록으로 들어가므로 헷갈리지 않게)
     btn.hidden = !running && state.selected !== state.today;
     const again = $('#wAgain', root);
-    again.hidden = running || state.selected !== state.today || !store.allDone() || (state.days[state.today]?.rounds?.length || 0) >= MAX_SESSIONS - 1;
+    const action = $('#roundAction', root);
+    const roundsDone = state.days[state.today]?.rounds?.length || 0;
+    const canRepeat = !running && state.selected === state.today && store.allDone() && roundsDone < MAX_SESSIONS - 1;
+    action.hidden = !canRepeat;
     again.disabled = !state.ready;
-    if (!again.hidden) btn.hidden = true;
+    if (canRepeat) {
+      $('#roundSummary', root).textContent = `${roundsDone + 1}회차 완료 · 누적 ${fmtKo(total || 0)}`;
+      btn.hidden = true;
+    }
     // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
     const finished = running && state.selected === state.today && store.allDone();
     btn.classList.toggle('ready', finished);
