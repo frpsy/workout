@@ -90,7 +90,7 @@ export function mountTimer(root) {
   $('#tGo', root).addEventListener('click', () => {
     if (timer.running) {
       stopTicking();
-      releaseLock();
+      setScreenAwake(wakeOwner, false);
       timer.stop();
       playSound('restStop');
       return;
@@ -109,7 +109,7 @@ export function mountTimer(root) {
     if (!root.isConnected) return document.removeEventListener(ev.type, quietStop);
     if (!timer.running) return;
     stopTicking();
-    releaseLock();
+    setScreenAwake(wakeOwner, false);
     timer.stop();
   };
   document.addEventListener('workout:progress-cleared', quietStop);
