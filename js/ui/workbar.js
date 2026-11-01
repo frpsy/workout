@@ -66,7 +66,6 @@ export function mountWorkbar(root, store) {
     // 재지 않는 동안, 오늘 기록된 운동시간이 있으면 초기화 버튼이 보임 (지난 날에는 두지 않음)
     resetBtn.hidden = running || !total || state.selected !== state.today;
     root.querySelector('.headline').classList.toggle('working', running);
-    root.closest('.page')?.classList.toggle('work-active', running && !paused);
     setScreenAwake(wakeOwner, running && !paused);
   }
   function ticking(on) {
