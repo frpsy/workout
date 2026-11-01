@@ -57,6 +57,7 @@ export function mountWorkbar(root, store) {
     const again = $('#wAgain', root);
     again.hidden = running || state.selected !== state.today || !store.allDone() || (state.days[state.today]?.rounds?.length || 0) >= MAX_SESSIONS - 1;
     again.disabled = !state.ready;
+    if (!again.hidden) btn.hidden = true;
     // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
     const finished = running && state.selected === state.today && store.allDone();
     btn.classList.toggle('ready', finished);
