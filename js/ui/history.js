@@ -231,6 +231,18 @@ export function mountHistory(root, store) {
         })
         .join('') +
       '</ul>';
+    const rounds = day?.rounds?.length ? [...day.rounds, { entries: day.activeEntries || {} }] : [];
+    const roundHtml = rounds.length ? '<div class="round-history"><h3 class="sec">운동 회차별 기록</h3>' +
+      rounds.map((round, index) => {
+        const checked = state.config.exercises
+          .filter((ex) => round.entries?.[ex.id]?.done || round.entries?.[ex.id]?.setsDone)
+          .map((ex) => {
+            const v = round.entries[ex.id];
+            const number = v.done ? (v.sets || ex.sets) : v.setsDone;
+            return `<li><span>${esc(ex.name)}</span><b>${number}세트${v.done ? ' 완료' : ''}</b></li>`;
+          }).join('');
+        return `<details class="round-details"><summary>${index + 1}회차 ${checked ? '운동 기록' : '진행 전'}</summary>${checked ? `<ul class="dayex">${checked}</ul>` : '<p class="sub">체크한 운동이 없습니다.</p>'}</details>`;
+      }).join('') + '</div>' : '';
     const note = (day && day.note) || {};
     const rest = ctx.rest.has(parse(date).getDay());
     const times = sessions.map((x) => `${clock(x.s)} – ${clock(x.e)}`).join(', '); // 하루에 여러 번 했으면 구간이 모두 나열됨
@@ -239,6 +251,7 @@ export function mountHistory(root, store) {
       `<span class="log-total${total || live ? '' : ' none'}">${timeText}</span></div>` +
       (times ? `<p class="log-time">${times}</p>` : '') +
       (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? '쉬는 날입니다.' : '기록이 없습니다.'}</p>`) +
+      roundHtml +
       (note.feel ? `<p class="note-line"><b>소감</b> ${esc(note.feel)}</p>` : '') +
       (note.thanks ? `<p class="note-line"><b>감사</b> ${esc(note.thanks)}</p>` : '') +
       `<button type="button" class="btn ghost sm" data-edit="${date}">${date === state.today ? '오늘 탭에서 체크하기' : '이 날 기록 고치기'}</button>`
