@@ -187,6 +187,7 @@ test('오늘: 운동을 모두 마쳤는데 시간을 재는 중이면 종료 �
 
 test('오늘: 운동 시간을 재는 동안 화면 켜짐을 요청하고, 중지·종료하면 풀어 줌', async () => {
   const calls = { request: 0, release: 0 };
+  Object.defineProperty(document, 'hidden', { value: false, configurable: true });
   Object.defineProperty(globalThis, 'navigator', {
     value: {
       wakeLock: {
@@ -213,6 +214,7 @@ test('오늘: 운동 시간을 재는 동안 화면 켜짐을 요청하고, 중�
   await tick();
   assert.equal(calls.release, 2);
   store.actions.flushAll();
+  delete document.hidden;
 });
 
 test('오늘: 지난 날을 고치는 중에는 운동 시작 버튼을 숨기고(시간은 오늘로 기록되므로), 멈춘 스톱워치는 재개를 강조', (t) => {
