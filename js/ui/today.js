@@ -56,6 +56,11 @@ export function mountToday(root, store) {
 
   root.innerHTML = `
     <header class="head">
+      <div class="brandline" aria-label="오늘운동">
+        <span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8M15 7h5v5"/></svg></span>
+        <span class="brand-copy"><span class="brand-name">오늘운동</span><span class="brand-detail">한 세트부터 하루의 기록까지</span></span>
+        <span class="brand-state" id="brandState">운동 준비</span>
+      </div>
       <div class="headline">
         <div class="hdate">
           <h1 id="dateLabel" tabindex="-1"></h1>
@@ -77,7 +82,7 @@ export function mountToday(root, store) {
         <div class="levels" id="levels" role="group" aria-label="오늘 난이도">
           ${LEVEL_ORDER.map((k) => `<button type="button" data-level="${k}" aria-pressed="false">${LEVELS[k].label}</button>`).join('')}
         </div>
-        <div class="segs" id="segs"></div>
+        <div class="segs" id="segs" role="progressbar" aria-label="오늘 운동 종목 완료" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></div>
         <span class="progtext" id="progText"></span>
       </div>
       <p class="note warn" id="recNote" hidden></p>
@@ -323,6 +328,8 @@ export function mountToday(root, store) {
 
     const segs = $('#segs', root);
     const total = rows.size;
+    segs.setAttribute("aria-valuemax", String(total));
+    segs.setAttribute("aria-valuenow", String(done));
     if (segs.children.length !== total) segs.innerHTML = [...rows.keys()].map(() => '<i></i>').join('');
     [...segs.children].forEach((s, i) => s.classList.toggle('on', i < done));
     const all = total > 0 && done === total;
