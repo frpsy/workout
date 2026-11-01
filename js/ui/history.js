@@ -217,7 +217,7 @@ export function mountHistory(root, store) {
     const live = activeSessionDate() === date; // 재는 중인 운동은 종료해야 합산되므로 ‘운동 중’으로 알림
     const timeText = total ? `총 ${fmtKo(total)}${live ? ' · 운동 중' : ''}` : live ? '운동 중' : '시간 기록 없음';
     const list = state.config.exercises
-      .map((ex) => ({ ex, v: store.view(date, ex) }))
+      .map((ex) => ({ ex, v: store.view(date, ex, undefined, { aggregate: true }) }))
       .filter(({ ex, v }) => ex.active !== false || v.done || v.setsDone);
     const has = list.some(({ v }) => v.done || v.setsDone);
     const rowsHtml = (list) =>
