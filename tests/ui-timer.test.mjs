@@ -31,19 +31,19 @@ test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림',
   assert.equal(time(), '0:45', '이어서 ±15 조절도 가능');
 
   root.querySelector('#tGo').click();
-  assert.equal(root.querySelector('#tGo').textContent, '중지');
+  assert.equal(root.querySelector('#tGo').textContent, '휴식 중지');
   assert.equal(preset.disabled, true, '실행 중에는 프리셋 버튼이 잠김');
   mock.timers.tick(10_000);
   assert.equal(time(), '0:35');
   root.querySelector('#tGo').click(); // 중지
   assert.equal(time(), '0:45');
-  assert.equal(root.querySelector('#tGo').textContent, '시작');
+  assert.equal(root.querySelector('#tGo').textContent, '휴식 시작');
 
   root.querySelector('#tGo').click();
   mock.timers.tick(45_500);
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), true, '끝나면 알림 표시');
   assert.equal(root.querySelector('#tDone').textContent, '휴식이 끝났습니다');
-  assert.equal(root.querySelector('#tGo').textContent, '시작');
+  assert.equal(root.querySelector('#tGo').textContent, '휴식 시작');
   mock.timers.tick(4_500);
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), false, '잠시 뒤 표시가 사라짐');
 });
@@ -58,18 +58,18 @@ test('오늘+타이머: 세트를 체크하면 휴식이 자동으로 시작되�
   mountTimer(timerRoot);
   const go = () => timerRoot.querySelector('#tGo');
   const row = root.querySelector('.row');
-  assert.equal(go().textContent, '시작');
+  assert.equal(go().textContent, '휴식 시작');
 
   row.querySelector('[data-set="1"]').click();
-  assert.equal(go().textContent, '중지', '세트를 체크하면 휴식이 시작됨');
+  assert.equal(go().textContent, '휴식 중지', '세트를 체크하면 휴식이 시작됨');
   go().click(); // 중지
   row.querySelector('[data-set="1"]').click(); // 되돌리기
-  assert.equal(go().textContent, '시작', '되돌릴 때는 시작하지 않음');
+  assert.equal(go().textContent, '휴식 시작', '되돌릴 때는 시작하지 않음');
 
   timerRoot.querySelector('#tAuto').click(); // 수동
   assert.equal(timerRoot.querySelector('#tAutoText').textContent, '수동');
   row.querySelector('[data-set="1"]').click();
-  assert.equal(go().textContent, '시작', '수동이면 시작하지 않음');
+  assert.equal(go().textContent, '휴식 시작', '수동이면 시작하지 않음');
   timerRoot.querySelector('#tAuto').click(); // 다시 자동
 
   // 나머지 운동을 모두 완료해 두고 마지막 운동의 마지막 세트를 체크하면 쉴 필요가 없음
@@ -77,9 +77,9 @@ test('오늘+타이머: 세트를 체크하면 휴식이 자동으로 시작되�
   for (const r of rows.slice(1)) r.querySelector('[data-f="check"]').click();
   row.querySelector('[data-set="2"]').click();
   go().click();
-  assert.equal(go().textContent, '시작');
+  assert.equal(go().textContent, '휴식 시작');
   row.querySelector('[data-set="3"]').click(); // 마지막 운동 완료
-  assert.equal(go().textContent, '시작', '모든 운동을 마치면 휴식을 시작하지 않음');
+  assert.equal(go().textContent, '휴식 시작', '모든 운동을 마치면 휴식을 시작하지 않음');
   store.actions.flushAll();
   localStorage.removeItem('workout-check:timer');
 });
@@ -100,9 +100,9 @@ test('오늘+타이머: 오늘 체크를 모두 되돌리면 쉬는 중이던 �
   row.querySelector('[data-set="2"]').click();
   mock.timers.tick(10_000);
   row.querySelector('[data-set="2"]').click(); // 한 칸만 되돌림: 1세트는 남음
-  assert.equal(go().textContent, '중지', '일부만 되돌리면 휴식은 계속');
+  assert.equal(go().textContent, '휴식 중지', '일부만 되돌리면 휴식은 계속');
   row.querySelector('[data-set="1"]').click(); // 체크가 하나도 없음
-  assert.equal(go().textContent, '시작', '모두 되돌리면 휴식이 멈춤');
+  assert.equal(go().textContent, '휴식 시작', '모두 되돌리면 휴식이 멈춤');
   assert.equal(time(), '1:00', '멈추면 정한 시간으로 돌아감');
   mock.timers.tick(70_000);
   assert.equal(timerRoot.querySelector('#timerBar').classList.contains('done'), false, '멈춘 뒤에는 끝남 알림도 없음');
@@ -124,9 +124,9 @@ test('오늘+타이머: 모든 운동을 마치면 쉬는 중이던 휴식도 �
   for (const r of rows.slice(0, -1)) r.querySelector('.check, [data-f="check"]').click(); // 앞 종목은 원형 버튼으로 한꺼번에 완료
   const sets = last.querySelectorAll('button[data-set]');
   for (const b of [...sets].slice(0, -1)) b.click(); // 마지막 종목은 마지막 세트 전까지
-  assert.equal(go().textContent, '중지', '세트 사이에는 쉬는 중');
+  assert.equal(go().textContent, '휴식 중지', '세트 사이에는 쉬는 중');
   sets[sets.length - 1].click(); // 마지막 세트로 모두 완료
-  assert.equal(go().textContent, '시작', '더 쉴 세트가 없으니 휴식이 멈춤');
+  assert.equal(go().textContent, '휴식 시작', '더 쉴 세트가 없으니 휴식이 멈춤');
   mock.timers.tick(70_000);
   assert.equal(timerRoot.querySelector('#timerBar').classList.contains('done'), false, '끝남 알림도 없음');
   store.actions.flushAll();

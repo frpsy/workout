@@ -185,7 +185,7 @@ test('효과음: 휴식 타이머 시작·중지음, 끝나기 3초 전 카운�
     // 세트 체크로 자동 시작될 때는 시작음 없이 조용히 시작
     played.length = 0;
     document.dispatchEvent(new Event('workout:set-checked'));
-    assert.equal(go.textContent, '중지');
+    assert.equal(go.textContent, '휴식 중지');
     assert.equal(played.length, 0);
     go.click();
   } finally {

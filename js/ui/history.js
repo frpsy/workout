@@ -37,14 +37,20 @@ export function mountHistory(root, store) {
       <p class="tallytext" id="periodText"></p>
       <p class="sub" id="calSub" hidden></p>
     </section>
+    <section class="history-empty" id="emptyHistory" hidden>
+      <span class="empty-symbol" aria-hidden="true">✓</span>
+      <h2 class="sec">첫 운동을 기록해 보세요</h2>
+      <p class="sub">오늘 탭에서 마친 세트를 체크해 주세요.<br>기록이 쌓이면 달성률과 꾸준함을 보여드려요.</p>
+      <button type="button" class="btn" id="firstRecord" data-edit="">오늘 운동하러 가기</button>
+    </section>
     <section class="daycard" id="dayCard" aria-live="polite"></section>
-    <section>
+    <section id="historySummary">
       <h2 class="sec">달성·연속</h2>
       <dl class="totals" id="summary"></dl>
       <p class="tallytext" id="tallyText"></p>
       <p class="tallytext" id="workText"></p>
     </section>
-    <section>
+    <section id="historyPerExercise">
       <h2 class="sec">종목별 꾸준함</h2>
       <ul class="perex" id="perEx"></ul>
       <p class="sub">달성률은 최근 30일 중 해야 했던 날(쉬는 요일·시작 전 제외) 대비 마친 날입니다.</p>
@@ -82,7 +88,7 @@ export function mountHistory(root, store) {
     picked = b.dataset.date;
     redraw();
   });
-  $('#dayCard', root).addEventListener('click', (ev) => {
+  root.addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-edit]');
     if (!b) return;
     store.actions.select(b.dataset.edit);
@@ -273,6 +279,16 @@ export function mountHistory(root, store) {
 
     const exs = store.activeExercises();
     const ctx = { exs, ids: exs.map((e) => e.id), rest: new Set(state.config.restDays || []) };
+    const hasRecord = Object.entries(state.days).some(([date, day]) => date <= state.today && (
+      day.workSec > 0 || day.sessions?.length || day.note?.feel || day.note?.thanks ||
+      Object.values(day.entries || {}).some((entry) => entry.done || entry.setsDone > 0)
+    ));
+    $('#emptyHistory', root).hidden = hasRecord || !!activeSessionDate();
+    root.closest('.page')?.classList.toggle('history-empty-state', !hasRecord);
+    $('#firstRecord', root).dataset.edit = state.today;
+    $('#historySummary', root).hidden = !hasRecord;
+    $('#historyPerExercise', root).hidden = !hasRecord;
+    $('#dayCard', root).hidden = !hasRecord && !picked && !activeSessionDate();
     renderCal(state, ctx);
     $('#dayCard', root).innerHTML = dayCardHtml(state, ctx, picked || state.today);
     renderStats(state, ctx);
