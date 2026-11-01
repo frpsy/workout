@@ -72,18 +72,28 @@ export function mountWorkbar(root, store) {
     clearInterval(workTick);
     workTick = on ? setInterval(renderWork, 1000) : 0;
   }
+  function finishWork({ sound = true } = {}) {
+    if (!session.running) return;
+    ticking(false);
+    const done = session.stop(); // 멈춘 시각을 먼저 확정해 중복 저장 방지
+    if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e });
+    if (sound) playSound('stop');
+    renderWork();
+  }
   $('#wBtn', root).addEventListener('click', () => {
     haptic();
-    if (session.running) {
-      ticking(false);
-      const done = session.stop();
-      if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e });
-      playSound('stop');
-    } else {
+    if (session.running) finishWork();
+    else {
       startWork();
       playSound('start');
+      renderWork();
     }
-    renderWork();
+  });
+  // 마지막 세트 완료 시 운동시간도 자동 종료하고 기록합니다.
+  // 완료 팡파르와 종료 효과음이 겹치지 않도록 별도 종료음은 내지 않습니다.
+  document.addEventListener('workout:all-done', () => {
+    if (!store.state.ready || store.state.selected !== store.state.today || !store.allDone()) return;
+    finishWork({ sound: false });
   });
   function startWork() {
     session.start(store.state.today);
