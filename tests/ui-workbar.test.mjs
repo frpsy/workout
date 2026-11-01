@@ -316,3 +316,51 @@ test('오늘: 일부만 되돌리면 운동시간은 그대로', (t) => {
   assert.equal(store.state.days[todayStr()].workSec, 20);
   store.actions.flushAll();
 });
+
+test('하루 운동 두 회차: 다시 하기에서 체크는 비우고 이전 회차와 누적 시간은 보존', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const rows = [...root.querySelectorAll('.row')];
+  const start = root.querySelector('#wBtn');
+  const again = root.querySelector('#wAgain');
+  assert.equal(again.hidden, true, '운동 전에는 다시 하기 숨김');
+  rows[0].querySelector('[data-set="1"]').click();
+  mock.timers.tick(10_000);
+  for (const r of rows) r.querySelector('[data-f="check"]').click();
+  // 첫 종목은 한 세트를 체크한 상태이므로 완료 버튼을 눌러 나머지를 체크합니다.
+  assert.equal(start.textContent, '▶ 운동 시작', '전 종목 완료 시 자동 종료');
+  assert.equal(again.hidden, false);
+  const date = todayStr();
+  assert.equal(store.state.days[date].workSec, 10);
+  assert.equal(store.allDone(), true);
+  again.click();
+  assert.equal(again.hidden, true, '다시 시작하면 버튼 숨김');
+  assert.equal(start.textContent, '■ 종료', '운동 스톱워치 새로 시작');
+  assert.equal(store.allDone(), false, '새 회차는 미완료');
+  assert.ok([...root.querySelectorAll('.row button[data-set]')].every((b) => b.getAttribute('aria-pressed') !== 'true'), '세트 체크 초기화');
+  assert.equal(store.state.days[date].workSec, 10, '이전 시간 유지');
+  assert.equal(store.state.days[date].rounds.length, 1, '이전 회차 스냅샷 저장');
+  assert.equal(store.state.days[date].entries.push.done, true, '기존 일별 달성 기록 유지');
+  mock.timers.tick(20_000);
+  for (const r of rows) r.querySelector('[data-f="check"]').click();
+  assert.equal(store.state.days[date].workSec, 30, '두 회차 합산');
+  assert.equal(store.state.days[date].sessions.length, 2);
+  assert.equal(again.hidden, false, '두 번째도 완료하면 세 번째 시작 가능');
+  store.actions.flushAll();
+});
+
+test('세션 다시 하기: 초기화된 체크와 이전 기록은 저장·로드 뒤에도 보존', async () => {
+  const { store, root } = setup(today);
+  for (const r of root.querySelectorAll('.row')) r.querySelector('[data-f="check"]').click();
+  root.querySelector('#wAgain').click();
+  const date = todayStr();
+  assert.equal(store.allDone(), false);
+  const { normalizeDay, serializeDay } = await import('../js/model.js');
+  const copy = normalizeDay(serializeDay(date, store.state.days[date]));
+  assert.equal(copy.rounds.length, 1);
+  assert.deepEqual(copy.activeEntries, {});
+  assert.equal(copy.entries.push.done, true);
+  root.querySelector('#wCancel').click();
+  store.actions.flushAll();
+});
