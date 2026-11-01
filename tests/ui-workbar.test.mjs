@@ -324,18 +324,18 @@ test('하루 운동 두 회차: 다시 하기에서 체크는 비우고 이전 �
   const rows = [...root.querySelectorAll('.row')];
   const start = root.querySelector('#wBtn');
   const again = root.querySelector('#wAgain');
-  assert.equal(again.hidden, true, '운동 전에는 다시 하기 숨김');
+  assert.equal(root.querySelector('#roundAction').hidden, true, '운동 전에는 다시 하기 숨김');
   rows[0].querySelector('[data-set="1"]').click();
   mock.timers.tick(10_000);
   for (const r of rows) r.querySelector('[data-f="check"]').click();
   // 첫 종목은 한 세트를 체크한 상태이므로 완료 버튼을 눌러 나머지를 체크합니다.
   assert.equal(start.textContent, '▶ 운동 시작', '전 종목 완료 시 자동 종료');
-  assert.equal(again.hidden, false);
+  assert.equal(root.querySelector('#roundAction').hidden, false);
   const date = todayStr();
   assert.equal(store.state.days[date].workSec, 10);
   assert.equal(store.allDone(), true);
   again.click();
-  assert.equal(again.hidden, true, '다시 시작하면 버튼 숨김');
+  assert.equal(root.querySelector('#roundAction').hidden, true, '다시 시작하면 버튼 숨김');
   assert.equal(start.textContent, '■ 종료', '운동 스톱워치 새로 시작');
   assert.equal(store.allDone(), false, '새 회차는 미완료');
   assert.ok([...root.querySelectorAll('.row button[data-set]')].every((b) => b.getAttribute('aria-pressed') !== 'true'), '세트 체크 초기화');
@@ -346,7 +346,7 @@ test('하루 운동 두 회차: 다시 하기에서 체크는 비우고 이전 �
   for (const r of rows) r.querySelector('[data-f="check"]').click();
   assert.equal(store.state.days[date].workSec, 30, '두 회차 합산');
   assert.equal(store.state.days[date].sessions.length, 2);
-  assert.equal(again.hidden, false, '두 번째도 완료하면 세 번째 시작 가능');
+  assert.equal(root.querySelector('#roundAction').hidden, false, '두 번째도 완료하면 세 번째 시작 가능');
   store.actions.flushAll();
 });
 
@@ -362,5 +362,44 @@ test('세션 다시 하기: 초기화된 체크와 이전 기록은 저장·로�
   assert.deepEqual(copy.activeEntries, {});
   assert.equal(copy.entries.push.done, true);
   root.querySelector('#wCancel').click();
+  store.actions.flushAll();
+});
+
+test('세션 회귀: 2회차 체크를 모두 되돌려도 1회차 시간과 달성 기록은 보존', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const rows = [...root.querySelectorAll('.row')];
+  for (const row of rows) row.querySelector('[data-f="check"]').click();
+  const date = todayStr();
+  const previous = store.state.days[date].workSec;
+  root.querySelector('#wAgain').click();
+  mock.timers.tick(5_000);
+  const first = rows[0].querySelector('[data-set="1"]');
+  first.click();
+  assert.equal(store.hasProgress(date, { current: true }), true);
+  first.click();
+  assert.equal(store.hasProgress(date, { current: true }), false);
+  assert.equal(root.querySelector('#wBtn').textContent, '▶ 운동 시작', '2회차 타이머 취소');
+  assert.equal(localStorage.getItem('workout-check:session'), null);
+  assert.equal(store.state.days[date].workSec, previous, '1회차 운동시간 유지');
+  assert.equal(store.state.days[date].sessions.length, 1, '1회차 운동 구간 유지');
+  assert.equal(store.state.days[date].entries.push.done, true, '하루 달성 기록 유지');
+  assert.equal(store.state.days[date].rounds.length, 1, '1회차 세트 보존');
+  store.actions.flushAll();
+});
+
+test('세션 UX: 완료하면 작은 화면에서도 별도 재운동 줄을 보여주고 시작은 숨김', () => {
+  const { store, root } = setup(today);
+  const action = root.querySelector('#roundAction');
+  const start = root.querySelector('#wBtn');
+  assert.equal(action.hidden, true);
+  for (const row of root.querySelectorAll('.row')) row.querySelector('[data-f="check"]').click();
+  assert.equal(action.hidden, false);
+  assert.match(root.querySelector('#roundSummary').textContent, /1회차 완료/);
+  assert.equal(start.hidden, true);
+  root.querySelector('#wAgain').click();
+  assert.equal(action.hidden, true);
+  assert.equal(start.hidden, false);
   store.actions.flushAll();
 });
