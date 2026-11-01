@@ -207,9 +207,12 @@ export function createStore(adapter) {
   }
 
   /** 그날 체크한 세트·완료가 하나라도 있는지 */
-  function hasProgress(date) {
+  function hasProgress(date, { current = false } = {}) {
     const day = state.days[date];
-    return !!day && Object.values(day.entries || {}).some((e) => e.done || e.setsDone > 0);
+    if (!day) return false;
+    const entries = current && date === state.today && day.rounds?.length
+      ? day.activeEntries || {} : day.entries || {};
+    return Object.values(entries).some((e) => e.done || e.setsDone > 0);
   }
 
   /** 세션별 운동을 하루 기록으로 합산: 달성·연속·목표 집계는 기존과 동일하게 일 단위로 계산합니다. */
