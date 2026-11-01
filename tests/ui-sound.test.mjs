@@ -82,6 +82,8 @@ test('효과음: 앱을 내렸다 올려 오디오가 interrupted로 멈춰 있�
     }
     resume() {
       resumed++;
+      this.state = 'running';
+      return Promise.resolve();
     }
   };
   try {
@@ -89,7 +91,10 @@ test('효과음: 앱을 내렸다 올려 오디오가 interrupted로 멈춰 있�
     played.length = 0;
     playSound('done');
     assert.equal(resumed, 1, 'interrupted도 resume');
-    assert.equal(played.length, 3);
+    assert.equal(played.length, 0, 'resume() 완료 전에는 재생하지 않음');
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.equal(played.length, 3, 'resume 완료 후에 재생');
   } finally {
     delete globalThis.AudioContext;
     localStorage.removeItem('workout-check:sound-silent');
@@ -188,5 +193,67 @@ test('효과음: 휴식 타이머 시작·중지음, 끝나기 3초 전 카운�
   } finally {
     delete globalThis.AudioContext;
     localStorage.removeItem('workout-check:sound');
+  }
+});
+
+test('효과음: 재개 실패 후 다음 탭에서 새 컨텍스트로 복구', async () => {
+  const { playSound, setSilentMode } = await import('../js/sound.js');
+  localStorage.removeItem('workout-check:sound');
+  let created = 0;
+  globalThis.AudioContext = class extends FakeAudio {
+    constructor() {
+      super();
+      created++;
+      this.state = created === 1 ? 'interrupted' : 'running';
+    }
+    resume() { return Promise.reject(new Error('audio interrupted')); }
+    close() { this.state = 'closed'; return Promise.resolve(); }
+  };
+  try {
+    setSilentMode(false);
+    played.length = 0;
+    playSound('set');
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.equal(played.length, 0, '재개 실패한 오디오에서는 소리를 만들지 않음');
+    playSound('set');
+    assert.equal(created, 2, '다음 동작에서 새 컨텍스트를 생성');
+    assert.equal(played.length, 1, '다음 동작의 효과음은 정상');
+  } finally {
+    delete globalThis.AudioContext;
+    localStorage.removeItem('workout-check:sound-silent');
+    played.length = 0;
+  }
+});
+
+test('효과음: 재개 중 설정을 끄면 뒤늦게 효과음이 나오지 않음', async () => {
+  const { playSound, setSilentMode, setSoundOn } = await import('../js/sound.js');
+  let finish;
+  globalThis.AudioContext = class extends FakeAudio {
+    constructor() { super(); this.state = 'suspended'; }
+    resume() {
+      return new Promise((resolve) => {
+        finish = () => { this.state = 'running'; resolve(); };
+      });
+    }
+    close() { return Promise.resolve(); }
+  };
+  try {
+    setSilentMode(false);
+    setSoundOn(true);
+    played.length = 0;
+    playSound('done');
+    assert.equal(played.length, 0);
+    setSoundOn(false);
+    finish();
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.equal(played.length, 0, '끄기 이전에 예약된 소리도 재생하지 않음');
+  } finally {
+    setSoundOn(true);
+    delete globalThis.AudioContext;
+    localStorage.removeItem('workout-check:sound-silent');
+    localStorage.removeItem('workout-check:sound');
+    played.length = 0;
   }
 });
