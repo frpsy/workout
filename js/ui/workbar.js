@@ -5,6 +5,7 @@
 import { createSession, fmtClock, fmtKo } from '../session.js';
 import { playSound } from '../sound.js';
 import { setScreenAwake } from '../screen-awake.js';
+import { MAX_SESSIONS } from '../model.js';
 import { $, haptic } from './dom.js';
 
 /** 돌려주는 값: render(저장 상태가 바뀔 때 다시 그림), autoStart(세트 체크 전후 상태를 받아 첫 세트면 시작) */
@@ -53,6 +54,10 @@ export function mountWorkbar(root, store) {
     btn.disabled = !state.ready;
     // 지난 날을 고치는 중에는 시작 버튼을 숨김 (시간은 늘 오늘 기록으로 들어가므로 헷갈리지 않게)
     btn.hidden = !running && state.selected !== state.today;
+    const again = $('#wAgain', root);
+    again.hidden = running || state.selected !== state.today || !store.allDone() || (state.days[state.today]?.rounds?.length || 0) >= MAX_SESSIONS - 1;
+    again.disabled = !state.ready;
+    if (!again.hidden) btn.hidden = true;
     // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
     const finished = running && state.selected === state.today && store.allDone();
     btn.classList.toggle('ready', finished);
@@ -95,6 +100,13 @@ export function mountWorkbar(root, store) {
     if (!store.state.ready || store.state.selected !== store.state.today || !store.allDone()) return;
     finishWork({ sound: false });
   });
+  $('#wAgain', root).addEventListener('click', () => {
+    if (session.running || !actions.startAnotherSession()) return;
+    startWork();
+    playSound('start');
+    renderWork();
+  });
+
   function startWork() {
     session.start(store.state.today);
     ticking(true);

@@ -64,6 +64,7 @@ export function mountToday(root, store) {
         <div class="work">
           <button type="button" class="wsec" id="wPause" hidden>중지</button>
           <button type="button" class="wbtn" id="wBtn">▶ 운동 시작</button>
+          <button type="button" class="wbtn" id="wAgain" hidden>운동 한 번 더 하기</button>
           <button type="button" class="wsec wcancel" id="wCancel" hidden>취소</button>
           <button type="button" class="wsec wcancel wreset" id="wReset" hidden aria-label="기록된 운동시간 지우기">시간 초기화</button>
         </div>
@@ -324,7 +325,9 @@ export function mountToday(root, store) {
     const pt = $('#progText', root);
     // 모두 마치면 이어진 연속 일수를 보여 줌 (그날의 완료 처리가 반영된 값)
     const streak = all && selected === today ? currentStreak(state.days, today, exs, new Set(config.restDays || [])) : 0;
-    pt.textContent = all ? (streak > 1 ? `연속 ${streak}일` : '모두 완료') : `${done}/${total} 완료`;
+    const round = state.days[selected]?.rounds?.length ? state.days[selected].rounds.length + 1 : 1;
+    const prefix = selected === today && round > 1 ? `${round}회차 · ` : '';
+    pt.textContent = prefix + (all ? (streak > 1 ? `연속 ${streak}일` : '모두 완료') : `${done}/${total} 완료`);
     pt.title = all && streak > 1 ? `모두 완료 · 연속 ${streak}일` : '';
     pt.classList.toggle('all', all);
 
