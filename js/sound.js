@@ -27,6 +27,35 @@ const SOUNDS = {
 };
 
 let ctx = null;
+let resumePending = null;
+
+// iOS can leave AudioContext interrupted after returning from the background.
+// Do not schedule sounds until resume() actually completes.
+function resumeContext(c) {
+  if (c.state === 'running') return Promise.resolve(true);
+  try {
+    const attempt = Promise.resolve(c.resume()).then(
+      () => ctx === c && c.state === 'running',
+      () => {
+        if (ctx === c) {
+          ctx = null;
+          try { void c.close(); } catch { /* already closed */ }
+        }
+        return false;
+      },
+    );
+    resumePending = attempt;
+    return attempt;
+  } catch {
+    if (ctx === c) ctx = null;
+    return Promise.resolve(false);
+  }
+}
+
+/** Restore only a previously unlocked audio context on foreground. */
+export function restoreSound() {
+  if (ctx && ctx.state !== 'running') void resumeContext(ctx);
+}
 
 export function isSoundOn() {
   return readText(KEY) !== 'off';
@@ -66,6 +95,7 @@ export function setSilentMode(on) {
       /* 무시 */
     }
     ctx = null;
+    resumePending = null;
   }
 }
 
@@ -74,15 +104,16 @@ export function unlockSound() {
   try {
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!AC) return null;
-    if (!ctx) {
+    if (!ctx || ctx.state === 'closed') {
       applySession();
       ctx = new AC();
+      resumePending = null;
     }
-    // iOS는 앱을 내렸다 올리면 'interrupted'로 멈춰 있어 'suspended'만 보면 소리가 나지 않음
-    if (ctx.state !== 'running') ctx.resume();
+    if (ctx.state !== 'running') void resumeContext(ctx);
     return ctx;
   } catch {
     ctx = null;
+    resumePending = null;
     return null;
   }
 }
@@ -97,21 +128,29 @@ export function playSound(name, n = 1) {
   if (!c) return;
   const notes = name === 'set' ? [[0, SCALE[Math.max(0, Math.min(SCALE.length - 1, n - 1))], 0.12, 'triangle']] : SOUNDS[name];
   if (!notes) return;
-  try {
-    for (const [at, freq, len, type] of notes) {
-      const t = c.currentTime + at;
-      const osc = c.createOscillator();
-      const gain = c.createGain();
-      osc.type = type;
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.3, t + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + len);
-      osc.connect(gain).connect(c.destination);
-      osc.start(t);
-      osc.stop(t + len + 0.02);
+  const schedule = () => {
+    if (ctx !== c || c.state !== 'running' || !isSoundOn()) return;
+    try {
+      for (const [at, freq, len, type] of notes) {
+        const t = c.currentTime + at;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.3, t + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + len);
+        osc.connect(gain).connect(c.destination);
+        osc.start(t);
+        osc.stop(t + len + 0.02);
+      }
+    } catch {
+      /* 오디오가 종료되거나 재생이 불가능한 환경 */
     }
-  } catch {
-    /* 소리를 낼 수 없는 환경 */
+  };
+  if (c.state === 'running') schedule();
+  else if (resumePending) {
+    // A failed resume must not produce a fake "successful" sound.
+    void resumePending.then((ready) => { if (ready) schedule(); });
   }
 }

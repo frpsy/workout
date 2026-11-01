@@ -1,6 +1,7 @@
 // 시작점: 저장소를 고르고, 상태를 만들고, 화면 조각을 붙입니다.
 
 import { createProgress } from './boot-progress.js';
+import { restoreSound } from './sound.js';
 import { createStorage } from './storage/index.js';
 import { createStore } from './store.js';
 import { mountHistory } from './ui/history.js';
@@ -56,7 +57,10 @@ async function boot() {
   // 자정 넘김·오래 열어 둔 화면 대비
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) store.actions.flushAll();
-    else store.actions.refreshToday();
+    else {
+      restoreSound();
+      store.actions.refreshToday();
+    }
   });
   window.addEventListener('pagehide', () => store.actions.flushAll());
   setInterval(() => store.actions.refreshToday(), 60_000);
