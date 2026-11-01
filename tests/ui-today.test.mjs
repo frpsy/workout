@@ -17,10 +17,26 @@ test('오늘: 목표 옆에 세트별 체크 버튼(1·2·3)이 보임', () => {
   const { store, root } = setup(today);
   const row = root.querySelector('.row');
   assert.equal(row.querySelector('[data-f="target"]').textContent, '15');
+  assert.equal(row.querySelector('[data-f="sets"]').textContent, '× 3세트');
+  assert.equal(row.querySelector('[data-f="settrack"]').textContent.includes('세트 체크'), true);
+  assert.equal(row.querySelector('[data-f="checkLabel"]').textContent, '완료');
   assert.equal(row.querySelector('[data-f="pips"]').children.length, 3);
   assert.equal(row.querySelector('[data-f="pips"]').hidden, false);
   assert.equal(row.querySelector('[data-f="cnt"]').value, '15');
   assert.equal(row.querySelector('[data-f="setsIn"]').value, '3', '실제 세트도 기본은 목표 세트');
+  store.actions.flushAll();
+});
+
+test('운동량과 완료 문구는 세트 수·완료 상태를 따라 바뀌고 한 세트는 별도 체크를 숨김', () => {
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  const ex = store.activeExercises()[0];
+  store.actions.setSets(ex.id, 1);
+  assert.equal(row.querySelector('[data-f="sets"]').textContent, '× 1세트');
+  assert.equal(row.querySelector('[data-f="settrack"]').hidden, true);
+  row.querySelector('[data-f="check"]').click();
+  assert.equal(row.querySelector('[data-f="checkLabel"]').textContent, '완료됨');
+  assert.match(row.querySelector('[data-f="check"]').getAttribute('aria-label'), /완료 해제/);
   store.actions.flushAll();
 });
 

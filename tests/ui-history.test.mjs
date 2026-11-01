@@ -6,6 +6,36 @@ import { fullDays, pickDate, setup, history } from './helpers/ui-env.mjs';
 
 const at = (date, h, m) => new Date(`${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`).getTime();
 
+test('첫 기록 전에는 시작 안내를 보여 주고, 첫 세트 이후 통계가 나타나며 되돌리면 다시 안내', () => {
+  const { root, store } = setup(history);
+  assert.equal(root.querySelector('#emptyHistory').hidden, false);
+  assert.equal(root.querySelector('#dayCard').hidden, true);
+  assert.equal(root.querySelector('#historySummary').hidden, true);
+  assert.equal(root.querySelector('#historyPerExercise').hidden, true);
+  let tab;
+  document.addEventListener('workout:goto-tab', (ev) => { tab = ev.detail; }, { once: true });
+  root.querySelector('#firstRecord').click();
+  assert.equal(tab, 'today');
+  store.actions.setLevel('easy');
+  assert.equal(root.querySelector('#emptyHistory').hidden, false, '난이도만 고른 것은 운동 기록으로 세지 않음');
+  store.actions.setProgress('push', 1);
+  assert.equal(root.querySelector('#emptyHistory').hidden, true);
+  assert.equal(root.querySelector('#historySummary').hidden, false);
+  assert.equal(root.querySelector('#historyPerExercise').hidden, false);
+  assert.equal(root.querySelector('#dayCard').hidden, false);
+  store.actions.setProgress('push', 0);
+  assert.equal(root.querySelector('#emptyHistory').hidden, false);
+  store.actions.flushAll();
+});
+
+test('체크 없이 운동시간이나 마무리만 남긴 기록도 통계를 보여 줌', () => {
+  for (const day of [{entries:{},workSec:30}, {entries:{},note:{feel:'가벼웠어요'}}]) {
+    const { root } = setup(history, {days:{[todayStr()]:day}});
+    assert.equal(root.querySelector('#emptyHistory').hidden, true);
+    assert.equal(root.querySelector('#historySummary').hidden, false);
+  }
+});
+
 test('기록: 기본은 이번 주 한 줄만 보이고, 달성·연속·종목별 꾸준함이 한 화면에 보임', () => {
   const rest = [0, 6];
   const { root, render, store } = setup(history, { days: fullDays(5), config: { startDate: addDays(todayStr(), -40), restDays: rest } });

@@ -13,7 +13,7 @@ export function mountTimer(root) {
       <button type="button" class="tstep" id="tMinus" aria-label="휴식 ${STEP_SEC}초 줄이기">−${STEP_SEC}</button>
       <button type="button" class="time" id="tTime">1:00</button>
       <button type="button" class="tstep" id="tPlus" aria-label="휴식 ${STEP_SEC}초 늘리기">+${STEP_SEC}</button>
-      <button type="button" class="tgo" id="tGo">시작</button>
+      <button type="button" class="tgo" id="tGo">휴식 시작</button>
       <span class="sr" id="tDone" role="status"></span>
     </div>`;
 
@@ -87,7 +87,7 @@ export function mountTimer(root) {
     auto.setAttribute('aria-label', timer.auto ? '세트를 체크하면 휴식이 자동으로 시작됨 (누르면 끄기)' : '세트를 체크해도 휴식이 자동으로 시작되지 않음 (누르면 켜기)');
     $('#tAutoText', root).textContent = timer.auto ? '자동' : '수동';
     const go = $('#tGo', root);
-    go.textContent = running ? '중지' : '시작';
+    go.textContent = running ? '휴식 중지' : '휴식 시작';
     go.classList.toggle('stop', running);
   }
 
