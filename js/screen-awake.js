@@ -60,8 +60,10 @@ function register() {
 
 /** owner별 사용 여부. 스톱워치와 휴식 타이머 중 하나라도 실행 중이면 유지. */
 export function setScreenAwake(owner, active) {
+  const wasActive = owners.has(owner);
   if (active) owners.add(owner);
   else owners.delete(owner);
   register();
-  void sync();
+  // 매 초 호출되는 운동 시간 렌더에서 권한 거절 요청을 반복하지 않습니다.
+  if (wasActive !== !!active) void sync();
 }
