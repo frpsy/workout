@@ -163,8 +163,11 @@ export function createStore(adapter) {
   }
 
   /** 선택한 날의 종목 상태 (완료했으면 그때 목표를 그대로 보여줌) */
-  function view(date, ex, res = resolver()) {
-    const e = ((state.days[date] && state.days[date].entries) || {})[ex.id];
+  function view(date, ex, res = resolver(), { aggregate = false } = {}) {
+    const day = state.days[date];
+    const entries = !aggregate && date === state.today && date === state.selected && day?.rounds?.length
+      ? day.activeEntries || {} : day?.entries || {};
+    const e = entries[ex.id];
     const done = !!(e && e.done);
     // 그날 난이도(쉬움 0.8 / 보통 1 / 어려움 1.2)를 곱함. 단위(개 1, 초 5)에 맞춰 반올림, 최소 한 단위
     const level = (state.days[date] && state.days[date].level) || 'normal';
@@ -190,7 +193,8 @@ export function createStore(adapter) {
   }
 
   function ensureEntry(date, id) {
-    const box = ensureDay(date).entries;
+    const day = ensureDay(date);
+    const box = day.rounds?.length && date === state.today ? day.activeEntries : day.entries;
     if (!box[id]) box[id] = { done: false };
     return box[id];
   }
@@ -208,8 +212,26 @@ export function createStore(adapter) {
     return !!day && Object.values(day.entries || {}).some((e) => e.done || e.setsDone > 0);
   }
 
+  /** 세션별 운동을 하루 기록으로 합산: 달성·연속·목표 집계는 기존과 동일하게 일 단위로 계산합니다. */
+  function updateAggregate(date) {
+    const day = state.days[date];
+    if (!day?.rounds?.length || date !== state.today) return;
+    const all = [...day.rounds.map((r) => r.entries), day.activeEntries || {}];
+    const aggregate = {};
+    for (const entries of all) for (const [id, entry] of Object.entries(entries)) {
+      const before = aggregate[id];
+      // 완료된 회차를 우선하고, 같은 단계라면 가장 많이 진행한 회차를 사용
+      if (!before || (entry.done && !before.done) ||
+          (entry.done === before.done && (entry.setsDone || 0) > (before.setsDone || 0))) {
+        aggregate[id] = { ...entry };
+      }
+    }
+    day.entries = aggregate;
+  }
+
   /** 그날 기록을 바꾼 뒤: 저장 예약 + 화면 갱신 */
   function commitDay(date) {
+    updateAggregate(date);
     scheduleSave(date);
     state.daysRev++;
     emit();
@@ -218,6 +240,18 @@ export function createStore(adapter) {
   /* ---------- 동작 ---------- */
 
   const actions = {
+    /** 오늘 운동을 한 차례 더 시작: 이전 회차는 보존하고 새 세트 체크만 비웁니다. */
+    startAnotherSession() {
+      if (!state.ready || state.selected !== state.today || !allDone()) return false;
+      const day = ensureDay(state.today);
+      if ((day.rounds?.length || 0) >= MAX_SESSIONS - 1) return false;
+      const snapshot = day.rounds?.length ? day.activeEntries || {} : day.entries;
+      day.rounds = [...(day.rounds || []), { entries: JSON.parse(JSON.stringify(snapshot)) }];
+      day.activeEntries = {};
+      commitDay(state.today);
+      return true;
+    },
+
     toggle(id) {
       if (!state.ready) return;
       const ex = findExercise(id);
@@ -285,7 +319,7 @@ export function createStore(adapter) {
       if (level === 'normal') delete day.level;
       else day.level = level;
       // 아직 마치지 않은 종목은 고쳐 둔 개수를 지우고 새 목표를 따라가게 함
-      for (const e of Object.values(day.entries)) if (!e.done) delete e.count;
+      for (const e of Object.values(day.rounds?.length ? day.activeEntries : day.entries)) if (!e.done) delete e.count;
       commitDay(date);
     },
 
