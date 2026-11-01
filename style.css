@@ -36,9 +36,9 @@
 
   /* 글자 크기: 본문 15px 기준. 16px은 입력칸 전용(iOS가 포커스할 때 확대하지 않는 최소값), 18px 이상은 주로 숫자(--font-num) */
   --fs-3xs: 10px;
-  --fs-2xs: 12px; /* 꼬리표·달력 머리 */
-  --fs-xs: 13px; /* 보조 설명·작은 버튼 */
-  --fs-sm: 14px; /* 안내 문구 */
+  --fs-2xs: 11px; /* 꼬리표·달력 머리 */
+  --fs-xs: 12px; /* 보조 설명·작은 버튼 */
+  --fs-sm: 13px; /* 안내 문구 */
   --fs-md: 14px; /* 목록·표·버튼 */
   --fs-base: 15px; /* 본문·카드 제목 */
   --fs-input: 16px;
@@ -55,8 +55,6 @@
   --gap: 8px;
   --gap-md: 10px;
   --gap-lg: 12px;
-  --gap-xl: 24px;
-  --check-size: 64px;
   --gutter: 16px; /* 화면 좌우 여백(저장 줄이 끝까지 닿도록 같은 값을 씀) */
   /* 아래 탭 막대: 버튼 50px + 테두리 1px + 아래 여백. 아이폰 홈 표시줄 영역(34px)은 12px 덜 써서 22px만 둠(표시줄과 글자가 겹치지 않는 선), 없는 기기는 8px */
   --tabbar-pad: max(calc(env(safe-area-inset-bottom, 0px) - 12px), 8px);
@@ -70,11 +68,11 @@
   --r-pill: 999px;
 
   /* 그림자 (두 테마 같은 값) */
-  --shadow-seg: 0 1px 3px rgba(0, 0, 0, 0.10); /* 난이도·보기에서 고른 칸 */
+  --shadow-seg: 0 1px 4px rgba(0, 0, 0, 0.16); /* 난이도·보기에서 고른 칸 */
   --shadow-knob: 0 1px 3px rgba(0, 0, 0, 0.25); /* 스위치 손잡이 */
   --shadow-icon: 0 6px 20px rgba(0, 0, 0, 0.12); /* 시작 화면 아이콘 */
-  --shadow-card: 0 2px 6px rgba(18, 48, 36, 0.06); /* 카드 */
-  --shadow-press: 0 2px 6px rgba(10, 117, 80, 0.20); /* 완료·주 버튼 */
+  --shadow-card: 0 1px 2px rgba(18, 48, 36, 0.06), 0 6px 18px -6px rgba(18, 48, 36, 0.14); /* 카드 */
+  --shadow-press: 0 4px 12px -2px rgba(10, 117, 80, 0.45); /* 완료 원·주 버튼 */
   --shadow-float: 0 -8px 16px -6px rgba(0, 0, 0, 0.22); /* 떠 있는 휴식 타이머 */
 }
 /* 어두운 테마: 기기 설정을 따르고, data-theme(claude.ai 아티팩트 뷰어)이 있으면 그것을 따름. 두 블록은 같아야 함(tests/style.test.mjs) */
@@ -172,7 +170,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   display: flex;
   flex-direction: column;
   gap: var(--gap-md);
-  min-height: 100%;
+  min-height: 100%; /* 화면 높이만큼: 운동 팁을 탭 막대 바로 위로 내림 */
 }
 .standalone .wrap { padding-top: calc(env(safe-area-inset-top, 0px) + 29px); } /* 상태 표시줄 + 21px 띄움 */
 .wrap > * { min-width: 0; }
@@ -183,7 +181,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 .sec { margin: 0 0 12px; font-size: var(--fs-base); font-weight: 700; }
 .sub { margin: 8px 0 0; font-size: var(--fs-sm); color: var(--muted); }
 .note { margin: 8px 0 0; font-size: var(--fs-sm); }
-.status { margin: 0; line-height: 1.5; font-size: var(--fs-xs); color: var(--muted); }
+.status { margin: 0; line-height: 14px; font-size: var(--fs-xs); color: var(--muted); }
 .status.err { color: var(--err); }
 .statusrow { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); min-height: 26px; }
 .statusrow .msg { min-width: 0; flex: 1; }
@@ -452,9 +450,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   cursor: pointer;
   touch-action: manipulation;
 }
-.headline:not(.working) .wbtn { background: var(--accent-fill); color: var(--on-accent); box-shadow: var(--shadow-press); }
-.wbtn.stop { background: transparent; color: var(--accent); }
-.wbtn.stop.ready { background: var(--accent-fill); color: var(--on-accent); }
+.wbtn.stop { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
 .wbtn.ready { box-shadow: 0 0 0 3px var(--accent-soft); }
 .wsec {
   position: relative;
@@ -503,7 +499,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "info check" "sets sets" "ctrl ctrl";
+  grid-template-areas: "info check" "ctrl ctrl";
   gap: 6px 10px;
   align-items: center;
   padding: 10px 12px;
@@ -533,67 +529,58 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   font-variant-numeric: tabular-nums;
 }
 .goal .unit { font-size: var(--fs-sm); color: var(--muted); }
-.goal .sets { font-size: var(--fs-sm); font-weight: 500; color: var(--fg); white-space: nowrap; }
+.goal .sets { font-family: var(--font-num); font-size: var(--fs-xl); line-height: 28px; font-weight: 700; color: var(--accent); }
 .delta { margin-left: 6px; font-size: var(--fs-xs); font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .delta.over { color: var(--accent); font-weight: 700; }
 
-/* 세트 체크는 작은 사각 버튼, 종목 완료는 이름이 있는 큰 버튼으로 구분 */
-.settrack { grid-area: sets; display: flex; align-items: center; gap: var(--gap); }
-.set-caption { flex: none; font-size: var(--fs-xs); color: var(--muted); }
-.setpips { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: var(--gap); }
+/* 세트 번호(1·2·3) */
+.setpips { display: inline-flex; gap: var(--gap-sm); margin: -2px 0 -2px 4px; align-self: center; }
 .setpips button {
   position: relative;
-  width: 36px;
-  height: 36px;
-  flex: none;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  border-radius: var(--r-seg);
-  border: 1px solid var(--ctrl-line);
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
   background: transparent;
   color: var(--accent);
   font-family: var(--font-num);
-  font-size: var(--fs-input);
+  font-size: var(--fs-md);
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
   touch-action: manipulation;
 }
 .setpips button.on { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
-.work-active .setpips button:not(.on) { background: var(--accent-soft); border-color: var(--accent); }
 .setpips button::after { content: ''; position: absolute; inset: -4px -3px; }
 
-/* 완료: 아이콘과 문구가 항상 보이고 일부 진행은 분수로 함께 표시 */
+/* 완료 원: 일부만 마치면 테두리로 진행(2/3) */
 .check {
   position: relative;
   grid-area: check;
-  width: var(--check-size);
-  min-height: var(--check-size);
-  border-radius: var(--r-ctrl);
-  border: 1px solid var(--ctrl-line);
-  background: var(--surface);
-  color: var(--accent);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--gap-xs);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
   cursor: pointer;
-  padding: var(--gap-sm) var(--gap-xs);
+  padding: 0;
   touch-action: manipulation;
 }
-.check svg { width: 22px; height: 22px; opacity: 0.6; }
-.check svg, .check .frac, .check-label { position: relative; z-index: 1; }
-.check-label { font-size: var(--fs-xs); font-weight: 700; line-height: 1; }
-.check .frac:empty { display: none; }
+.check svg { width: 26px; height: 26px; opacity: 0; }
+.check svg, .check .frac { grid-area: 1 / 1; position: relative; z-index: 1; }
 .check .frac {
   font-family: var(--font-num);
-  font-size: var(--fs-md);
+  font-size: var(--fs-xl);
   line-height: 1;
   font-weight: 700;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
-.row.done .check { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); box-shadow: var(--shadow-press); }
+.row.done .check { background: var(--accent-fill); border-color: var(--accent-fill); box-shadow: var(--shadow-press); }
 .row.done .check svg { opacity: 1; }
 .row:not(.done) .check:not(.part) svg { opacity: 0.35; color: var(--accent); } /* 빈 원에도 옅은 체크를 보여 누르면 완료라는 것을 알림 */
 .check.part { border-color: transparent; background: conic-gradient(var(--accent) var(--p, 0%), var(--line) 0) border-box; }
@@ -601,7 +588,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: inherit;
+  border-radius: 50%;
   border: 3px solid transparent;
   background: var(--surface) padding-box;
 }
@@ -636,7 +623,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .row .hint { grid-column: 1 / -1; margin: 0; font-size: var(--fs-xs); color: var(--muted); display: none; }
 [data-view="detail"] .row .hint { display: block; }
 [data-view="compact"] .row .ctrl { display: none; }
-[data-view="compact"] .row { grid-template-areas: "info check" "sets sets"; }
+[data-view="compact"] .row { grid-template-areas: "info check"; }
 
 /* 효과음 켜기/끄기 */
 .snd {
@@ -788,22 +775,20 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   min-width: 76px;
   height: 36px;
   padding: 0 var(--gap);
-  border: 1px solid var(--ctrl-line);
+  border: 0;
   border-radius: var(--r-ctrl);
-  background: transparent;
-  color: var(--accent);
+  background: var(--accent-fill);
+  color: var(--on-accent);
   font-size: var(--fs-md);
   font-weight: 700;
   cursor: pointer;
   touch-action: manipulation;
 }
 .timer .tgo.stop { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-.work-active .timer .tgo:not(.stop) { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
-#timer { position: sticky; bottom: var(--tabbar-h); z-index: 3; border-radius: var(--r-card); }
 .timer .tstep::after, .timer .tgo::after, .timer button.tlabel::after { content: ''; position: absolute; inset: -5px 0; } /* 보이는 크기는 작게, 누르는 영역은 44px */
 
-/* 운동 영역 아래에 내일 날씨와 팁을 묶어 긴 빈 공간 없이 이어짐 */
-#bottom { margin-top: var(--gap-lg); padding-top: var(--gap-lg); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: var(--gap-sm); }
+/* 오늘 화면 아래 빈 곳: 내일 날씨 한 줄과 운동 팁(탭 막대 바로 위에 낮게) */
+#bottom { margin-top: auto; display: flex; flex-direction: column; gap: var(--gap-sm); }
 .weather {
   position: relative;
   display: block;
@@ -853,9 +838,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   padding: 16px;
 }
 #history .totals { margin-top: 0; }
-#history .history-empty { text-align: center; padding: var(--gap-xl) var(--gutter); }
+#history .history-empty { text-align: center; padding: var(--gutter); }
 .history-empty .btn { margin-top: var(--gap-lg); }
-.empty-symbol { display: inline-grid; place-items: center; width: var(--check-size); height: var(--check-size); border-radius: var(--r-card); background: var(--accent-soft); color: var(--accent); font-size: var(--fs-3xl); margin-bottom: var(--gap-lg); }
+.empty-symbol { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: var(--fs-3xl); margin-bottom: var(--gap-lg); }
 .page.history-empty-state #plan-sec { display: none; }
 #plan-sec details.block {
   background: var(--surface);
@@ -1261,8 +1246,6 @@ tr.cur td { background: var(--accent-soft); }
   .wbtn { min-width: 64px; padding: 0 8px; }
 }
 @media (max-width: 360px) {
-  .statusrow { flex-wrap: wrap; }
-  .statusrow .msg { flex-basis: 100%; }
   .timer { gap: var(--gap-xs); }
   .timer .tstep { width: 36px; flex: none; }
   .timer button.tlabel { width: 32px; flex: none; }

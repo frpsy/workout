@@ -4,25 +4,6 @@ import assert from 'node:assert/strict';
 import { addDays, todayStr } from '../js/dates.js';
 import { setup, today } from './helpers/ui-env.mjs';
 
-test('운동 중 강조는 시작·중지·재개·종료 상태와 함께 바뀜', () => {
-  const { root, store } = setup(today);
-  const page = document.createElement('div');
-  page.className = 'page';
-  document.body.appendChild(page);
-  page.appendChild(root);
-  const active = () => page.classList.contains('work-active');
-  assert.equal(active(), false);
-  root.querySelector('#wBtn').click();
-  assert.equal(active(), true);
-  root.querySelector('#wPause').click();
-  assert.equal(active(), false);
-  root.querySelector('#wPause').click();
-  assert.equal(active(), true);
-  root.querySelector('#wBtn').click();
-  assert.equal(active(), false);
-  store.actions.flushAll();
-});
-
 test('오늘: 시작을 누르면 시간이 흐르고, 종료하면 총 운동시간이 기록됨', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
