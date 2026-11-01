@@ -4,6 +4,7 @@
 
 import { createSession, fmtClock, fmtKo } from '../session.js';
 import { playSound } from '../sound.js';
+import { setScreenAwake } from '../screen-awake.js';
 import { $, haptic } from './dom.js';
 
 /** 돌려주는 값: render(저장 상태가 바뀔 때 다시 그림), autoStart(세트 체크 전후 상태를 받아 첫 세트면 시작) */
@@ -14,26 +15,7 @@ export function mountWorkbar(root, store) {
   let workTick = 0;
 
 
-  // 운동 시간을 재는 동안(중지 중이 아닐 때) 화면이 꺼지지 않게 요청
-  let screenLock = null;
-  let lockBusy = false;
-  async function holdScreen(on) {
-    try {
-      if (on && !screenLock && !lockBusy && navigator.wakeLock) {
-        lockBusy = true;
-        screenLock = await navigator.wakeLock.request('screen');
-        screenLock.addEventListener('release', () => (screenLock = null));
-      } else if (!on && screenLock) {
-        const l = screenLock;
-        screenLock = null;
-        await l.release();
-      }
-    } catch {
-      /* 허용되지 않음: 화면이 꺼질 수 있을 뿐입니다 */
-    } finally {
-      lockBusy = false;
-    }
-  }
+  const wakeOwner = Symbol('workout-session');
 
   // 오늘 체크한 세트·완료가 하나도 없게 되돌아가면(모두 초기화) 재던 시간도 버리고 기록된 운동시간도 지우고, 휴식 타이머에도 알림
   let prevProgress = null; // { date, any }
@@ -84,7 +66,7 @@ export function mountWorkbar(root, store) {
     // 재지 않는 동안, 오늘 기록된 운동시간이 있으면 초기화 버튼이 보임 (지난 날에는 두지 않음)
     resetBtn.hidden = running || !total || state.selected !== state.today;
     root.querySelector('.headline').classList.toggle('working', running);
-    holdScreen(running && !paused);
+    setScreenAwake(wakeOwner, running && !paused);
   }
   function ticking(on) {
     clearInterval(workTick);
