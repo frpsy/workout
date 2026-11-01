@@ -47,6 +47,11 @@ export function mountWorkbar(root, store) {
     const cancelBtn = $('#wCancel', root);
     const resetBtn = $('#wReset', root);
     const total = (state.days[state.selected] && state.days[state.selected].workSec) || 0;
+    const round = (state.days[state.today]?.rounds?.length || 0) + 1;
+    const brandState = $('#brandState', root);
+    const stage = running ? (paused ? '일시중지' : '진행 중') : state.ready && state.selected === state.today && store.allDone() ? '완료' : '준비';
+    brandState.textContent = `${round}회차 ${stage}`;
+    brandState.classList.toggle('active', running && !paused);
     wTime.textContent = running ? fmtClock(session.elapsed()) : total ? `총 ${fmtKo(total)}` : '';
     wTime.classList.toggle('running', running);
     wTime.classList.toggle('paused', paused);

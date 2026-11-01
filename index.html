@@ -3,14 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rep Streak</title>
-<meta name="description" content="푸시업, 풀업, 스쿼트를 매일 체크하고 주마다 목표를 늘려 가는 기록장">
-<meta name="theme-color" content="#EAF1ED" media="(prefers-color-scheme: light)">
+<title>오늘운동 | 세트와 세션 기록</title>
+<meta name="description" content="한 세트부터 여러 운동 세션까지. 휴식 타이머와 운동시간, 하루의 꾸준함을 간편하게 기록하세요.">
+<meta name="theme-color" content="#F2F7F3" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0B100E" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Rep Streak">
+<meta name="apple-mobile-web-app-title" content="오늘운동">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta property="og:site_name" content="오늘운동">
+<meta property="og:title" content="오늘운동 | 세트와 세션 기록">
+<meta property="og:description" content="운동을 한 세트씩, 세션별로 기록하는 나만의 운동 기록장">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -21,7 +24,7 @@
 <body>
 <div class="splash" id="splash" role="status" aria-live="polite">
   <img src="icons/icon-192.png" width="84" height="84" alt="" class="splash-icon">
-  <p class="splash-title">Rep Streak</p>
+  <p class="splash-title">오늘운동</p>
   <div class="splash-track" id="splashTrack" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="splashBar"></i></div>
   <p class="splash-text" id="splashText">앱을 준비하는 중…</p>
   <button type="button" class="splash-retry" id="splashRetry" onclick="location.reload()">다시 시도</button>
@@ -41,6 +44,7 @@
   <div class="page" data-tab="record">
     <div class="wrap">
       <h1 class="page-title" id="recordTitle">기록</h1>
+      <p class="page-intro">하루하루 쌓이는 운동의 흐름</p>
       <div id="history" class="stack"></div>
       <div id="plan-sec"></div>
     </div>
@@ -48,6 +52,7 @@
   <div class="page" data-tab="settings">
     <div class="wrap">
       <h1 class="page-title" id="settingsTitle">설정</h1>
+      <p class="page-intro">나에게 맞는 운동과 목표 관리</p>
       <div id="settings" class="stack"></div>
     </div>
   </div>

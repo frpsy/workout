@@ -1,12 +1,12 @@
 {
-  "name": "Rep Streak",
-  "short_name": "Rep Streak",
-  "description": "매일 운동을 체크하고 주마다 목표를 늘려 가는 기록장",
+  "name": "오늘운동 · 루틴 기록",
+  "short_name": "오늘운동",
+  "description": "세트·세션·운동시간을 기록하며 매일의 루틴을 이어가는 운동 앱",
   "lang": "ko",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#EAF1ED",
+  "background_color": "#F2F7F3",
   "theme_color": "#0A7550",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
