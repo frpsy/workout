@@ -26,6 +26,7 @@ const ASSETS = [
   './js/model.js',
   './js/progression.js',
   './js/session.js',
+  './js/screen-awake.js',
   './js/sound.js',
   './js/stats.js',
   './js/storage/claude-db.js',

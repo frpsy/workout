@@ -2,6 +2,7 @@
 
 import { createTimer, fmt, STEP_SEC } from '../timer.js';
 import { playSound, unlockSound } from '../sound.js';
+import { setScreenAwake } from '../screen-awake.js';
 import { $, haptic } from './dom.js';
 
 const TICK_MS = 250;
@@ -17,7 +18,7 @@ export function mountTimer(root) {
       <span class="sr" id="tDone" role="status"></span>
     </div>`;
 
-  let lock = null; // 화면 켜짐 유지
+  const wakeOwner = Symbol('rest-timer'); // 운동 스톱워치와 공유
   let interval = 0;
   let doneTimer = 0;
   let lastCount = 0; // 마지막 3초 카운트 소리를 이미 낸 초
@@ -26,7 +27,7 @@ export function mountTimer(root) {
     onChange: render,
     onDone() {
       stopTicking();
-      releaseLock();
+      setScreenAwake(wakeOwner, false);
       haptic();
       try {
         if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
@@ -45,21 +46,6 @@ export function mountTimer(root) {
     },
   });
 
-  async function takeLock() {
-    try {
-      if (navigator.wakeLock && timer.running) lock = await navigator.wakeLock.request('screen');
-    } catch {
-      /* 허용되지 않음: 화면이 꺼질 수 있을 뿐입니다 */
-    }
-  }
-  function releaseLock() {
-    try {
-      if (lock) lock.release();
-    } catch {
-      /* 이미 풀림 */
-    }
-    lock = null;
-  }
   function startTicking() {
     clearInterval(interval);
     interval = setInterval(() => timer.tick(), TICK_MS);
@@ -99,12 +85,12 @@ export function mountTimer(root) {
     timer.start();
     if (!quiet) playSound('restStart'); // 세트 체크로 자동 시작할 때는 세트 소리와 겹치지 않게 조용히
     startTicking();
-    takeLock();
+    setScreenAwake(wakeOwner, true);
   }
   $('#tGo', root).addEventListener('click', () => {
     if (timer.running) {
       stopTicking();
-      releaseLock();
+      setScreenAwake(wakeOwner, false);
       timer.stop();
       playSound('restStop');
       return;
@@ -123,7 +109,7 @@ export function mountTimer(root) {
     if (!root.isConnected) return document.removeEventListener(ev.type, quietStop);
     if (!timer.running) return;
     stopTicking();
-    releaseLock();
+    setScreenAwake(wakeOwner, false);
     timer.stop();
   };
   document.addEventListener('workout:progress-cleared', quietStop);
@@ -136,7 +122,7 @@ export function mountTimer(root) {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
     timer.tick();
-    if (timer.running) takeLock();
+    if (timer.running) setScreenAwake(wakeOwner, true);
   });
 
   render();
