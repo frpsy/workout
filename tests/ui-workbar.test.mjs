@@ -275,7 +275,7 @@ test('오늘: 지난 날을 고치는 중에는 운동 시작 버튼을 숨기�
   store.actions.flushAll();
 });
 
-test('오늘: 체크한 세트·완료를 모두 되돌리면 재던 시간과 기록된 운동시간도 초기화됨', (t) => {
+test('오늘: 모든 세트 체크를 되돌려도 저장된 시간은 유지하고 진행 중 시간만 취소', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
   const { store, root } = setup(today);
@@ -296,8 +296,8 @@ test('오늘: 체크한 세트·완료를 모두 되돌리면 재던 시간과 �
   $$('#wBtn').click(); // 종료: 30초 기록
   assert.equal(store.state.days[todayStr()].workSec, 30);
   check.click(); // 모두 되돌림
-  assert.equal(store.state.days[todayStr()].workSec, undefined, '기록된 운동시간도 지움');
-  assert.equal($$('#wTime').textContent, '');
+  assert.equal(store.state.days[todayStr()].workSec, 30, '기록된 운동시간 보존');
+  assert.equal(root.querySelector('#wTime').textContent, '총 30초');
   store.actions.flushAll();
 });
 
@@ -401,5 +401,24 @@ test('세션 UX: 완료하면 작은 화면에서도 별도 재운동 줄을 보
   root.querySelector('#wAgain').click();
   assert.equal(action.hidden, true);
   assert.equal(start.hidden, false);
+  store.actions.flushAll();
+});
+
+
+test('마지막 종목을 첫 세트 동작으로 일괄 완료해도 가짜 운동시간을 생성하지 않음', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const rows = [...root.querySelectorAll('.row')];
+  for (const row of rows.slice(0, -1)) {
+    const ex = store.activeExercises().find((e) => e.name === row.querySelector('.name')?.textContent);
+    if (ex) store.actions.toggle(ex.id);
+  }
+  assert.equal(store.state.days[todayStr()]?.workSec, undefined);
+  rows.at(-1).querySelector('[data-f="check"]').click();
+  assert.equal(store.allDone(), true);
+  assert.equal(root.querySelector('#wBtn').textContent, '▶ 운동 시작');
+  assert.equal(localStorage.getItem('workout-check:session'), null);
+  assert.equal(store.state.days[todayStr()]?.workSec, undefined, '실제로 잰 시간이 없으면 생성하지 않음');
   store.actions.flushAll();
 });

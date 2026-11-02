@@ -84,7 +84,17 @@ export function setupFull() {
 /** 달력에서 그 날짜를 누름(이번 주 밖이면 한 달 보기로 펼치고, 다른 달이면 ‹로 옮김) */
 export function pickDate(root, date) {
   const cell = () => root.querySelector(`#cal button.cell[data-date="${date}"]`);
-  if (!cell()) root.querySelector('#calToggle').click();
-  for (let i = 0; i < 24 && !cell(); i++) root.querySelector('#calPrev').click();
-  cell().click();
+  const toggle = root.querySelector('#calToggle');
+  if (!cell() && toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+  for (let i = 0; i < 24 && !cell(); i++) {
+    const dates = [...root.querySelectorAll('#cal button.cell[data-date]')].map((b) => b.dataset.date);
+    if (!dates.length) break;
+    const direction = date < dates[0] ? '#calPrev' : '#calNext';
+    const button = root.querySelector(direction);
+    if (button.disabled) break;
+    button.click();
+  }
+  const target = cell();
+  if (!target) throw new Error(`달력에서 날짜 ${date}를 찾지 못했습니다`);
+  target.click();
 }

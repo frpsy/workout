@@ -125,7 +125,9 @@ test('기록: 처음엔 오늘 카드, 날짜를 누르면 그 자리에서 그�
 test('기록: 기록이 없는 날은 안내, 시각이 없는 예전 날은 시간 기록 없음으로 보임, 소감은 글자 그대로 보임', () => {
   const t0 = todayStr();
   const empty = addDays(t0, -3);
-  const days = fullDays(2);
+  // 달력의 탐색 가능 범위 안에 빈 날을 둡니다. 가장 오래된 기록보다 앞선 날짜는 선택할 수 없습니다.
+  const days = fullDays(5);
+  delete days[empty];
   days[t0] = { ...days[t0], note: { feel: '<b>굵게</b>', thanks: '' } };
   const { root } = setup(history, { days });
   pickDate(root, empty);
