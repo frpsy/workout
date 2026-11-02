@@ -297,7 +297,7 @@ test('오늘: 모든 세트 체크를 되돌려도 저장된 시간은 유지하
   assert.equal(store.state.days[todayStr()].workSec, 30);
   check.click(); // 모두 되돌림
   assert.equal(store.state.days[todayStr()].workSec, 30, '기록된 운동시간 보존');
-  assert.equal($('#wTime').textContent, '총 30초');
+  assert.equal(root.querySelector('#wTime').textContent, '총 30초');
   store.actions.flushAll();
 });
 
