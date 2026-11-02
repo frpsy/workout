@@ -18,7 +18,7 @@ export function mountWorkbar(root, store) {
 
   const wakeOwner = Symbol('workout-session');
 
-  // 오늘 체크한 세트·완료가 하나도 없게 되돌아가면(모두 초기화) 재던 시간도 버리고 기록된 운동시간도 지우고, 휴식 타이머에도 알림
+  // 오늘 체크한 세트·완료를 모두 되돌리면 진행 중인 타이머만 취소하고 저장된 운동시간은 보존합니다.
   let prevProgress = null; // { date, any }
   function resetTimeIfCleared() {
     const state = store.state;
@@ -31,8 +31,7 @@ export function mountWorkbar(root, store) {
       ticking(false);
       session.cancel();
     }
-    // 이전 회차의 운동시간은 보존. 첫 회차를 전부 되돌린 경우에만 일별 기록 제거.
-    if (!state.days[state.today]?.rounds?.length) actions.clearWorkSec(state.today);
+    // 체크를 되돌리는 것은 시간 기록 삭제가 아닙니다. 저장된 운동시간은 명시적으로 초기화할 때만 지웁니다.
     document.dispatchEvent(new Event('workout:progress-cleared'));
   }
 
@@ -129,7 +128,7 @@ export function mountWorkbar(root, store) {
     // 오늘 이미 운동 시간을 기록했으면 자동 시작하지 않음(두 번째 운동은 ▶ 운동 시작을 직접 누름)
     const day = state.days[state.today];
     const recorded = !!(day && (day.workSec || (day.sessions && day.sessions.length)));
-    if (after.setsDone <= before.setsDone || session.running || recorded || state.selected !== state.today || !state.ready) return;
+    if (after.setsDone <= before.setsDone || session.running || recorded || store.allDone() || state.selected !== state.today || !state.ready) return;
     startWork();
     renderWork();
   }
