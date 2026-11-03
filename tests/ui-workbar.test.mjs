@@ -396,7 +396,7 @@ test('세션 UX: 완료하면 작은 화면에서도 별도 재운동 줄을 보
   assert.equal(action.hidden, true);
   for (const row of root.querySelectorAll('.row')) row.querySelector('[data-f="check"]').click();
   assert.equal(action.hidden, false);
-  assert.match(root.querySelector('#roundSummary').textContent, /1회차 완료/);
+  assert.match(root.querySelector('#roundSummary').textContent, /1회차 종료/);
   assert.equal(start.hidden, true);
   root.querySelector('#wAgain').click();
   assert.equal(action.hidden, true);
@@ -420,5 +420,45 @@ test('마지막 종목을 첫 세트 동작으로 일괄 완료해도 가짜 운
   assert.equal(root.querySelector('#wBtn').textContent, '▶ 운동 시작');
   assert.equal(localStorage.getItem('workout-check:session'), null);
   assert.equal(store.state.days[todayStr()]?.workSec, undefined, '실제로 잰 시간이 없으면 생성하지 않음');
+  store.actions.flushAll();
+});
+
+test('부분 수행: 각 종목 1/3세트 후 종료하면 회차가 닫히고 재운동할 수 있다', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const rows = [...root.querySelectorAll('.row')];
+  for (const row of rows) row.querySelector('[data-set="1"]').click();
+  assert.equal(store.allDone(), false);
+  mock.timers.tick(20_000);
+  root.querySelector('#wBtn').click();
+  const date = todayStr();
+  assert.equal(store.isSessionClosed(), true);
+  assert.equal(store.allDone(), false, '목표는 미달성으로 유지');
+  assert.equal(store.state.days[date].workSec, 20);
+  assert.equal(root.querySelector('#roundAction').hidden, false);
+  assert.equal(root.querySelector('#wBtn').hidden, true);
+  root.querySelector('#wAgain').click();
+  assert.equal(store.isSessionClosed(), false, '새 회차는 진행 중');
+  assert.equal(store.state.days[date].rounds.length, 1);
+  assert.equal(store.state.days[date].rounds[0].entries.push.setsDone, 1);
+  assert.ok(rows.every((row) => [...row.querySelectorAll('[data-set]')].every((b) => b.getAttribute('aria-pressed') === 'false')));
+  assert.equal(store.state.days[date].workSec, 20, '이전 회차 시간 보존');
+  root.querySelector('#wCancel').click();
+  store.actions.flushAll();
+});
+
+test('부분 수행 종료 뒤 추가 체크로 타이머가 다시 시작되지 않는다', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  row.querySelector('[data-set="1"]').click();
+  mock.timers.tick(5_000);
+  root.querySelector('#wBtn').click();
+  row.querySelector('[data-set="2"]').click();
+  assert.equal(store.isSessionClosed(), true);
+  assert.equal(localStorage.getItem('workout-check:session'), null);
+  assert.equal(store.state.days[todayStr()].workSec, 5);
   store.actions.flushAll();
 });
