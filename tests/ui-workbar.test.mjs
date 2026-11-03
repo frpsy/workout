@@ -396,7 +396,7 @@ test('세션 UX: 완료하면 작은 화면에서도 별도 재운동 줄을 보
   assert.equal(action.hidden, true);
   for (const row of root.querySelectorAll('.row')) row.querySelector('[data-f="check"]').click();
   assert.equal(action.hidden, false);
-  assert.match(root.querySelector('#roundSummary').textContent, /1회차 종료/);
+  assert.match(root.querySelector('#roundSummary').textContent, /1회차 완료/);
   assert.equal(start.hidden, true);
   root.querySelector('#wAgain').click();
   assert.equal(action.hidden, true);
