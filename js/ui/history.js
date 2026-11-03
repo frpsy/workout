@@ -231,7 +231,7 @@ export function mountHistory(root, store) {
         })
         .join('') +
       '</ul>';
-    const rounds = day?.rounds?.length ? [...day.rounds, { entries: day.activeEntries || {} }] : [];
+    const rounds = day?.rounds?.length ? [...day.rounds, { entries: day.activeEntries || {} }] : day?.sessionClosed ? [{ entries: day.entries || {} }] : [];
     const roundHtml = rounds.length ? '<div class="round-history"><h3 class="sec">운동 회차별 기록</h3>' +
       rounds.map((round, index) => {
         const checked = state.config.exercises
@@ -241,7 +241,7 @@ export function mountHistory(root, store) {
             const number = v.done ? (v.sets || ex.sets) : v.setsDone;
             return `<li><span>${esc(ex.name)}</span><b>${v.count ?? v.target ?? ex.base}${(UNITS[ex.unit] || UNITS.reps).label} × ${number}세트${v.done ? ' 완료' : ''}</b></li>`;
           }).join('');
-        return `<details class="round-details"><summary>${index + 1}회차 ${checked ? '운동 기록' : '진행 전'}</summary>${checked ? `<ul class="dayex">${checked}</ul>` : '<p class="sub">체크한 운동이 없습니다.</p>'}</details>`;
+        return `<details class="round-details"><summary>${index + 1}회차 ${index < rounds.length - 1 || day?.sessionClosed ? '종료' : '진행 중'} · ${checked ? '운동 기록' : '체크 없음'}</summary>${checked ? `<ul class="dayex">${checked}</ul>` : '<p class="sub">체크한 운동이 없습니다.</p>'}</details>`;
       }).join('') + '</div>' : '';
     const note = (day && day.note) || {};
     const rest = ctx.rest.has(parse(date).getDay());

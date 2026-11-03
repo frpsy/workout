@@ -130,3 +130,15 @@ test('예전 저녁 기록(pm)은 하루 기록(entries)에 합치고, 운동 �
   assert.equal(normalizeDay({ entries: {}, pm: 'x' }).pm, undefined);
   assert.deepEqual(normalizeDay({ entries: {}, sessions: [{ s: 5, e: 9, sec: 4, c: 2 }, { s: 1, e: 3, sec: 2 }] }).sessions, [{ s: 1, e: 3, sec: 2 }, { s: 5, e: 9, sec: 4 }], '예전 c 표시는 버림');
 });
+
+test('부분 완료 회차 종료 상태는 저장·복원되고 기존 기록은 그대로 읽힌다', async () => {
+  const { serializeDay } = await import('../js/model.js');
+  const date = '2026-11-03';
+  const day = { entries: { push: { done: false, setsDone: 1 } }, sessionClosed: true, workSec: 60 };
+  const copy = normalizeDay(serializeDay(date, day));
+  assert.equal(copy.sessionClosed, true);
+  assert.equal(copy.entries.push.done, false);
+  assert.equal(copy.entries.push.setsDone, 1);
+  assert.equal(copy.workSec, 60);
+  assert.equal(normalizeDay({ entries: {} }).sessionClosed, undefined);
+});

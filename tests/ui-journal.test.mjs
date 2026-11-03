@@ -149,3 +149,27 @@ test('마무리: 마지막 종목을 막 체크하면 칸을 화면으로 끌어
     proto.scrollIntoView = orig;
   }
 });
+
+test('부분 수행 후 회차 종료 시 목표 미달성이어도 소감과 감사가 열린다', () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="journal"></div>';
+  const store = createStore(ad);
+  const root = document.querySelector('#journal');
+  store.subscribe(mountJournal(root, store));
+  for (const id of ['push', 'pull', 'squat']) store.actions.setProgress(id, 1);
+  assert.equal(store.allDone(), false);
+  assert.equal(root.querySelector('#jBox').hidden, true);
+  assert.equal(store.actions.closeSession(), true);
+  assert.equal(root.querySelector('#jBox').hidden, false);
+  const feel = root.querySelector('#jFeel');
+  const thanks = root.querySelector('#jThanks');
+  feel.value = '한 세트씩 실시';
+  feel.dispatchEvent(new Event('input', { bubbles: true }));
+  thanks.value = '운동할 수 있음';
+  thanks.dispatchEvent(new Event('input', { bubbles: true }));
+  assert.deepEqual(store.state.days[todayStr()].note, { feel: '한 세트씩 실시', thanks: '운동할 수 있음' });
+  store.actions.startAnotherSession();
+  assert.equal(store.isSessionClosed(), false);
+  assert.equal(root.querySelector('#jBox').hidden, false);
+  store.actions.flushAll();
+});
