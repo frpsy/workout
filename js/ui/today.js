@@ -228,10 +228,7 @@ export function mountToday(root, store) {
         const after = view();
         soundFor(store, before, after);
         workbar.autoStart(before, after);
-        // 세트를 새로 마쳤으면(되돌린 게 아니면) 휴식 타이머에 알림. 모든 운동을 끝냈으면 쉴 필요가 없음
-        const allDone = store.allDone();
-        // 지난 날 기록을 고치는 중에는 쉴 일이 없으므로 휴식을 시작하지 않음
-        if (after.setsDone > before.setsDone && !allDone && store.state.selected === store.state.today) document.dispatchEvent(new Event('workout:set-checked'));
+        notifyRestStart(before, after);
         notifyAllDone(wasDone);
       });
       r.check.addEventListener('click', () => {
@@ -239,8 +236,10 @@ export function mountToday(root, store) {
         const before = view();
         const wasDone = store.allDone();
         actions.toggle(ex.id);
-        soundFor(store, before, view());
-        workbar.autoStart(before, view());
+        const after = view();
+        soundFor(store, before, after);
+        workbar.autoStart(before, after);
+        notifyRestStart(before, after);
         notifyAllDone(wasDone);
       });
       // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
@@ -255,6 +254,14 @@ export function mountToday(root, store) {
       rows.set(ex.id, r);
     }
     if (!exs.length) box.innerHTML = '<p class="empty">사용 중인 운동이 없습니다. 아래 운동 설정에서 추가해 주세요.</p>';
+  }
+
+  /** 세트 번호와 큰 완료 버튼 모두: 새로운 세트를 마치고 운동이 남았을 때만 자동 휴식을 요청합니다. */
+  function notifyRestStart(before, after) {
+    if (after.setsDone > before.setsDone && !store.allDone() &&
+        !store.isSessionClosed() && store.state.selected === store.state.today) {
+      document.dispatchEvent(new Event('workout:set-checked'));
+    }
   }
 
   /** 오늘 운동을 방금 모두 마쳤으면 알림(쉬는 중이던 휴식 타이머를 멈추게) */
