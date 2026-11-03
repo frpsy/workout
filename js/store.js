@@ -206,6 +206,11 @@ export function createStore(adapter) {
     return exs.length > 0 && exs.every((e) => view(date, e, res).done);
   }
 
+  /** 회차 종료 여부는 목표 완료와 별개로 관리합니다. 예전 전체 완료 기록도 종료로 간주합니다. */
+  function isSessionClosed(date = state.selected) {
+    return !!state.days[date]?.sessionClosed || allDone(date);
+  }
+
   /** 그날 체크한 세트·완료가 하나라도 있는지 */
   function hasProgress(date, { current = false } = {}) {
     const day = state.days[date];
@@ -243,14 +248,23 @@ export function createStore(adapter) {
   /* ---------- 동작 ---------- */
 
   const actions = {
+    /** 운동시간 종료 또는 전체 종목 완료 시 현 회차 종료. 세트 기록은 변경하지 않습니다. */
+    closeSession() {
+      if (!state.ready || state.selected !== state.today || isSessionClosed()) return false;
+      ensureDay(state.today).sessionClosed = true;
+      commitDay(state.today);
+      return true;
+    },
+
     /** 오늘 운동을 한 차례 더 시작: 이전 회차는 보존하고 새 세트 체크만 비웁니다. */
     startAnotherSession() {
-      if (!state.ready || state.selected !== state.today || !allDone()) return false;
+      if (!state.ready || state.selected !== state.today || !isSessionClosed()) return false;
       const day = ensureDay(state.today);
       if ((day.rounds?.length || 0) >= MAX_SESSIONS - 1) return false;
       const snapshot = day.rounds?.length ? day.activeEntries || {} : day.entries;
       day.rounds = [...(day.rounds || []), { entries: JSON.parse(JSON.stringify(snapshot)) }];
       day.activeEntries = {};
+      delete day.sessionClosed;
       commitDay(state.today);
       return true;
     },
@@ -424,6 +438,7 @@ export function createStore(adapter) {
     actions,
     view,
     allDone,
+    isSessionClosed,
     hasProgress,
     resolver,
     activeExercises,
