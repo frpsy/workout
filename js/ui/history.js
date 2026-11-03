@@ -231,7 +231,7 @@ export function mountHistory(root, store) {
         })
         .join('') +
       '</ul>';
-    const rounds = day?.rounds?.length ? [...day.rounds, { entries: day.activeEntries || {} }] : [];
+    const rounds = day?.rounds?.length ? [...day.rounds, { entries: day.activeEntries || {} }] : day?.sessionClosed ? [{ entries: day.entries || {} }] : [];
     const roundHtml = rounds.length ? '<div class="round-history"><h3 class="sec">운동 회차별 기록</h3>' +
       rounds.map((round, index) => {
         const checked = state.config.exercises
