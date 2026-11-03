@@ -5,7 +5,7 @@ import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LEVELS, LIMITS, SCHEMA_V
 import { isDateStr } from './dates.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'rounds', 'activeEntries']);
+const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'rounds', 'activeEntries', 'sessionClosed']);
 const MAX_WORK_SEC = 86400; // 하루 총 운동시간 상한(24시간)
 export const NOTE_MAX = 200; // 운동 소감·감사한 일 글자 수 상한
 export const MAX_SESSIONS = 20; // 하루에 남기는 운동 구간(시작·종료) 수 상한
@@ -144,7 +144,7 @@ export function normalizeDay(raw) {
     entries: normalizeEntries(isObj(v.entries) ? v.entries : {}),
   })) : [];
   const activeEntries = isObj(raw.activeEntries) && rounds.length ? normalizeEntries(raw.activeEntries) : null;
-  return { entries, ...(rounds.length ? { rounds, activeEntries: activeEntries || {} } : {}), ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
+  return { entries, ...(rounds.length ? { rounds, activeEntries: activeEntries || {} } : {}), ...(raw.sessionClosed === true ? { sessionClosed: true } : {}), ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeDay(date, day) {
@@ -152,7 +152,7 @@ export function serializeDay(date, day) {
   const note = normalizeNote(day.note);
   const sessions = normalizeSessions(day.sessions);
   const rounds = Array.isArray(day.rounds) ? day.rounds.slice(0, MAX_SESSIONS).map((v) => ({ entries: normalizeEntries(v.entries || {}) })) : [];
-  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(rounds.length ? { rounds, activeEntries: normalizeEntries(day.activeEntries || {}) } : {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
+  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(rounds.length ? { rounds, activeEntries: normalizeEntries(day.activeEntries || {}) } : {}), ...(day.sessionClosed === true ? { sessionClosed: true } : {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeConfig(config) {
