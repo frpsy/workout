@@ -1,6 +1,7 @@
 // 휴식 타이머 테스트 (가짜 DOM 환경은 helpers/ui-env.mjs)
 import { mock, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { addDays, todayStr } from '../js/dates.js';
 import { mountTimer, setup, today } from './helpers/ui-env.mjs';
 
 test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림', (t) => {
@@ -82,6 +83,64 @@ test('오늘+타이머: 세트를 체크하면 휴식이 자동으로 시작되�
   assert.equal(go().textContent, '휴식 시작', '모든 운동을 마치면 휴식을 시작하지 않음');
   store.actions.flushAll();
   localStorage.removeItem('workout-check:timer');
+});
+
+test('오늘+타이머: 큰 완료 버튼으로 종목을 마치면 휴식이 시작되고, 실행 중 중복 시작 없이 마지막 완료 시 멈춤', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const timerRoot = document.createElement('div');
+  document.body.appendChild(timerRoot);
+  mountTimer(timerRoot);
+  const go = () => timerRoot.querySelector('#tGo');
+  const time = () => timerRoot.querySelector('#tTime').textContent;
+  const checks = [...root.querySelectorAll('.row [data-f="check"]')];
+  assert.equal(go().textContent, '휴식 시작');
+
+  checks[0].click(); // 세트 번호 대신 큰 초록색 완료 버튼
+  assert.equal(go().textContent, '휴식 중지', '큰 완료 버튼에서도 휴식을 자동 시작');
+  mock.timers.tick(10_000);
+  assert.equal(time(), '0:50');
+  checks[1].click();
+  assert.equal(time(), '0:50', '다른 종목 완료로 이미 진행 중인 휴식 시간을 초기화하지 않음');
+
+  checks[2].click();
+  assert.equal(store.allDone(), true);
+  assert.equal(go().textContent, '휴식 시작', '마지막 종목을 완료하면 휴식 타이머를 중지');
+  mock.timers.tick(70_000);
+  assert.equal(timerRoot.querySelector('#timerBar').classList.contains('done'), false, '운동 완료 뒤 휴식 종료 알림은 없음');
+  store.actions.flushAll();
+});
+
+test('오늘+타이머: 큰 완료 버튼의 해제·수동 모드·과거 날짜·종료된 회차에는 자동 휴식을 시작하지 않음', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const timerRoot = document.createElement('div');
+  document.body.appendChild(timerRoot);
+  mountTimer(timerRoot);
+  const go = () => timerRoot.querySelector('#tGo');
+  const checks = [...root.querySelectorAll('.row [data-f="check"]')];
+
+  checks[0].click();
+  assert.equal(go().textContent, '휴식 중지');
+  go().click(); // 수동 중지
+  checks[0].click(); // 완료 해제
+  assert.equal(go().textContent, '휴식 시작', '완료 해제 시에는 자동 시작하지 않음');
+
+  timerRoot.querySelector('#tAuto').click(); // 수동 모드
+  checks[0].click();
+  assert.equal(go().textContent, '휴식 시작', '수동 모드에서는 완료해도 자동 시작하지 않음');
+
+  timerRoot.querySelector('#tAuto').click(); // 다시 자동
+  store.actions.closeSession();
+  checks[1].click();
+  assert.equal(go().textContent, '휴식 시작', '종료한 회차의 기록 변경으로 휴식을 시작하지 않음');
+
+  store.actions.select(addDays(todayStr(), -1));
+  root.querySelector('.row [data-f="check"]').click();
+  assert.equal(go().textContent, '휴식 시작', '지난 날짜 기록 수정은 휴식을 시작하지 않음');
+  store.actions.flushAll();
 });
 
 test('오늘+타이머: 오늘 체크를 모두 되돌리면 쉬는 중이던 휴식도 멈추고, 일부만 되돌리면 그대로', (t) => {
