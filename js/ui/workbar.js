@@ -48,7 +48,7 @@ export function mountWorkbar(root, store) {
     const total = (state.days[state.selected] && state.days[state.selected].workSec) || 0;
     const round = (state.days[state.today]?.rounds?.length || 0) + 1;
     const brandState = $('#brandState', root);
-    const stage = running ? (paused ? '일시중지' : '진행 중') : state.ready && state.selected === state.today && store.isSessionClosed() ? '종료' : '준비';
+    const stage = running ? (paused ? '일시중지' : '진행 중') : state.ready && state.selected === state.today && store.allDone() ? '완료' : state.ready && state.selected === state.today && store.isSessionClosed() ? '종료' : '준비';
     brandState.textContent = `${round}회차 ${stage}`;
     brandState.classList.toggle('active', running && !paused);
     wTime.textContent = running ? fmtClock(session.elapsed()) : total ? `총 ${fmtKo(total)}` : '';
@@ -66,7 +66,7 @@ export function mountWorkbar(root, store) {
     action.hidden = !canRepeat;
     again.disabled = !state.ready;
     if (canRepeat) {
-      $('#roundSummary', root).textContent = `${roundsDone + 1}회차 종료 · 누적 ${fmtKo(total || 0)}`;
+      $('#roundSummary', root).textContent = `${roundsDone + 1}회차 ${store.allDone() ? '완료' : '종료'} · 누적 ${fmtKo(total || 0)}`;
       btn.hidden = true;
     }
     // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
