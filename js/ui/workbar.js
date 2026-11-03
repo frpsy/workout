@@ -48,7 +48,7 @@ export function mountWorkbar(root, store) {
     const total = (state.days[state.selected] && state.days[state.selected].workSec) || 0;
     const round = (state.days[state.today]?.rounds?.length || 0) + 1;
     const brandState = $('#brandState', root);
-    const stage = running ? (paused ? '일시중지' : '진행 중') : state.ready && state.selected === state.today && store.allDone() ? '완료' : '준비';
+    const stage = running ? (paused ? '일시중지' : '진행 중') : state.ready && state.selected === state.today && store.isSessionClosed() ? '종료' : '준비';
     brandState.textContent = `${round}회차 ${stage}`;
     brandState.classList.toggle('active', running && !paused);
     wTime.textContent = running ? fmtClock(session.elapsed()) : total ? `총 ${fmtKo(total)}` : '';
@@ -62,11 +62,11 @@ export function mountWorkbar(root, store) {
     const again = $('#wAgain', root);
     const action = $('#roundAction', root);
     const roundsDone = state.days[state.today]?.rounds?.length || 0;
-    const canRepeat = !running && state.selected === state.today && store.allDone() && roundsDone < MAX_SESSIONS - 1;
+    const canRepeat = !running && state.selected === state.today && store.isSessionClosed() && roundsDone < MAX_SESSIONS - 1;
     action.hidden = !canRepeat;
     again.disabled = !state.ready;
     if (canRepeat) {
-      $('#roundSummary', root).textContent = `${roundsDone + 1}회차 완료 · 누적 ${fmtKo(total || 0)}`;
+      $('#roundSummary', root).textContent = `${roundsDone + 1}회차 종료 · 누적 ${fmtKo(total || 0)}`;
       btn.hidden = true;
     }
     // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
@@ -93,6 +93,7 @@ export function mountWorkbar(root, store) {
     ticking(false);
     const done = session.stop(); // 멈춘 시각을 먼저 확정해 중복 저장 방지
     if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e });
+    if (done && done.date === store.state.today) actions.closeSession();
     if (sound) playSound('stop');
     renderWork();
   }
@@ -110,6 +111,7 @@ export function mountWorkbar(root, store) {
   document.addEventListener('workout:all-done', () => {
     if (!store.state.ready || store.state.selected !== store.state.today || !store.allDone()) return;
     finishWork({ sound: false });
+    actions.closeSession();
   });
   $('#wAgain', root).addEventListener('click', () => {
     if (session.running || !actions.startAnotherSession()) return;
@@ -128,7 +130,7 @@ export function mountWorkbar(root, store) {
     // 오늘 이미 운동 시간을 기록했으면 자동 시작하지 않음(두 번째 운동은 ▶ 운동 시작을 직접 누름)
     const day = state.days[state.today];
     const recorded = !!(day && (day.workSec || (day.sessions && day.sessions.length)));
-    if (after.setsDone <= before.setsDone || session.running || recorded || store.allDone() || state.selected !== state.today || !state.ready) return;
+    if (after.setsDone <= before.setsDone || session.running || recorded || store.isSessionClosed() || state.selected !== state.today || !state.ready) return;
     startWork();
     renderWork();
   }
