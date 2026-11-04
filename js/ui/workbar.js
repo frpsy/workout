@@ -92,6 +92,7 @@ export function mountWorkbar(root, store) {
     if (!session.running) return;
     ticking(false);
     const done = session.stop(); // 멈춘 시각을 먼저 확정해 중복 저장 방지
+    document.dispatchEvent(new Event('workout:ended')); // 명시적 운동 종료 시 휴식 타이머도 즉시 중지
     if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e });
     if (done && done.date === store.state.today) actions.closeSession();
     if (sound) playSound('stop');
