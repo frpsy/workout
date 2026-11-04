@@ -114,6 +114,7 @@ export function mountTimer(root) {
   };
   document.addEventListener('workout:progress-cleared', quietStop);
   document.addEventListener('workout:all-done', quietStop);
+  document.addEventListener('workout:ended', quietStop); // ■ 운동 종료 버튼을 누르면 휴식도 중지
   $('#tTime', root).addEventListener('click', () => timer.nextPreset()); // 30 → 60 → 90초
   $('#tMinus', root).addEventListener('click', () => timer.adjust(-STEP_SEC));
   $('#tPlus', root).addEventListener('click', () => timer.adjust(STEP_SEC));
