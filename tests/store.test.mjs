@@ -328,3 +328,27 @@ test('하루에 여러 번 운동하면 운동 구간이 시각 순으로 쌓이
   assert.deepEqual(store.state.days[d].sessions, [{ s: 1_000, e: 700_000, sec: 600 }, { s: 2_000_000, e: 2_300_000, sec: 300 }]);
   assert.equal(store.state.days[d].workSec, 900);
 });
+
+test('세트 수 조절과 체크: 줄여서 체크한 세트가 전부가 되면 완료, 직접 고친 세트 수는 되돌려도 유지', () => {
+  const store = createStore(fakeAdapter());
+  const d = todayStr();
+  const ex = store.state.config.exercises.find((e) => e.id === 'push');
+  store.actions.setProgress('push', 2); // 3세트 중 2세트
+  store.actions.setSets('push', 2);
+  let v = store.view(d, ex);
+  assert.equal(v.done, true, '2/2가 되면 종목 완료');
+  assert.equal(v.sets, 2);
+  assert.equal(store.state.days[d].entries.push.setsDone, undefined);
+
+  store.actions.setSets('push', 4); // 마친 뒤 세트 수를 고치면 완료 그대로
+  assert.equal(store.view(d, ex).done, true);
+
+  store.actions.setProgress('push', 3); // 4번째 세트를 되돌림
+  v = store.view(d, ex);
+  assert.deepEqual({ done: v.done, sets: v.sets, setsDone: v.setsDone }, { done: false, sets: 4, setsDone: 3 }, '고친 세트 수 유지(3/3 미완료로 보이지 않음)');
+
+  store.actions.setProgress('push', 4);
+  store.actions.toggle('push'); // 완료 버튼으로 해제해도
+  assert.equal(store.view(d, ex).sets, 4, '직접 고친 세트 수 유지');
+  store.actions.flushAll();
+});

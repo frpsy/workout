@@ -255,3 +255,49 @@ test('효과음: 재개 중 설정을 끄면 뒤늦게 효과음이 나오지 �
     played.length = 0;
   }
 });
+
+test('효과음: resume()이 끝났는데도 멈춰 있으면 오디오를 버리고, 누르는 순간에는 새로 만들어 바로 소리를 냄', async () => {
+  const { playSound, setSilentMode, restoreSound } = await import('../js/sound.js');
+  localStorage.removeItem('workout-check:sound');
+  const prev = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  const activation = { isActive: false };
+  Object.defineProperty(globalThis, 'navigator', { value: { userActivation: activation }, configurable: true });
+  let created = 0;
+  let stuck = true;
+  globalThis.AudioContext = class extends FakeAudio {
+    constructor() {
+      super();
+      created++;
+      this.state = stuck ? 'interrupted' : 'running';
+    }
+    resume() { return Promise.resolve(); } // iOS: 끝났다고 하지만 그대로 멈춤
+    close() { this.state = 'closed'; }
+  };
+  try {
+    setSilentMode(false);
+    played.length = 0;
+    playSound('done');
+    await new Promise((r) => setImmediate(r));
+    assert.equal(played.length, 0, '멈춘 오디오로는 가짜로 재생하지 않음');
+    stuck = false;
+    playSound('done'); // 막힌 오디오는 버렸으니 새로 만듦
+    assert.equal(created, 2);
+    assert.equal(played.length, 3);
+
+    // 앱을 내렸다 올린 뒤: 'running'이라도 다음 탭에서 새 오디오로 바꿈
+    await new Promise((r) => setTimeout(r, 1100));
+    restoreSound();
+    activation.isActive = true;
+    played.length = 0;
+    playSound('set', 1);
+    assert.equal(created, 3, '돌아온 뒤 첫 탭에서 새로 만듦');
+    assert.equal(played.length, 1);
+    playSound('set', 2);
+    assert.equal(created, 3, '그다음부터는 그대로 씀');
+  } finally {
+    if (prev) Object.defineProperty(globalThis, 'navigator', prev);
+    else delete globalThis.navigator;
+    delete globalThis.AudioContext;
+    played.length = 0;
+  }
+});

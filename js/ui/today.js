@@ -222,38 +222,37 @@ export function mountToday(root, store) {
         if (!b || b.disabled) return;
         haptic();
         const i = Number(b.dataset.set);
-        const before = view();
-        const wasDone = store.allDone();
-        actions.setProgress(ex.id, before.setsDone === i ? i - 1 : i);
-        const after = view();
-        soundFor(store, before, after);
-        workbar.autoStart(before, after);
-        notifyRestStart(before, after);
-        notifyAllDone(wasDone);
+        changeProgress(view, () => actions.setProgress(ex.id, view().setsDone === i ? i - 1 : i));
       });
       r.check.addEventListener('click', () => {
         haptic();
-        const before = view();
-        const wasDone = store.allDone();
-        actions.toggle(ex.id);
-        const after = view();
-        soundFor(store, before, after);
-        workbar.autoStart(before, after);
-        notifyRestStart(before, after);
-        notifyAllDone(wasDone);
+        changeProgress(view, () => actions.toggle(ex.id));
       });
       // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
       holdStep(r.minus, () => step(-unit.inc), () => step(-unit.big));
       holdStep(r.plus, () => step(unit.inc), () => step(unit.big));
       r.cnt.addEventListener('change', () => actions.setCount(ex.id, parseInt(r.cnt.value, 10)));
-      r.setsMinus.addEventListener('click', () => actions.setSets(ex.id, view().sets - 1));
-      r.setsPlus.addEventListener('click', () => actions.setSets(ex.id, view().sets + 1));
-      r.setsIn.addEventListener('change', () => actions.setSets(ex.id, parseInt(r.setsIn.value, 10)));
+      // 세트 수를 바꿔 종목이 완료되거나 다시 진행 중이 되면 체크와 똑같이 소리·완료 처리
+      r.setsMinus.addEventListener('click', () => changeProgress(view, () => actions.setSets(ex.id, view().sets - 1)));
+      r.setsPlus.addEventListener('click', () => changeProgress(view, () => actions.setSets(ex.id, view().sets + 1)));
+      r.setsIn.addEventListener('change', () => changeProgress(view, () => actions.setSets(ex.id, parseInt(r.setsIn.value, 10))));
       for (const input of [r.cnt, r.setsIn]) input.addEventListener('focus', () => input.select());
       box.appendChild(el);
       rows.set(ex.id, r);
     }
     if (!exs.length) box.innerHTML = '<p class="empty">사용 중인 운동이 없습니다. 아래 운동 설정에서 추가해 주세요.</p>';
+  }
+
+  /** 체크·세트 수 변경 공통: 바뀐 상태에 맞는 소리, 운동시간 자동 시작, 자동 휴식, 모두 완료 알림 */
+  function changeProgress(view, change) {
+    const before = view();
+    const wasDone = store.allDone();
+    change();
+    const after = view();
+    soundFor(store, before, after);
+    workbar.autoStart(before, after);
+    notifyRestStart(before, after);
+    notifyAllDone(wasDone);
   }
 
   /** 세트 번호와 큰 완료 버튼 모두: 새로운 세트를 마치고 운동이 남았을 때만 자동 휴식을 요청합니다. */

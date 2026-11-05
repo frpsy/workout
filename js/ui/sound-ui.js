@@ -24,6 +24,7 @@ export function mountSoundToggle(root) {
 
 /** 종목 상태가 바뀐 뒤 효과음: 세트 체크 / 종목 완료 / 모두 완료 / 되돌림 */
 export function soundFor(store, before, after) {
+  if (before.done && after.done) return; // 마친 종목의 세트 수만 고친 경우
   if (after.done && !before.done) {
     const all = store.allDone();
     playSound(all ? 'all' : 'done');

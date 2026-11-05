@@ -387,3 +387,30 @@ test('브랜드: 첫 화면에 앱 이름과 현재 운동 회차 상태를 표�
   root.querySelector('#wCancel').click();
   store.actions.flushAll();
 });
+
+test('오늘: 세트 수를 줄여 체크한 세트가 전부가 되면 완료 표시·완료음, 마친 뒤 세트 수 수정은 조용히', () => {
+  const played = [];
+  globalThis.AudioContext = class {
+    constructor() { this.currentTime = 0; this.state = 'running'; this.destination = {}; }
+    resume() {}
+    createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect: () => ({ connect() {} }) }; }
+    createOscillator() { const o = { frequency: {}, connect: (g) => g, start() { played.push(o.frequency.value); }, stop() {} }; return o; }
+  };
+  try {
+    const { store, root } = setup(today);
+    const row = root.querySelector('.row');
+    const f = (n) => row.querySelector(`[data-f="${n}"]`);
+    row.querySelector('[data-set="2"]').click();
+    played.length = 0;
+    f('setsMinus').click();
+    assert.ok(row.classList.contains('done'), '2/2 → 완료');
+    assert.equal(played.length, 3, '종목 완료음');
+    played.length = 0;
+    f('setsMinus').click();
+    assert.ok(row.classList.contains('done'));
+    assert.equal(played.length, 0, '마친 종목 세트 수 수정은 되돌림 소리 없음');
+    store.actions.flushAll();
+  } finally {
+    delete globalThis.AudioContext;
+  }
+});

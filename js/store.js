@@ -281,7 +281,7 @@ export function createStore(adapter) {
         entry.done = false;
         if (entry.count === entry.target) delete entry.count; // 목표 그대로 했던 개수는 다시 목표(난이도)를 따라가게
         delete entry.target;
-        delete entry.sets;
+        if (entry.sets === ex.sets) delete entry.sets; // 직접 고친 세트 수는 해제해도 그대로 둠
       } else {
         entry.done = true;
         entry.count = v.count;
@@ -310,7 +310,7 @@ export function createStore(adapter) {
         if (entry.done) {
           entry.done = false;
           delete entry.target;
-          delete entry.sets;
+          entry.sets = v.sets; // 세트 수는 그대로 둬야 남은 세트가 맞게 보임(직접 고친 세트 수 유지)
         }
         if (k > 0) entry.setsDone = k;
         else delete entry.setsDone;
@@ -375,9 +375,19 @@ export function createStore(adapter) {
       if (!state.ready) return;
       const ex = findExercise(id);
       if (!ex || !Number.isFinite(n)) return emit();
-      const entry = ensureEntry(state.selected, id);
-      entry.sets = Math.max(LIMITS.sets[0], Math.min(LIMITS.sets[1], Math.round(n)));
-      commitDay(state.selected);
+      const date = state.selected;
+      const v = view(date, ex);
+      const k = Math.max(LIMITS.sets[0], Math.min(LIMITS.sets[1], Math.round(n)));
+      const entry = ensureEntry(date, id);
+      // 마친 종목은 세트 수만 고침(실제로 한 세트 수 기록). 진행 중에 세트를 줄여 체크한 세트가 전부가 되면 종목 완료
+      if (!v.done && v.setsDone > 0 && v.setsDone >= k) {
+        entry.done = true;
+        entry.count = v.count;
+        entry.target = v.target;
+        delete entry.setsDone;
+      }
+      entry.sets = k;
+      commitDay(date);
     },
 
     select(date) {
