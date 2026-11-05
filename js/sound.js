@@ -28,19 +28,46 @@ const SOUNDS = {
 
 let ctx = null;
 let resumePending = null;
+let createdAt = 0;
+let stale = false; // 앱을 내렸다 올린 뒤: iOS는 'running'이라고 하면서 소리를 내지 않기도 해서, 다음 탭에서 새로 만듦
+
+const RESUME_WAIT_MS = 1500; // resume()이 이 안에 끝나지 않으면 막힌 것으로 보고 버림
+
+/** 지금 사용자가 누르는 동작 안인지 (이때 만든 오디오만 바로 소리를 냄) */
+function inGesture() {
+  const ua = globalThis.navigator && navigator.userActivation;
+  if (ua && typeof ua.isActive === 'boolean') return ua.isActive;
+  const ev = globalThis.event; // 오래된 Safari: 이벤트 처리 중이면 현재 이벤트가 보임
+  return !!(ev && ev.isTrusted && /^(click|pointer|touch|key|change|input)/.test(ev.type));
+}
+
+/** 오디오를 버림: 다음에 누를 때 새로 만듦 */
+function discard(c) {
+  if (ctx !== c) return;
+  ctx = null;
+  resumePending = null;
+  try { void c.close(); } catch { /* 이미 닫힘 */ }
+}
 
 // iOS can leave AudioContext interrupted after returning from the background.
 // Do not schedule sounds until resume() actually completes.
 function resumeContext(c) {
   if (c.state === 'running') return Promise.resolve(true);
   try {
-    const attempt = Promise.resolve(c.resume()).then(
-      () => ctx === c && c.state === 'running',
+    let timer = 0;
+    const wait = new Promise((resolve) => { timer = setTimeout(() => resolve('timeout'), RESUME_WAIT_MS); });
+    const attempt = Promise.race([Promise.resolve(c.resume()), wait]).then(
+      (r) => {
+        clearTimeout(timer);
+        if (ctx !== c) return false;
+        if (r !== 'timeout' && c.state === 'running') return true;
+        // 끝났다고 했는데도 멈춰 있거나(iOS 'interrupted') 응답이 없으면, 막힌 오디오를 계속 붙잡지 않음
+        discard(c);
+        return false;
+      },
       () => {
-        if (ctx === c) {
-          ctx = null;
-          try { void c.close(); } catch { /* already closed */ }
-        }
+        clearTimeout(timer);
+        discard(c);
         return false;
       },
     );
@@ -54,6 +81,7 @@ function resumeContext(c) {
 
 /** Restore only a previously unlocked audio context on foreground. */
 export function restoreSound() {
+  stale = true;
   if (ctx && ctx.state !== 'running') void resumeContext(ctx);
 }
 
@@ -99,16 +127,33 @@ export function setSilentMode(on) {
   }
 }
 
+/** iOS: 누르는 동작 안에서 아주 짧은 무음을 한 번 틀어 오디오 출력을 확실히 엶 */
+function primeContext(c) {
+  try {
+    const src = c.createBufferSource();
+    src.buffer = c.createBuffer(1, 1, 22050);
+    src.connect(c.destination);
+    src.start(0);
+  } catch {
+    /* 지원하지 않는 환경 */
+  }
+}
+
 /** 오디오를 준비. 사용자가 누르는 동작 안에서 불러야 소리가 남 (iOS 등) */
 export function unlockSound() {
   try {
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!AC) return null;
+    // 누르는 동작 안에서는, 멈춘 오디오나 앱을 내렸다 올린 뒤의 오디오를 새로 만듦(새로 만든 것은 바로 소리가 남)
+    if (ctx && inGesture() && (stale || ctx.state !== 'running') && Date.now() - createdAt > 1000) discard(ctx);
     if (!ctx || ctx.state === 'closed') {
       applySession();
       ctx = new AC();
+      createdAt = Date.now();
       resumePending = null;
-    }
+      stale = false;
+      primeContext(ctx);
+    } else if (inGesture()) stale = false;
     if (ctx.state !== 'running') void resumeContext(ctx);
     return ctx;
   } catch {
