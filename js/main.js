@@ -48,7 +48,14 @@ async function boot() {
   store.subscribe((state) => {
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
-      renders.forEach((r) => r(state));
+      // 한 조각이 오류를 내도 나머지는 그리고, 입장 화면은 반드시 걷습니다(안 그러면 화면이 멈춰 보임).
+      renders.forEach((r) => {
+        try {
+          r(state);
+        } catch (err) {
+          console.error(err);
+        }
+      });
       if (state.ready && progress) progress.done(); // 처음 그린 뒤 막대를 채우고 시작 화면을 걷음
     });
     if (state.ready && progress) progress.step('ready');

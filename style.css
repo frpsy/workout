@@ -1309,7 +1309,7 @@ tr.cur td { background: var(--accent-soft); }
   font-weight: 700;
   cursor: pointer;
 }
-.splash.failed .splash-retry { display: block; }
+.splash.failed .splash-retry, .splash.stalled .splash-retry { display: block; }
 .splash.failed .splash-track i { background: var(--err); }
 
 /* 넓은 화면: 콘텐츠 폭을 유지하면서 여백과 카드 밀도를 개선 */

@@ -122,3 +122,30 @@ test('시작 화면: 글꼴이 이미 준비돼 있으면 기다리지 않음', 
   p.done();
   assert.ok(root.classList.contains('leaving'));
 });
+
+test('시작 화면: 15초 넘게 멈춰 있으면 다시 시도 버튼을 보이고, 단계 문구가 안내를 덮어쓰지 않으며, 끝나면 그대로 걷힘', () => {
+  const { root, p, timeouts } = setup();
+  const stall = timeouts.find(([, ms]) => ms === 15000);
+  assert.ok(stall, '15초 뒤 멈춤 안내를 예약');
+  assert.equal(root.classList.contains('stalled'), false);
+  stall[0]();
+  assert.ok(root.classList.contains('stalled'));
+  assert.ok(root.classList.contains('slow'));
+  assert.match(root.querySelector('#splashText').textContent, /다시 시도/);
+  p.step('data'); // 늦게라도 단계가 오르면 목표는 오르지만 문구는 그대로
+  assert.match(root.querySelector('#splashText').textContent, /다시 시도/);
+  p.done(); // 늦게라도 준비되면 평소처럼 걷힘
+  assert.ok(root.classList.contains('leaving'));
+});
+
+test('시작 화면: 이미 끝났거나 실패했으면 늦게 불린 멈춤 안내는 아무것도 하지 않음', () => {
+  const a = setup();
+  a.p.done();
+  a.timeouts.find(([, ms]) => ms === 15000)[0]();
+  assert.equal(a.root.classList.contains('stalled'), false);
+  const b = setup();
+  b.p.fail('실패');
+  b.timeouts.find(([, ms]) => ms === 15000)[0]();
+  assert.equal(b.root.classList.contains('stalled'), false);
+  assert.equal(b.root.querySelector('#splashText').textContent, '실패');
+});
