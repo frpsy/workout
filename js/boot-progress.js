@@ -13,6 +13,7 @@ export const STEPS = [
 ];
 const BAR_AFTER_MS = 1200; // 이만큼 걸리면 진행 막대와 문구를 보여 줌
 const SLOW_MS = 8000; // 이만큼 걸리면 안내 문구를 덧붙임
+const STALL_MS = 15000; // 이만큼 걸리면 멈춘 것으로 보고 '다시 시도' 버튼을 보여 줌(끝나면 알아서 걷힘)
 const LEAVE_MS = 220; // 사라지는 시간 (style.css의 .splash 전환 시간과 맞춤)
 const WAIT_MAX_MS = 1000; // 움직임·글꼴을 기다리는 최대 시간(배경 탭·느린 연결 대비)
 const INTRO = new Set(['splash-icon', 'splash-word']);
@@ -24,6 +25,7 @@ export function createProgress(root, { setInterval: si = setInterval, clearInter
   let cur = 0;
   let limit = STEPS[0].limit;
   let finished = false;
+  let stalled = false;
 
   const paint = () => {
     const v = Math.max(0, Math.min(100, cur));
@@ -41,6 +43,12 @@ export function createProgress(root, { setInterval: si = setInterval, clearInter
   const slow = st(() => {
     if (!finished) text.textContent += ' 연결이 느립니다. 오프라인이면 기기에 저장된 기록으로 열립니다.';
   }, SLOW_MS);
+  const stall = st(() => {
+    if (finished) return;
+    stalled = true;
+    root.classList.add('slow', 'stalled'); // 막대·문구와 함께 '다시 시도' 버튼을 보임
+    text.textContent = '연결이 오래 걸립니다. 잠시 더 기다리거나 다시 시도해 주세요.';
+  }, STALL_MS);
 
   paint();
   text.textContent = STEPS[0].label;
@@ -51,7 +59,7 @@ export function createProgress(root, { setInterval: si = setInterval, clearInter
       const s = STEPS.find((x) => x.id === id);
       if (!s || finished) return;
       limit = Math.max(limit, s.limit);
-      text.textContent = s.label;
+      if (!stalled) text.textContent = s.label; // 멈춤 안내는 단계 문구로 덮어쓰지 않음
     },
     get value() {
       return cur;
@@ -63,6 +71,7 @@ export function createProgress(root, { setInterval: si = setInterval, clearInter
       ci(timer);
       clearTimeout(reveal);
       clearTimeout(slow);
+      clearTimeout(stall);
       cur = 100;
       paint();
       text.textContent = '준비됐어요';
@@ -89,6 +98,7 @@ export function createProgress(root, { setInterval: si = setInterval, clearInter
       ci(timer);
       clearTimeout(reveal);
       clearTimeout(slow);
+      clearTimeout(stall);
       root.classList.add('failed');
       text.textContent = message;
     },
