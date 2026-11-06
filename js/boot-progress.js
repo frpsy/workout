@@ -1,5 +1,7 @@
-// 시작 화면: 아이콘과 이름이 짧게 떠오르고(CSS), 준비되면 바로 걷히며 앱이 그 자리에서 올라옵니다.
-// 따로 기다리는 시간은 없고, 떠오르는 움직임(0.4초 안팎)이 아직 끝나지 않았을 때만 그것이 끝나기를 기다립니다(중간에 끊겨 보이지 않게).
+// 시작 화면: 아이콘과 이름이 짧게 떠오르고(CSS), 준비되면 시작 화면만 투명해지며 앱이 드러납니다(앱 화면은 움직이지 않음).
+// 따로 기다리는 시간은 없고, 아직 끝나지 않은 것만 기다립니다:
+//  - 떠오르는 움직임(0.3초 안팎): 중간에 끊겨 보이지 않게
+//  - 글꼴: 첫 실행에 글꼴이 늦게 오면 앱이 드러난 뒤 글자 크기가 바뀌어 화면이 커졌다 줄어드는 것처럼 보이므로
 // 1.2초 넘게 걸릴 때만 진행 막대와 안내 문구가 나타나고, 막대는 단계가 올라갈 때마다 목표치(limit)를 향해
 // 천천히 다가가(끝나기 전에는 목표치에 닿지 않음) 멈춘 것처럼 보이지 않게 합니다.
 
@@ -12,8 +14,7 @@ export const STEPS = [
 const BAR_AFTER_MS = 1200; // 이만큼 걸리면 진행 막대와 문구를 보여 줌
 const SLOW_MS = 8000; // 이만큼 걸리면 안내 문구를 덧붙임
 const LEAVE_MS = 220; // 사라지는 시간 (style.css의 .splash 전환 시간과 맞춤)
-const ENTER_MS = 500; // 앱이 올라오는 움직임(.entering)이 끝난 뒤 표시를 지움
-const INTRO_WAIT_MS = 600; // 떠오르는 움직임을 기다리는 최대 시간(배경 탭 등에서 끝나지 않을 때 대비)
+const WAIT_MAX_MS = 1000; // 움직임·글꼴을 기다리는 최대 시간(배경 탭·느린 연결 대비)
 const INTRO = new Set(['splash-icon', 'splash-word']);
 
 export function createProgress(root, { setInterval: si = setInterval, clearInterval: ci = clearInterval, setTimeout: st = setTimeout } = {}) {
@@ -65,22 +66,21 @@ export function createProgress(root, { setInterval: si = setInterval, clearInter
       cur = 100;
       paint();
       text.textContent = '준비됐어요';
-      const html = root.ownerDocument.documentElement;
       let left = false;
       const leave = () => {
         if (left) return;
         left = true;
-        root.classList.add('leaving'); // CSS가 짧게 사라지게 함
-        html.classList.add('entering'); // 앱 화면이 아래에서 살짝 올라옴
+        root.classList.add('leaving'); // CSS가 짧게 투명해지게 함
         st(() => root.remove(), LEAVE_MS);
-        st(() => html.classList.remove('entering'), LEAVE_MS + ENTER_MS);
       };
-      const intro = typeof root.getAnimations === 'function'
-        ? root.getAnimations({ subtree: true }).filter((a) => INTRO.has(a.animationName) && a.playState !== 'finished')
+      const waits = typeof root.getAnimations === 'function'
+        ? root.getAnimations({ subtree: true }).filter((a) => INTRO.has(a.animationName) && a.playState !== 'finished').map((a) => a.finished)
         : [];
-      if (!intro.length) return leave();
-      Promise.all(intro.map((a) => a.finished.catch(() => {}))).then(leave);
-      st(leave, INTRO_WAIT_MS);
+      const fonts = root.ownerDocument.fonts;
+      if (fonts && fonts.status !== 'loaded' && fonts.ready) waits.push(fonts.ready);
+      if (!waits.length) return leave();
+      Promise.all(waits.map((w) => Promise.resolve(w).catch(() => {}))).then(leave);
+      st(leave, WAIT_MAX_MS);
     },
     /** 시작하지 못했을 때: 막대를 멈추고 안내와 다시 시도 버튼을 보여 줌 */
     fail(message) {

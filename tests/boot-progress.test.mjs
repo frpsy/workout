@@ -54,13 +54,10 @@ test('시작 화면: 금방 끝나면 기다리지 않고 바로 사라지고, �
   assert.ok(root.classList.contains('leaving'), '바로 사라지기 시작');
   assert.equal(root.querySelector('#splashBar').style.width, '100%');
   assert.equal(root.querySelector('#splashTrack').getAttribute('aria-valuenow'), '100');
-  assert.ok(root.ownerDocument.documentElement.classList.contains('entering'), '앱 화면이 올라오는 움직임 시작');
   const [remove, wait] = timeouts[before];
   assert.equal(wait, 220, '짧게 사라진 뒤 제거');
   p.done(); // 두 번 불러도 한 번만
-  assert.equal(timeouts.length, before + 2, '제거와 움직임 표시 정리만 예약');
-  timeouts[before + 1][0]();
-  assert.equal(root.ownerDocument.documentElement.classList.contains('entering'), false, '움직임이 끝나면 표시를 지움');
+  assert.equal(timeouts.length, before + 1);
   remove();
   assert.equal(root.isConnected, false, '화면에서 제거');
 
@@ -98,12 +95,30 @@ test('시작 화면: 아이콘이 떠오르는 중에 준비되면 그 움직임
   root.getAnimations = () => [intro, other];
   p.done();
   assert.equal(root.classList.contains('leaving'), false, '아직 떠오르는 중');
-  const cap = timeouts.find(([, ms]) => ms === 600);
-  assert.ok(cap, '끝나지 않아도 0.6초 뒤에는 걷힘');
+  const cap = timeouts.find(([, ms]) => ms === 1000);
+  assert.ok(cap, '끝나지 않아도 1초 뒤에는 걷힘');
   finish();
   await new Promise((r) => setImmediate(r));
   assert.ok(root.classList.contains('leaving'), '움직임이 끝나면 바로 걷힘');
   const n = timeouts.length;
   cap[0](); // 늦게 불린 예비 예약은 아무것도 하지 않음
   assert.equal(timeouts.length, n);
+});
+
+test('시작 화면: 첫 실행에 글꼴이 아직 오는 중이면 글꼴이 준비된 뒤에 걷힘(앱이 드러난 뒤 글자 크기가 바뀌지 않게)', async () => {
+  const { root, p } = setup();
+  let ready;
+  Object.defineProperty(root.ownerDocument, 'fonts', { value: { status: 'loading', ready: new Promise((r) => (ready = r)) }, configurable: true });
+  p.done();
+  assert.equal(root.classList.contains('leaving'), false, '글꼴을 기다림');
+  ready();
+  await new Promise((r) => setImmediate(r));
+  assert.ok(root.classList.contains('leaving'));
+});
+
+test('시작 화면: 글꼴이 이미 준비돼 있으면 기다리지 않음', () => {
+  const { root, p } = setup();
+  Object.defineProperty(root.ownerDocument, 'fonts', { value: { status: 'loaded', ready: new Promise(() => {}) }, configurable: true });
+  p.done();
+  assert.ok(root.classList.contains('leaving'));
 });
