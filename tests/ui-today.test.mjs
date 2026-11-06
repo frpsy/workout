@@ -373,7 +373,8 @@ test('오늘: 아침·저녁 버튼은 없고, 모든 운동을 마치면 모두
 
 test('브랜드: 첫 화면에 앱 이름과 현재 운동 회차 상태를 표시', () => {
   const { store, root } = setup(today);
-  assert.equal(root.querySelector('.brand-name').textContent, '오늘운동');
+  assert.equal(root.querySelector('.brand-name').getAttribute('aria-label'), 'Repday');
+  assert.equal(root.querySelector('.brand-name use').getAttribute('href'), '#wordmark');
   assert.equal(root.querySelector('#brandState').textContent, '1회차 준비');
   assert.equal(root.querySelector('#segs').getAttribute('aria-valuemax'), '3');
   root.querySelector('.row [data-set="1"]').click();
