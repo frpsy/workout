@@ -1249,7 +1249,7 @@ tr.cur td { background: var(--accent-soft); }
   to { transform: translate3d(var(--ind-2, 0px), 0, 0); }
 }
 
-/* ── 시작 화면: 아이콘과 이름(글꼴 없이 그린 SVG라 바뀌어 보이지 않음)이 가운데 떠오르고, 준비되면 앱이 그 자리에서 올라옴 ── */
+/* ── 시작 화면: 아이콘과 이름(글꼴 없이 그린 SVG라 바뀌어 보이지 않음)이 가운데 떠오르고, 준비되면 투명해지며 앱이 드러남 ── */
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 .splash {
   position: fixed;
@@ -1260,6 +1260,7 @@ tr.cur td { background: var(--accent-soft); }
   padding: 24px;
   background: var(--bg);
   transition: opacity 0.22s ease-out, visibility 0s linear 0.22s;
+  will-change: opacity;
 }
 .splash.leaving { opacity: 0; visibility: hidden; pointer-events: none; }
 .splash-brand { display: flex; flex-direction: column; align-items: center; gap: 18px; }
@@ -1365,21 +1366,15 @@ tr.cur td { background: var(--accent-soft); }
 }
 
 /* ── 움직임 ────────────────────────────────────────────── */
-@keyframes splash-icon { from { opacity: 0; transform: scale(0.84); } to { opacity: 1; transform: none; } }
+@keyframes splash-icon { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
 @keyframes splash-word { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@keyframes app-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes app-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes timer-flash { 50% { background: var(--accent-soft); border-color: var(--accent); } }
 @keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* 시작: 아이콘이 살짝 커지며 나타나고 이름이 뒤따름. 준비되면 아이콘이 조금 더 커지며 사라지고, 그 자리에서 앱이 올라옴 */
-  .splash-icon { animation: splash-icon 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+  /* 시작: 아이콘이 살짝 커지며 나타나고 이름이 뒤따름. 준비되면 시작 화면만 투명해지며 앱이 드러남(앱 화면은 움직이지 않음: 크기·위치가 변해 보이지 않게) */
+  .splash-icon { animation: splash-icon 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
   .splash-word { animation: splash-word 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) 0.04s both; }
-  .splash-brand { transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1); }
-  .splash.leaving .splash-brand { transform: scale(1.08); }
-  .entering .pager { animation: app-enter 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-  .entering .tabbar { animation: app-fade 0.3s ease-out 0.06s both; }
   .row, .check, .segs i, .cell { transition: background-color 0.18s, border-color 0.18s; }
   .levels button, .views button { transition: background-color 0.15s, color 0.15s, box-shadow 0.15s; }
   .switch i, .switch i::after { transition: background-color 0.18s, transform 0.18s; }
