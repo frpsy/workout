@@ -1,6 +1,6 @@
 {
-  "name": "오늘운동 · 루틴 기록",
-  "short_name": "오늘운동",
+  "name": "Repday · 매일 운동 기록",
+  "short_name": "Repday",
   "description": "세트·세션·운동시간을 기록하며 매일의 루틴을 이어가는 운동 앱",
   "lang": "ko",
   "start_url": "./",

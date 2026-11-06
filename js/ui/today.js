@@ -56,9 +56,9 @@ export function mountToday(root, store) {
 
   root.innerHTML = `
     <header class="head">
-      <div class="brandline" aria-label="오늘운동">
-        <span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8M15 7h5v5"/></svg></span>
-        <span class="brand-copy"><span class="brand-name">오늘운동</span><span class="brand-detail">한 세트부터 하루의 기록까지</span></span>
+      <div class="brandline">
+        <img class="brand-symbol" src="icons/icon-192.png" width="32" height="32" alt="">
+        <span class="brand-copy"><svg class="brand-name" role="img" aria-label="Repday"><use href="#wordmark"/></svg><span class="brand-detail">한 세트부터 하루의 기록까지</span></span>
         <span class="brand-state" id="brandState">운동 준비</span>
       </div>
       <div class="headline">

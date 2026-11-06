@@ -1,4 +1,4 @@
-# Rep Streak (운동 기록 앱) — 작업 규칙
+# Repday (운동 기록 앱) — 작업 규칙
 
 - 빌드 없는 정적 사이트(바닐라 JS ES 모듈). 구조·기능은 `README.md`를 먼저 봅니다.
 - 변경 후 `npm run lint`, `npm test` 통과를 확인하고, feature 브랜치 → PR → squash 머지까지 묻지 않고 진행합니다.

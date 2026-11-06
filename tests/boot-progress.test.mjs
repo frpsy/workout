@@ -50,14 +50,17 @@ test('시작 화면: 금방 끝나면 기다리지 않고 바로 사라지고, �
   assert.ok(slow);
 
   const before = timeouts.length;
-  p.done(); // 0.3초 만에 준비가 끝남: 최소 표시 시간 없이 바로
+  p.done(); // 0.3초 만에 준비가 끝남: 떠오르는 움직임이 없으면(이미 끝남) 바로
   assert.ok(root.classList.contains('leaving'), '바로 사라지기 시작');
   assert.equal(root.querySelector('#splashBar').style.width, '100%');
   assert.equal(root.querySelector('#splashTrack').getAttribute('aria-valuenow'), '100');
+  assert.ok(root.ownerDocument.documentElement.classList.contains('entering'), '앱 화면이 올라오는 움직임 시작');
   const [remove, wait] = timeouts[before];
-  assert.equal(wait, 180, '짧게 사라진 뒤 제거');
+  assert.equal(wait, 220, '짧게 사라진 뒤 제거');
   p.done(); // 두 번 불러도 한 번만
-  assert.equal(timeouts.length, before + 1);
+  assert.equal(timeouts.length, before + 2, '제거와 움직임 표시 정리만 예약');
+  timeouts[before + 1][0]();
+  assert.equal(root.ownerDocument.documentElement.classList.contains('entering'), false, '움직임이 끝나면 표시를 지움');
   remove();
   assert.equal(root.isConnected, false, '화면에서 제거');
 
@@ -85,4 +88,22 @@ test('진행 막대: 실패하면 멈추고 안내를 보여 줌', () => {
   tick(10);
   assert.equal(p.value, v);
   assert.equal(root.querySelector('#splashText').textContent, '화면을 띄우지 못했습니다.');
+});
+
+test('시작 화면: 아이콘이 떠오르는 중에 준비되면 그 움직임이 끝난 뒤에 걷힘(중간에 끊기지 않게)', async () => {
+  const { root, p, timeouts } = setup();
+  let finish;
+  const intro = { animationName: 'splash-icon', playState: 'running', finished: new Promise((r) => (finish = r)) };
+  const other = { animationName: 'ready-pulse', playState: 'running', finished: new Promise(() => {}) };
+  root.getAnimations = () => [intro, other];
+  p.done();
+  assert.equal(root.classList.contains('leaving'), false, '아직 떠오르는 중');
+  const cap = timeouts.find(([, ms]) => ms === 600);
+  assert.ok(cap, '끝나지 않아도 0.6초 뒤에는 걷힘');
+  finish();
+  await new Promise((r) => setImmediate(r));
+  assert.ok(root.classList.contains('leaving'), '움직임이 끝나면 바로 걷힘');
+  const n = timeouts.length;
+  cap[0](); // 늦게 불린 예비 예약은 아무것도 하지 않음
+  assert.equal(timeouts.length, n);
 });

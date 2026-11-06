@@ -1,4 +1,4 @@
-/* Rep Streak 화면 스타일
+/* Repday 화면 스타일
    순서: 글꼴 → 디자인 값(색·글자·간격·모서리·그림자) → 기본 → 공통 부품 → 오늘 탭 → 기록 탭 → 설정 탭 → 탭 막대·시작 화면 → 좁은·키 작은 화면 → 움직임
    같은 우선순위 규칙은 뒤에 오는 것이 이기므로, 상태(.done, .stop 등)와 화면 크기 규칙은 기본 규칙보다 뒤에 둡니다. */
 
@@ -427,13 +427,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   display: flex; align-items: center; min-width: 0;
   gap: var(--gap); padding-bottom: 9px; border-bottom: 1px solid var(--line);
 }
-.brand-symbol {
-  width: 32px; height: 32px; flex: none; display: grid; place-items: center;
-  border-radius: var(--r-seg); background: var(--accent-fill); color: var(--on-accent);
-}
-.brand-symbol svg { width: 19px; height: 19px; }
+.brand-symbol { width: 32px; height: 32px; flex: none; border-radius: 8px; box-shadow: 0 0 0 1px var(--line); }
 .brand-copy { min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
-.brand-name { font-size: var(--fs-base); font-weight: 700; letter-spacing: -0.025em; }
+.brand-name { display: block; width: 57px; height: 17px; margin: 1px 0 1.5px; color: var(--fg); } /* 위아래 여백까지 예전 이름 줄 높이(19.5px)와 같게: 아래 내용이 밀리지 않음 */
 .brand-detail { font-size: var(--fs-2xs); color: var(--muted); }
 .brand-state {
   flex: none; margin-left: auto; padding: 5px 9px;
@@ -1253,26 +1249,38 @@ tr.cur td { background: var(--accent-soft); }
   to { transform: translate3d(var(--ind-2, 0px), 0, 0); }
 }
 
-/* ── 시작 화면: 아이콘 + 진행 막대. 준비되면 서서히 사라지며 앱으로 전환 ── */
+/* ── 시작 화면: 아이콘과 이름(글꼴 없이 그린 SVG라 바뀌어 보이지 않음)이 가운데 떠오르고, 준비되면 앱이 그 자리에서 올라옴 ── */
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 .splash {
   position: fixed;
   inset: 0;
   z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+  transition: opacity 0.22s ease-out, visibility 0s linear 0.22s;
+}
+.splash.leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+.splash-brand { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.splash-icon { display: block; width: 88px; height: 88px; border-radius: 22px; box-shadow: var(--shadow-icon); }
+.splash-word { display: block; width: 101px; height: 30px; color: var(--fg); }
+/* 막대·문구는 이름 아래 따로 두어, 나타나도 아이콘 위치가 흔들리지 않게 함. 오래 걸릴 때(.slow)와 실패했을 때(.failed)만 보임 */
+.splash-load {
+  position: absolute;
+  top: calc(50% + 96px);
+  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: var(--gap-md);
-  padding: 24px;
-  background: var(--bg);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  padding: 0 24px;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
 }
-.splash.leaving { opacity: 0; transform: scale(1.02); pointer-events: none; }
-/* 금방 열릴 때는 아이콘만 깜빡 보이고, 오래 걸릴 때(.slow)와 실패했을 때(.failed)만 막대·문구를 보여 줌 */
-.splash:not(.slow):not(.failed) .splash-track, .splash:not(.slow):not(.failed) .splash-text { visibility: hidden; }
-.splash-icon { border-radius: 19px; box-shadow: var(--shadow-icon); }
-.splash-title { margin: 4px 0 8px; font-size: var(--fs-lg); font-weight: 700; color: var(--fg); }
-.splash-track { width: min(220px, 60vw); height: 6px; border-radius: var(--r-bar); background: var(--line); overflow: hidden; }
+.splash.slow .splash-load, .splash.failed .splash-load { opacity: 1; }
+.splash-track { width: min(160px, 50vw); height: 4px; border-radius: var(--r-bar); background: var(--line); overflow: hidden; }
 .splash-track i {
   display: block;
   height: 100%;
@@ -1284,7 +1292,6 @@ tr.cur td { background: var(--accent-soft); }
 .splash-text {
   margin: 0;
   max-width: 280px;
-  min-height: 2.8em;
   font-size: var(--fs-sm);
   line-height: 1.4;
   color: var(--muted);
@@ -1358,13 +1365,21 @@ tr.cur td { background: var(--accent-soft); }
 }
 
 /* ── 움직임 ────────────────────────────────────────────── */
-@keyframes app-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes splash-icon { from { opacity: 0; transform: scale(0.84); } to { opacity: 1; transform: none; } }
+@keyframes splash-word { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes app-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes app-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes timer-flash { 50% { background: var(--accent-soft); border-color: var(--accent); } }
 @keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
 
-.pager, .tabbar { animation: app-in 0.35s ease-out backwards; }
-
 @media (prefers-reduced-motion: no-preference) {
+  /* 시작: 아이콘이 살짝 커지며 나타나고 이름이 뒤따름. 준비되면 아이콘이 조금 더 커지며 사라지고, 그 자리에서 앱이 올라옴 */
+  .splash-icon { animation: splash-icon 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+  .splash-word { animation: splash-word 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) 0.04s both; }
+  .splash-brand { transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1); }
+  .splash.leaving .splash-brand { transform: scale(1.08); }
+  .entering .pager { animation: app-enter 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .entering .tabbar { animation: app-fade 0.3s ease-out 0.06s both; }
   .row, .check, .segs i, .cell { transition: background-color 0.18s, border-color 0.18s; }
   .levels button, .views button { transition: background-color 0.15s, color 0.15s, box-shadow 0.15s; }
   .switch i, .switch i::after { transition: background-color 0.18s, transform 0.18s; }
@@ -1375,6 +1390,6 @@ tr.cur td { background: var(--accent-soft); }
   .wbtn.ready { animation: ready-pulse 1.4s ease-in-out infinite; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .splash, .splash-track i { transition: none; }
-  .pager, .tabbar { animation: none; }
+  .splash { transition-duration: 0.12s, 0s; transition-delay: 0s, 0.12s; }
+  .splash-track i, .splash-load { transition: none; }
 }
