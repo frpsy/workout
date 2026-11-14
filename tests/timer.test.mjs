@@ -101,3 +101,21 @@ test('프리셋 3단계: 30 → 60 → 90 → 30, 프리셋이 아닌 값에서�
   run.timer.nextPreset();
   assert.equal(run.timer.duration, 60, '실행 중에는 바뀌지 않음');
 });
+
+test('종료 시각을 넘겨 주고, 저장된 종료 시각으로 이어서 시작함', () => {
+  let t = 1_000_000;
+  const ended = [];
+  const a = createTimer({ now: () => t, duration: 60, endAt: null, onDone: (at) => ended.push(at) });
+  a.start();
+  assert.equal(a.fraction(), 1);
+  t += 15_000;
+  assert.equal(a.fraction(), 0.75);
+  const b = createTimer({ now: () => t, duration: 60, endAt: 1_060_000, onDone: (at) => ended.push(at) }); // 재실행
+  assert.equal(b.running, true);
+  assert.equal(b.remaining(), 45);
+  t += 50_000;
+  b.tick();
+  assert.deepEqual(ended, [1_060_000], '끝난 시각(늦게 알아챈 만큼을 계산할 수 있게)');
+  assert.equal(b.running, false);
+  assert.equal(b.fraction(), 1);
+});
