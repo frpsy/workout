@@ -2,6 +2,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeConfig, normalizeDay, validateConfig } from '../js/model.js';
 
+test('세트당 목표 상한: 기본 운동은 저장된 값이 없어도 35·10·50, 직접 정한 값과 0(없음)은 존중', () => {
+  const c = normalizeConfig({ v: 2, startDate: '2026-10-26', exercises: [
+    { id: 'push', name: '푸시업', unit: 'reps', base: 15, step: 2, sets: 3, active: true },
+    { id: 'pull', name: '풀업', unit: 'reps', base: 3, step: 0.5, sets: 3, active: true, max: 12 },
+    { id: 'squat', name: '스쿼트', unit: 'reps', base: 30, step: 5, sets: 3, active: true, max: 0 },
+    { id: 'plank', name: '플랭크', unit: 'sec', base: 30, step: 5, sets: 3, active: true },
+  ] }, '2026-01-01');
+  const by = Object.fromEntries(c.exercises.map((e) => [e.id, e.max]));
+  assert.deepEqual(by, { push: 35, pull: 12, squat: undefined, plank: undefined });
+  assert.deepEqual(validateConfig({ ...c, exercises: [{ ...c.exercises[0], max: 10 }] }).length, 1, '최대가 시작 목표보다 작으면 안 됨');
+});
+
 test('v1 설정을 v2로 변환', () => {
   const c = normalizeConfig({ startDate: '2026-10-26', push: { base: 20, step: 3 }, pull: { base: 3, step: 0.5 }, squat: { base: 30, step: 5 } }, '2026-01-01');
   assert.equal(c.v, 2);

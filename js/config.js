@@ -16,13 +16,13 @@ export const LEVELS = {
 };
 export const LEVEL_ORDER = ['easy', 'normal', 'hard'];
 
-/** 목표는 '세트당 개수 × 세트 수' (예: 15 × 3). 기본 3세트 */
+/** 목표는 '세트당 개수 × 세트 수' (예: 15 × 3). 기본 3세트. max는 세트당 목표의 상한(없거나 0이면 계속 늘어남) */
 export const DEFAULT_SETS = 3;
 
 export const DEFAULT_EXERCISES = [
-  { id: 'push', name: '푸시업', unit: 'reps', base: 15, step: 2, sets: DEFAULT_SETS, active: true },
-  { id: 'pull', name: '풀업', unit: 'reps', base: 3, step: 0.5, sets: DEFAULT_SETS, active: true },
-  { id: 'squat', name: '스쿼트', unit: 'reps', base: 30, step: 5, sets: DEFAULT_SETS, active: true },
+  { id: 'push', name: '푸시업', unit: 'reps', base: 15, step: 2, max: 35, sets: DEFAULT_SETS, active: true },
+  { id: 'pull', name: '풀업', unit: 'reps', base: 3, step: 0.5, max: 10, sets: DEFAULT_SETS, active: true },
+  { id: 'squat', name: '스쿼트', unit: 'reps', base: 30, step: 5, max: 50, sets: DEFAULT_SETS, active: true },
 ];
 
 /** 같이 따라 할 수 있는 영상: 기본 운동 id → 유튜브 영상. 해당 종목 줄에 '영상으로 같이하기' 버튼이 생깁니다 */
@@ -60,6 +60,7 @@ export const LIMITS = {
   nameLength: 20,
   base: [1, 9999],
   step: [0, 500],
+  max: [0, 9999], // 0 = 상한 없음
   sets: [1, 10],
   count: [0, 99999],
   recoveryEvery: [0, 12],

@@ -48,6 +48,7 @@ export const LEVEL_RULES = {
 
 export function computeTarget(ex, level, recovery, plan) {
   let n = Math.floor(ex.base + ex.step * level + 1e-9);
+  if (ex.max > 0) n = Math.min(n, ex.max); // 세트당 목표 상한(회복주는 상한에 닿은 값에서 줄임)
   if (recovery) n = Math.round(n * plan.recoveryRatio);
   return Math.max(1, n);
 }

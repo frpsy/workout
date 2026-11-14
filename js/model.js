@@ -23,12 +23,16 @@ export function normalizeExercise(raw) {
   const name = typeof raw.name === 'string' ? raw.name.trim().slice(0, LIMITS.nameLength) : '';
   // 예전 기본 이름의 맞춤법을 바로잡음(외래어 표기법: push-up → 푸시업). 저장돼 있던 설정도 열 때 새 이름으로 보임
   const fixed = name === '푸쉬업' ? '푸시업' : name;
+  const dflt = DEFAULT_EXERCISES.find((d) => d.id === raw.id);
+  const max = inRange(raw.max, LIMITS.max) ? Math.round(raw.max) : (dflt?.max ?? 0);
   return {
     id: raw.id,
     name: fixed || '운동',
     unit: Object.prototype.hasOwnProperty.call(UNITS, raw.unit) ? raw.unit : 'reps',
     base: inRange(raw.base, LIMITS.base) ? Math.round(raw.base) : 10,
     step: inRange(raw.step, LIMITS.step) ? raw.step : 1,
+    // 세트당 목표 상한. 저장된 값이 없으면 기본 운동(푸시업·풀업·스쿼트)은 기본 상한을 따름, 0이면 상한 없음
+    ...(max > 0 ? { max } : {}),
     // 이전 설정에는 세트가 없어 기본 세트로 읽습니다. 이미 완료한 날은 기록에 남은 sets(없으면 1)를 씁니다.
     sets: inRange(raw.sets, LIMITS.sets) ? Math.round(raw.sets) : DEFAULT_SETS,
     active: raw.active !== false,
@@ -180,6 +184,7 @@ export function validateConfig(cfg) {
     if (!inRange(e.base, LIMITS.base)) errors.push(`${label}: 시작 목표는 1 이상이어야 합니다.`);
     if (!inRange(e.sets, LIMITS.sets)) errors.push(`${label}: 세트는 ${LIMITS.sets[0]}~${LIMITS.sets[1]} 사이여야 합니다.`);
     if (!inRange(e.step, LIMITS.step)) errors.push(`${label}: 주당 증가는 0 이상이어야 합니다.`);
+    if (e.max !== undefined && (!inRange(e.max, LIMITS.max) || (e.max > 0 && e.max < e.base))) errors.push(`${label}: 최대는 시작 목표 이상이어야 합니다(비우면 제한 없음).`);
   });
   return errors;
 }

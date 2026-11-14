@@ -157,6 +157,7 @@ export function mountSettings(root, store) {
         <div class="exrow2">
           <label>시작 <input data-k="base" type="number" inputmode="numeric" min="1" max="9999" value="${e.base}" id="bs-${e.id}"></label>
           <label>매주 + <input data-k="step" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="${e.step}" id="st-${e.id}"></label>
+          <label>최대 <input data-k="max" type="number" inputmode="numeric" min="0" max="9999" value="${e.max || ''}" placeholder="없음" aria-label="세트당 목표 최대(비우면 제한 없음)" id="mx-${e.id}"></label>
           <label>세트 <input data-k="sets" type="number" inputmode="numeric" min="${LIMITS.sets[0]}" max="${LIMITS.sets[1]}" value="${e.sets}" id="se-${e.id}"></label>
         </div>
         <div class="exrow3">
@@ -188,7 +189,11 @@ export function mountSettings(root, store) {
     else if (k === 'unit') ex.unit = ev.target.value;
     else if (k === 'base') ex.base = parseFloat(ev.target.value);
     else if (k === 'step') ex.step = parseFloat(ev.target.value);
-    else if (k === 'sets') ex.sets = parseInt(ev.target.value, 10);
+    else if (k === 'max') {
+      const m = parseInt(ev.target.value, 10);
+      if (m > 0 || ev.target.value !== '') ex.max = Number.isFinite(m) ? m : 0;
+      else delete ex.max; // 비우면 제한 없음
+    } else if (k === 'sets') ex.sets = parseInt(ev.target.value, 10);
     else if (k === 'active') {
       ex.active = ev.target.checked;
       item.classList.toggle('off', !ex.active);

@@ -50,6 +50,15 @@ test('해낸 주만 늘리기: 지난주 5일 미만이면 유지', () => {
   assert.equal(r.targetForWeek(push, 4), 19); // 레벨: 1주차 통과(+1), 2주차 미달, 이번 주 가정(+1), 회복주 제외
 });
 
+test('세트당 목표 상한(max): 푸시업 35에서 멈추고, 회복주는 상한에서 줄임', () => {
+  const r = createTargetResolver({ startDate: START, plan: plan() }, {}, START);
+  const capped = { id: 'push', base: 15, step: 2, max: 35 };
+  assert.deepEqual([9, 10, 11, 12, 20].map((w) => r.targetForWeek(capped, w)), [33, 35, 28, 35, 35]);
+  assert.equal(r.targetForWeek({ id: 'pull', base: 3, step: 0.5, max: 10 }, 40), 10);
+  assert.equal(r.targetForWeek({ id: 'squat', base: 30, step: 5, max: 50 }, 6), 50);
+  assert.equal(r.targetForWeek({ id: 'x', base: 15, step: 2, max: 0 }, 30), 75, '0이면 상한 없음');
+});
+
 test('목표는 최소 1', () => {
   const r = createTargetResolver({ startDate: START, plan: plan({ recoveryRatio: 0.3 }) }, {}, START);
   assert.equal(r.targetForWeek({ id: 'x', base: 1, step: 0 }, 3), 1);
