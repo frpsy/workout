@@ -197,7 +197,7 @@ export function mountToday(root, store) {
           <h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>
           <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button></p>
         </div>
-        <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span></button>
+        <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span><span class="cap" data-f="cap" aria-hidden="true"></span></button>
         <div class="ctrl">
           ${unit.timed ? `<button type="button" class="watch" data-f="watch" aria-label="${n} 시간 재기 시작">시작</button>` : ''}
           <div class="stepper reps" role="group" aria-label="${n} 세트당 ${u}">
@@ -216,13 +216,14 @@ export function mountToday(root, store) {
         <p class="hint" data-f="hint"></p>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };
-      for (const f of ['target', 'sets', 'pips', 'undo', 'frac', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
+      for (const f of ['target', 'sets', 'pips', 'undo', 'frac', 'cap', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
       const step = (d) => actions.setCount(ex.id, view().count + d);
       // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
       if (r.watch) r.watch.addEventListener('click', () => (watch && watch.id === ex.id ? stopWatch() : startWatch(ex.id)));
       // 큰 버튼: 누를 때마다 다음 한 세트만 완료(마지막 세트에서 종목 완료). 모두 마친 뒤에는 눌러도 바뀌지 않음
-      r.check.addEventListener('click', () => {
+      r.check.addEventListener('click', (ev) => {
+        if (ev.detail >= 2) return; // 빠른 두 번 누름(더블탭)이 두 세트를 한꺼번에 완료하지 않게 두 번째는 무시
         const v = view();
         if (v.done) return;
         haptic();
@@ -324,7 +325,11 @@ export function mountToday(root, store) {
       const part = !v.done && v.setsDone > 0;
       r.check.classList.toggle('part', part);
       r.check.style.setProperty('--p', `${Math.round((v.setsDone / v.sets) * 100)}%`);
-      r.frac.textContent = part ? `${v.setsDone}/${v.sets}` : '';
+      const multi = !v.done && v.sets > 1;
+      r.check.classList.toggle('multi', multi);
+      r.frac.textContent = multi ? `${v.setsDone}/${v.sets}` : '';
+      // 버튼이 하는 일을 글자로 알림: 눌렀을 때 완료되는 세트(마친 뒤에는 '완료')
+      r.cap.textContent = v.done ? '완료' : v.sets > 1 ? `${v.setsDone + 1}세트 완료` : '완료';
       r.check.setAttribute('aria-label', v.done ? `${r.ex.name} 완료됨` : v.sets > 1 ? `${r.ex.name} ${v.setsDone + 1}세트 완료 (${v.setsDone}/${v.sets}세트 마침)` : `${r.ex.name} 완료`);
       for (const b of [r.check, r.undo, r.watch, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) if (b) b.disabled = !state.ready;
       if (document.activeElement !== r.cnt) r.cnt.value = watch && watch.id === r.ex.id ? elapsed() : v.count;

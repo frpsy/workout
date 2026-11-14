@@ -151,7 +151,7 @@ test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래
   assert.equal(value('.tabbar', 'padding-bottom'), 'max(calc(env(safe-area-inset-bottom, 0px) - 12px), 8px)');
   assert.equal(value('.tabbar button', 'height'), '50px');
   assert.equal(value('.wrap', 'padding-bottom', { raw: true }), 'calc(var(--tabbar-h) + 7px)');
-  assert.equal(value('#timer', 'bottom', { raw: true, media: '@media (max-height: 700px)' }), 'var(--tabbar-h)');
+  assert.equal(value('#timer', 'bottom', { raw: true }), 'calc(var(--tabbar-h) + 7px)');
   assert.equal(value('.savebar.dirty', 'bottom', { raw: true }), 'calc(var(--tabbar-h) + 1px)');
 });
 
