@@ -161,7 +161,7 @@ async function capture(launch, origin, outDir, only = null) {
           const name = `${vp.name}-${scheme}-${scene.name}-${kind}.png`;
           // sticky 휴식 타이머는 따로 합성되는 층이라 글자가 실행마다 한두 픽셀씩 달리 그려짐: 찍는 순간만 보통 흐름으로(이 장면들에서는 붙어 있지 않아 모양이 같음).
           // position 자체의 변화는 위의 계산된 스타일 비교가 잡음
-          await page.screenshot({ path: join(outDir, name), animations: 'disabled', caret: 'hide', style: '#timer { position: relative !important; }' });
+          await page.screenshot({ path: join(outDir, name), animations: 'disabled', caret: 'hide', style: '#timer { position: relative !important; bottom: auto !important; }' });
           names.push(name);
         };
         await shot('screen');
