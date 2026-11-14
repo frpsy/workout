@@ -1,5 +1,5 @@
 // 한 줄 휴식 타이머: 휴식 [−15] 1:00 [+15] [시작]
-// 쉬는 동안 줄 바탕이 남은 시간만큼 줄어들고, 끝나면 '휴식 끝 +0:07'처럼 지난 시간을 잠시 보여 줍니다.
+// 쉬는 동안 줄 바탕이 남은 시간만큼 줄어들고, 끝나면 줄 전체가 초록으로 커지며 '휴식 끝 +0:07'처럼 지난 시간을 잠시 보여 줍니다(화면 가장자리도 잠깐 번쩍임).
 
 import { createTimer, fmt, STEP_SEC } from '../timer.js';
 import { playSound, unlockSound } from '../sound.js';
@@ -18,7 +18,8 @@ export function mountTimer(root) {
       <button type="button" class="tstep" id="tPlus" aria-label="휴식 ${STEP_SEC}초 늘리기">+${STEP_SEC}</button>
       <button type="button" class="tgo" id="tGo">휴식 시작</button>
       <span class="sr" id="tDone" role="status"></span>
-    </div>`;
+    </div>
+    <i class="restflash" aria-hidden="true"></i>`;
 
   const wakeOwner = Symbol('rest-timer'); // 운동 스톱워치와 공유
   let interval = 0;
@@ -76,7 +77,7 @@ export function mountTimer(root) {
     const time = $('#tTime', root);
     const done = doneAt !== null && !running;
     const over = done ? fmt(Math.max(0, Math.floor((Date.now() - doneAt) / 1000))) : '';
-    if (done) time.innerHTML = `<span class="tend">휴식 끝</span>+${over}`;
+    if (done) time.innerHTML = `<span class="tend">휴식 끝</span><span class="tover">+${over}</span>`;
     else time.textContent = fmt(left);
     time.disabled = running; // 실행 중에는 프리셋을 바꾸지 않음
     time.setAttribute('aria-label', running ? `남은 시간 ${fmt(left)}` : done ? `휴식 끝, ${over} 지남 (누르면 닫기)` : `휴식 ${fmt(timer.duration)} (누르면 30·60·90초로 바뀜)`);

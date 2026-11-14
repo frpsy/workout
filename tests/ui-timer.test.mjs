@@ -2,7 +2,7 @@
 import { mock, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addDays, todayStr } from '../js/dates.js';
-import { mountTimer, setup, today } from './helpers/ui-env.mjs';
+import { mountTimer, setup, today, complete, setTo } from './helpers/ui-env.mjs';
 
 test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
@@ -138,25 +138,25 @@ test('오늘+타이머: 세트를 체크하면 휴식이 자동으로 시작되�
   const row = root.querySelector('.row');
   assert.equal(go().textContent, '휴식 시작');
 
-  row.querySelector('[data-set="1"]').click();
+  setTo(row, 1);
   assert.equal(go().textContent, '휴식 중지', '세트를 체크하면 휴식이 시작됨');
   go().click(); // 중지
-  row.querySelector('[data-set="1"]').click(); // 되돌리기
+  setTo(row, 1); // 되돌리기
   assert.equal(go().textContent, '휴식 시작', '되돌릴 때는 시작하지 않음');
 
   timerRoot.querySelector('#tAuto').click(); // 수동
   assert.equal(timerRoot.querySelector('#tAutoText').textContent, '수동');
-  row.querySelector('[data-set="1"]').click();
+  setTo(row, 1);
   assert.equal(go().textContent, '휴식 시작', '수동이면 시작하지 않음');
   timerRoot.querySelector('#tAuto').click(); // 다시 자동
 
   // 나머지 운동을 모두 완료해 두고 마지막 운동의 마지막 세트를 체크하면 쉴 필요가 없음
   const rows = [...root.querySelectorAll('.row')];
-  for (const r of rows.slice(1)) r.querySelector('[data-f="check"]').click();
-  row.querySelector('[data-set="2"]').click();
+  for (const r of rows.slice(1)) complete(r);
+  setTo(row, 2);
   go().click();
   assert.equal(go().textContent, '휴식 시작');
-  row.querySelector('[data-set="3"]').click(); // 마지막 운동 완료
+  setTo(row, 3); // 마지막 운동 완료
   assert.equal(go().textContent, '휴식 시작', '모든 운동을 마치면 휴식을 시작하지 않음');
   store.actions.flushAll();
   localStorage.removeItem('workout-check:timer');
@@ -174,14 +174,14 @@ test('오늘+타이머: 큰 완료 버튼으로 종목을 마치면 휴식이 �
   const checks = [...root.querySelectorAll('.row [data-f="check"]')];
   assert.equal(go().textContent, '휴식 시작');
 
-  checks[0].click(); // 세트 번호 대신 큰 초록색 완료 버튼
+  complete(checks[0]); // 세트 번호 대신 큰 초록색 완료 버튼
   assert.equal(go().textContent, '휴식 중지', '큰 완료 버튼에서도 휴식을 자동 시작');
   mock.timers.tick(10_000);
   assert.equal(time(), '0:50');
-  checks[1].click();
+  complete(checks[1]);
   assert.equal(time(), '0:50', '다른 종목 완료로 이미 진행 중인 휴식 시간을 초기화하지 않음');
 
-  checks[2].click();
+  complete(checks[2]);
   assert.equal(store.allDone(), true);
   assert.equal(go().textContent, '휴식 시작', '마지막 종목을 완료하면 휴식 타이머를 중지');
   mock.timers.tick(70_000);
@@ -199,23 +199,23 @@ test('오늘+타이머: 큰 완료 버튼의 해제·수동 모드·과거 날�
   const go = () => timerRoot.querySelector('#tGo');
   const checks = [...root.querySelectorAll('.row [data-f="check"]')];
 
-  checks[0].click();
+  complete(checks[0]);
   assert.equal(go().textContent, '휴식 중지');
   go().click(); // 수동 중지
-  checks[0].click(); // 완료 해제
+  complete(checks[0]); // 완료 해제
   assert.equal(go().textContent, '휴식 시작', '완료 해제 시에는 자동 시작하지 않음');
 
   timerRoot.querySelector('#tAuto').click(); // 수동 모드
-  checks[0].click();
+  complete(checks[0]);
   assert.equal(go().textContent, '휴식 시작', '수동 모드에서는 완료해도 자동 시작하지 않음');
 
   timerRoot.querySelector('#tAuto').click(); // 다시 자동
   store.actions.closeSession();
-  checks[1].click();
+  complete(checks[1]);
   assert.equal(go().textContent, '휴식 시작', '종료한 회차의 기록 변경으로 휴식을 시작하지 않음');
 
   store.actions.select(addDays(todayStr(), -1));
-  root.querySelector('.row [data-f="check"]').click();
+  complete(root.querySelector('.row'));
   assert.equal(go().textContent, '휴식 시작', '지난 날짜 기록 수정은 휴식을 시작하지 않음');
   store.actions.flushAll();
 });
@@ -232,12 +232,12 @@ test('오늘+타이머: 오늘 체크를 모두 되돌리면 쉬는 중이던 �
   const time = () => timerRoot.querySelector('#tTime').textContent;
   const row = root.querySelector('.row');
 
-  row.querySelector('[data-set="1"]').click();
-  row.querySelector('[data-set="2"]').click();
+  setTo(row, 1);
+  setTo(row, 2);
   mock.timers.tick(10_000);
-  row.querySelector('[data-set="2"]').click(); // 한 칸만 되돌림: 1세트는 남음
+  setTo(row, 1); // 한 칸만 되돌림: 1세트는 남음
   assert.equal(go().textContent, '휴식 중지', '일부만 되돌리면 휴식은 계속');
-  row.querySelector('[data-set="1"]').click(); // 체크가 하나도 없음
+  setTo(row, 0); // 체크가 하나도 없음
   assert.equal(go().textContent, '휴식 시작', '모두 되돌리면 휴식이 멈춤');
   assert.equal(time(), '1:00', '멈추면 정한 시간으로 돌아감');
   mock.timers.tick(70_000);
@@ -257,11 +257,10 @@ test('오늘+타이머: 모든 운동을 마치면 쉬는 중이던 휴식도 �
   const go = () => timerRoot.querySelector('#tGo');
   const rows = [...root.querySelectorAll('.row')];
   const last = rows.at(-1);
-  for (const r of rows.slice(0, -1)) r.querySelector('.check, [data-f="check"]').click(); // 앞 종목은 원형 버튼으로 한꺼번에 완료
-  const sets = last.querySelectorAll('button[data-set]');
-  for (const b of [...sets].slice(0, -1)) b.click(); // 마지막 종목은 마지막 세트 전까지
+  for (const r of rows.slice(0, -1)) complete(r); // 앞 종목은 끝까지 완료
+  setTo(last, 2); // 마지막 종목은 마지막 세트 전까지
   assert.equal(go().textContent, '휴식 중지', '세트 사이에는 쉬는 중');
-  sets[sets.length - 1].click(); // 마지막 세트로 모두 완료
+  setTo(last, 3); // 마지막 세트로 모두 완료
   assert.equal(go().textContent, '휴식 시작', '더 쉴 세트가 없으니 휴식이 멈춤');
   mock.timers.tick(70_000);
   assert.equal(timerRoot.querySelector('#timerBar').classList.contains('done'), false, '끝남 알림도 없음');

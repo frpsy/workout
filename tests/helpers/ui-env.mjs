@@ -98,3 +98,18 @@ export function pickDate(root, date) {
   if (!target) throw new Error(`달력에서 날짜 ${date}를 찾지 못했습니다`);
   target.click();
 }
+
+/** 종목 줄의 세트를 n개까지 마친 상태로: 큰 버튼(한 세트씩 완료)과 되돌리기 버튼을 필요한 만큼 누름 */
+export function setTo(el, n) {
+  const row = el.closest('.row');
+  const check = row.querySelector('[data-f="check"]');
+  const cur = () => Number(check.dataset.done);
+  for (let i = 0; i < 20 && cur() < n; i++) check.click();
+  for (let i = 0; i < 20 && cur() > n; i++) row.querySelector('[data-f="undo"]').click();
+}
+/** 종목 줄을 끝까지 완료(남은 세트를 큰 버튼으로 하나씩) */
+export function complete(el) {
+  const row = el.closest('.row');
+  const check = row.querySelector('[data-f="check"]');
+  for (let i = 0; i < 20 && !row.classList.contains('done'); i++) check.click();
+}
