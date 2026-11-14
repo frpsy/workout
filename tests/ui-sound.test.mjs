@@ -135,9 +135,9 @@ test('효과음: 무음 모드에서도 소리 내기를 켜면 오디오 세션
     assert.equal(session.type, 'playback');
     assert.equal(played.length, 1, '바로 들어 보기');
     setSilentMode(false);
-    assert.equal(session.type, 'auto');
+    assert.equal(session.type, 'ambient', '기본은 다른 앱(유튜브·음악) 소리를 멈추지 않는 종류');
     playSound('done');
-    assert.equal(session.type, 'auto', '새 오디오를 만들 때도 설정을 따름');
+    assert.equal(session.type, 'ambient', '새 오디오를 만들 때도 설정을 따름');
   } finally {
     if (prev) Object.defineProperty(globalThis, 'navigator', prev);
     else delete globalThis.navigator;

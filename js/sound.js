@@ -102,15 +102,20 @@ export function isSilentModeOn() {
   return readText(SILENT_KEY) === 'on';
 }
 
-/** 오디오 세션 종류를 정함: 'playback'이면 아이폰 무음 스위치를 켜도 소리가 남(다른 앱 음악은 멈출 수 있음) */
+/**
+ * 오디오 세션 종류를 정함.
+ * 기본은 'ambient': 다른 앱(유튜브·음악)의 재생을 멈추지 않고 그 위에 효과음만 섞어 냄(아이폰 무음 스위치를 켜면 조용).
+ * '무음 모드에서도 효과음'을 켜면 'playback': 무음 스위치와 상관없이 소리가 나지만 다른 앱의 소리는 멈출 수 있음.
+ */
 function applySession() {
   if (!canPlayInSilentMode()) return;
   try {
-    navigator.audioSession.type = isSilentModeOn() ? 'playback' : 'auto';
+    navigator.audioSession.type = isSilentModeOn() ? 'playback' : 'ambient';
   } catch {
     /* 바꿀 수 없는 환경 */
   }
 }
+applySession(); // 앱을 여는 순간부터 적용: 첫 효과음 전에도 다른 앱 소리를 건드리지 않게
 
 export function setSilentMode(on) {
   writeText(SILENT_KEY, on ? 'on' : 'off');
