@@ -25,6 +25,12 @@ export const DEFAULT_EXERCISES = [
   { id: 'squat', name: '스쿼트', unit: 'reps', base: 30, step: 5, sets: DEFAULT_SETS, active: true },
 ];
 
+/** 같이 따라 할 수 있는 영상: 기본 운동 id → 유튜브 영상. 해당 종목 줄에 '영상으로 같이하기' 버튼이 생깁니다 */
+export const EXERCISE_VIDEOS = {
+  push: { id: 'R09TwHx_pzY', title: '정말 현실적인 푸쉬업 루틴. 푸쉬업 100개!' },
+};
+export const videoUrl = (v) => `https://youtu.be/${v.id}`;
+
 /**
  * 목표 증가 방식
  * - mode 'linear': 매주 step만큼 늘어남

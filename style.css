@@ -672,6 +672,27 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   background: var(--surface) padding-box;
 }
 
+/* 영상으로 같이하기: 유튜브로 열어, 앱을 오가도 영상 소리가 이어짐 */
+.video {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-ctrl);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  text-decoration: none;
+  touch-action: manipulation;
+}
+.video svg { flex: none; }
+.video small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-xs); font-weight: 400; color: var(--muted); text-align: right; }
+.video:active { background: var(--line); }
+
 /* 개수·세트 조절 줄 */
 .ctrl { grid-area: ctrl; display: flex; align-items: center; gap: var(--gap); }
 .stepper.reps { flex: 1; }
