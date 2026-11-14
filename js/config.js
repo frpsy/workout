@@ -28,6 +28,8 @@ export const DEFAULT_EXERCISES = [
 /** 같이 따라 할 수 있는 영상: 기본 운동 id → 유튜브 영상. 해당 종목 줄에 '영상으로 같이하기' 버튼이 생깁니다 */
 export const EXERCISE_VIDEOS = {
   push: { id: 'R09TwHx_pzY', title: '정말 현실적인 푸쉬업 루틴. 푸쉬업 100개!' },
+  pull: { id: '0aI_6D5oS7I', title: '턱걸이/풀업 5X5 (pullup 5X5) 데스런.' },
+  squat: { id: 'tDhPStGIuDU', title: '스쿼트 35X3 (squat35X3) 데스런.' },
 };
 export const videoUrl = (v) => `https://youtu.be/${v.id}`;
 
