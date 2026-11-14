@@ -1230,7 +1230,7 @@ tr.cur td { background: var(--accent-soft); }
 .exitem.off { opacity: 0.6; }
 .exrow1 { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: var(--gap); }
 .exrow1 input { width: 100%; font-weight: 700; }
-.exrow2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
+.exrow2 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
 .exrow2 label {
   display: flex;
   flex-direction: column;
