@@ -1,7 +1,7 @@
 // 효과음 테스트 (가짜 DOM 환경은 helpers/ui-env.mjs)
 import { mock, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { adapter, createStore, mountSettings, mountTimer, setup, today } from './helpers/ui-env.mjs';
+import { adapter, createStore, mountSettings, mountTimer, setup, today, complete, setTo } from './helpers/ui-env.mjs';
 
 // 효과음 테스트용 가짜 오디오: 소리 모듈이 만든 오디오를 계속 쓰므로 한 곳에 기록함
 const played = [];
@@ -31,25 +31,26 @@ test('효과음: 세트 체크·종목 완료·모두 완료·되돌림·운동 
     assert.equal(snd.getAttribute('aria-pressed'), 'true', '기본은 켜짐');
 
     played.length = 0;
-    row.querySelector('[data-set="1"]').click();
+    setTo(row, 1);
     assert.equal(played.length, 1, '세트 체크: 짧은 소리 한 번');
     const first = played[0];
-    row.querySelector('[data-set="2"]').click();
+    setTo(row, 2);
     assert.ok(played[1] > first, '다음 세트는 음이 올라감');
 
     played.length = 0;
-    row.querySelector('[data-set="3"]').click(); // 종목 완료
+    setTo(row, 3); // 종목 완료
     assert.equal(played.length, 3, '종목 완료: 세 음');
     played.length = 0;
-    row.querySelector('[data-set="3"]').click(); // 되돌림
+    setTo(row, 2); // 되돌림
     assert.equal(played.length, 1, '되돌림: 낮은 소리 한 번');
 
     played.length = 0;
     const rows = [...root.querySelectorAll('.row')];
-    row.querySelector('[data-f="check"]').click();
-    for (const r of rows.slice(1, -1)) r.querySelector('[data-f="check"]').click();
+    complete(row);
+    for (const r of rows.slice(1, -1)) complete(r);
+    setTo(rows.at(-1), 2);
     played.length = 0;
-    rows.at(-1).querySelector('[data-f="check"]').click(); // 마지막 종목 → 모두 완료
+    complete(rows.at(-1)); // 마지막 종목 → 모두 완료
     assert.equal(played.length, 4, '모두 완료: 네 음 팡파르');
 
     played.length = 0;
@@ -62,7 +63,7 @@ test('효과음: 세트 체크·종목 완료·모두 완료·되돌림·운동 
     assert.equal(snd.getAttribute('aria-pressed'), 'false');
     assert.equal(localStorage.getItem('workout-check:sound'), 'off', '이 브라우저에 기억');
     played.length = 0;
-    row.querySelector('[data-set="1"]').click();
+    setTo(row, 1);
     assert.equal(played.length, 0, '끄면 소리가 나지 않음');
     store.actions.flushAll();
   } finally {

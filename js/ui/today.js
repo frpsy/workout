@@ -14,6 +14,9 @@ import { mountWorkbar } from './workbar.js';
 const CHECK_SVG =
   '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+const UNDO_SVG =
+  '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 4 9l4 4"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>';
+
 const HOLD_MS = 450; // 이만큼 누르고 있으면 '꾹 누름'
 const REPEAT_MS = 200; // 꾹 누르는 동안 큰 단위로 바뀌는 간격
 
@@ -191,7 +194,7 @@ export function mountToday(root, store) {
       el.innerHTML = `
         <div class="info">
           <h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>
-          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" role="group" aria-label="${n} 세트별 체크"></span></p>
+          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button></p>
         </div>
         <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span></button>
         <div class="ctrl">
@@ -211,22 +214,24 @@ export function mountToday(root, store) {
         <p class="hint" data-f="hint"></p>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };
-      for (const f of ['target', 'sets', 'pips', 'frac', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
+      for (const f of ['target', 'sets', 'pips', 'undo', 'frac', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
       const step = (d) => actions.setCount(ex.id, view().count + d);
       // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
       if (r.watch) r.watch.addEventListener('click', () => (watch && watch.id === ex.id ? stopWatch() : startWatch(ex.id)));
-      // 세트별 체크: 누른 세트까지 마친 것으로 하고, 이미 거기까지 마친 상태에서 다시 누르면 한 칸 되돌림
-      r.pips.addEventListener('click', (ev) => {
-        const b = ev.target.closest('button[data-set]');
-        if (!b || b.disabled) return;
-        haptic();
-        const i = Number(b.dataset.set);
-        changeProgress(view, () => actions.setProgress(ex.id, view().setsDone === i ? i - 1 : i));
-      });
+      // 큰 버튼: 누를 때마다 다음 한 세트만 완료(마지막 세트에서 종목 완료). 모두 마친 뒤에는 눌러도 바뀌지 않음
       r.check.addEventListener('click', () => {
+        const v = view();
+        if (v.done) return;
         haptic();
-        changeProgress(view, () => actions.toggle(ex.id));
+        changeProgress(view, () => actions.setProgress(ex.id, v.setsDone + 1));
+      });
+      // 되돌리기: 마지막으로 체크한 한 세트만 취소(세트 표시는 누르는 버튼이 아님)
+      r.undo.addEventListener('click', () => {
+        const v = view();
+        if (v.setsDone < 1) return;
+        haptic();
+        changeProgress(view, () => actions.setProgress(ex.id, v.setsDone - 1));
       });
       // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
       holdStep(r.minus, () => step(-unit.inc), () => step(-unit.big));
@@ -255,7 +260,7 @@ export function mountToday(root, store) {
     notifyAllDone(wasDone);
   }
 
-  /** 세트 번호와 큰 완료 버튼 모두: 새로운 세트를 마치고 운동이 남았을 때만 자동 휴식을 요청합니다. */
+  /** 새로운 세트를 마치고 운동이 남았을 때만 자동 휴식을 요청합니다. */
   function notifyRestStart(before, after) {
     if (after.setsDone > before.setsDone && !store.allDone() &&
         !store.isSessionClosed() && store.state.selected === store.state.today) {
@@ -294,22 +299,23 @@ export function mountToday(root, store) {
       if (v.done) done++;
       r.target.textContent = v.target;
       r.target.closest('.goal').title = `목표 ${v.target}${r.unit.label} × ${v.sets}세트`;
-      // 세트가 여러 개면 세트마다 체크 버튼(1·2·3), 하나면 기존처럼 완료 버튼만
+      // 세트가 여러 개면 세트 수만큼 진행 표시(누르는 버튼이 아님), 하나면 완료 버튼만
       const nSets = v.sets;
       r.sets.hidden = nSets > 1;
       r.sets.textContent = '';
       const pipKey = `${nSets}`;
       if (r.pips.dataset.n !== pipKey) {
         r.pips.dataset.n = pipKey;
-        r.pips.innerHTML = nSets > 1 ? Array.from({ length: nSets }, (_, i) => `<button type="button" data-set="${i + 1}" aria-pressed="false" aria-label="${esc(r.ex.name)} ${i + 1}세트 체크">${i + 1}</button>`).join('') : '';
+        r.pips.innerHTML = nSets > 1 ? Array.from({ length: nSets }, (_, i) => `<i data-set="${i + 1}"></i>`).join('') : '';
       }
       r.pips.hidden = nSets <= 1;
       for (const b of r.pips.children) {
-        const on = Number(b.dataset.set) <= v.setsDone;
-        b.classList.toggle('on', on);
-        b.setAttribute('aria-pressed', String(on));
-        b.disabled = !state.ready;
+        const i = Number(b.dataset.set);
+        b.classList.toggle('on', i <= v.setsDone);
+        b.classList.toggle('next', !v.done && i === v.setsDone + 1);
       }
+      r.undo.hidden = v.setsDone < 1;
+      r.check.dataset.done = String(v.setsDone);
       r.el.classList.toggle('done', v.done);
       r.check.setAttribute('aria-pressed', String(v.done));
       // 세트를 일부만 마쳤으면 완료 버튼 테두리가 진행 정도(2/3)를 보여 줌
@@ -317,8 +323,8 @@ export function mountToday(root, store) {
       r.check.classList.toggle('part', part);
       r.check.style.setProperty('--p', `${Math.round((v.setsDone / v.sets) * 100)}%`);
       r.frac.textContent = part ? `${v.setsDone}/${v.sets}` : '';
-      r.check.setAttribute('aria-label', v.done ? `${r.ex.name} 완료됨, 눌러서 완료 해제` : part ? `${r.ex.name} ${v.setsDone}/${v.sets}세트 마침, 눌러서 모두 완료` : `${r.ex.name} ${v.sets}세트 모두 완료`);
-      for (const b of [r.check, r.watch, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) if (b) b.disabled = !state.ready;
+      r.check.setAttribute('aria-label', v.done ? `${r.ex.name} 완료됨` : v.sets > 1 ? `${r.ex.name} ${v.setsDone + 1}세트 완료 (${v.setsDone}/${v.sets}세트 마침)` : `${r.ex.name} 완료`);
+      for (const b of [r.check, r.undo, r.watch, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) if (b) b.disabled = !state.ready;
       if (document.activeElement !== r.cnt) r.cnt.value = watch && watch.id === r.ex.id ? elapsed() : v.count;
       if (document.activeElement !== r.setsIn) r.setsIn.value = v.sets;
       // 목표와 다르게 한 부분만 짧게 알려 줌 (예: +2개 · 세트 -1)
