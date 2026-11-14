@@ -326,6 +326,29 @@ test('오늘: 큰 버튼은 누를 때마다 한 세트씩만 완료하고, 마�
   store.actions.flushAll();
 });
 
+test('오늘: 큰 버튼 글자가 다음에 완료될 세트와 진행을 알리고, 더블탭은 한 번만 셈', () => {
+  const { store, root } = setup(today);
+  const row = root.querySelector('.row');
+  const check = row.querySelector('[data-f="check"]');
+  const cap = () => row.querySelector('[data-f="cap"]').textContent;
+  const frac = () => row.querySelector('[data-f="frac"]').textContent;
+  assert.equal(cap(), '1세트 완료');
+  assert.equal(frac(), '0/3');
+  assert.ok(check.classList.contains('multi'));
+  const tap = (detail) => check.dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail }));
+  tap(1);
+  tap(2); // 더블탭의 두 번째 누름
+  assert.equal(frac(), '1/3', '두 번째 누름은 무시');
+  assert.equal(cap(), '2세트 완료');
+  tap(1);
+  tap(1);
+  assert.ok(row.classList.contains('done'));
+  assert.equal(cap(), '완료');
+  assert.equal(frac(), '');
+  assert.ok(!check.classList.contains('multi'));
+  store.actions.flushAll();
+});
+
 test('오늘: 세트 표시는 누르는 버튼이 아니고, 되돌리기 버튼이 한 세트씩 취소', () => {
   const { store, root } = setup(today);
   const row = root.querySelector('.row');
