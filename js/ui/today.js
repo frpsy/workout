@@ -1,6 +1,6 @@
 // 머리말(날짜·진행)과 오늘의 운동 체크 행
 
-import { LEVEL_ORDER, LEVELS, UNITS } from '../config.js';
+import { EXERCISE_VIDEOS, LEVEL_ORDER, LEVELS, UNITS, videoUrl } from '../config.js';
 import { dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { currentStreak } from '../stats.js';
@@ -189,6 +189,7 @@ export function mountToday(root, store) {
       const unit = UNITS[ex.unit];
       const u = esc(unit.label);
       const n = esc(ex.name);
+      const video = EXERCISE_VIDEOS[ex.id];
       const el = document.createElement('article');
       el.className = 'row';
       el.innerHTML = `
@@ -211,6 +212,7 @@ export function mountToday(root, store) {
             <button type="button" data-f="setsPlus" aria-label="${n} 세트 늘리기">+</button>
           </div>
         </div>
+        ${video ? `<a class="video" data-f="video" href="${esc(videoUrl(video))}" target="_blank" rel="noopener noreferrer" aria-label="${n} 유튜브 영상으로 같이하기: ${esc(video.title)}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4" fill="currentColor"/><path d="M10 9.2v5.6l5-2.8z" fill="var(--surface)"/></svg><span>영상으로 같이하기</span><small>${esc(video.title)}</small></a>` : ''}
         <p class="hint" data-f="hint"></p>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };
