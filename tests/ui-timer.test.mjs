@@ -45,8 +45,85 @@ test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림',
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), true, '끝나면 알림 표시');
   assert.equal(root.querySelector('#tDone').textContent, '휴식이 끝났습니다');
   assert.equal(root.querySelector('#tGo').textContent, '휴식 시작');
-  mock.timers.tick(4_500);
-  assert.equal(root.querySelector('#timerBar').classList.contains('done'), false, '잠시 뒤 표시가 사라짐');
+  assert.equal(time(), '휴식 끝+0:00', '끝난 뒤 지난 시간을 보여 줌');
+  assert.equal(root.querySelector('#tMinus').disabled, false);
+  mock.timers.tick(7_000);
+  assert.equal(time(), '휴식 끝+0:07');
+  assert.equal(root.querySelector('#timerBar').classList.contains('done'), true, '몇 초 만에 사라지지 않아 놓치지 않음');
+  mock.timers.tick(54_000);
+  assert.equal(root.querySelector('#timerBar').classList.contains('done'), false, '1분 뒤에는 표시가 사라짐');
+  assert.equal(root.querySelector('#tDone').textContent, '');
+  assert.equal(time(), '0:45');
+});
+
+test('타이머: 휴식 끝 표시는 시간을 누르면 닫히고(프리셋은 그대로), 새 휴식을 시작해도 걷힘', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  document.body.innerHTML = '<div id="timer"></div>';
+  const root = document.getElementById('timer');
+  mountTimer(root);
+  const bar = root.querySelector('#timerBar');
+  const time = root.querySelector('#tTime');
+  root.querySelector('#tGo').click();
+  assert.equal(bar.style.getPropertyValue('--p'), '100.00%', '시작할 때 바탕이 가득 참');
+  mock.timers.tick(30_000);
+  assert.equal(bar.style.getPropertyValue('--p'), '50.00%', '남은 시간만큼 줄어듦');
+  mock.timers.tick(28_000);
+  assert.equal(bar.classList.contains('ending'), true, '마지막 3초 강조');
+  mock.timers.tick(2_500);
+  assert.equal(bar.classList.contains('done'), true);
+  assert.equal(bar.classList.contains('ending'), false);
+  time.click();
+  assert.equal(bar.classList.contains('done'), false, '누르면 닫힘');
+  assert.equal(time.textContent, '1:00', '닫을 때 프리셋은 바뀌지 않음');
+
+  root.querySelector('#tGo').click();
+  mock.timers.tick(60_500);
+  assert.equal(bar.classList.contains('done'), true);
+  root.querySelector('#tGo').click(); // 끝난 표시가 떠 있을 때 다시 시작
+  assert.equal(bar.classList.contains('done'), false);
+  assert.equal(time.textContent, '1:00');
+  mock.timers.tick(5_000);
+  assert.equal(time.textContent, '0:55', '새 휴식이 정상으로 흐름');
+  root.querySelector('#tGo').click();
+});
+
+test('타이머: 쉬는 중에 새로고침·재실행해도 이어지고, 그사이 끝났으면 알리며, 한참 지났으면 조용히 정리', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const remount = () => {
+    document.body.innerHTML = '<div id="timer"></div>';
+    const root = document.getElementById('timer');
+    mountTimer(root);
+    return root;
+  };
+  let root = remount();
+  root.querySelector('#tGo').click();
+  mock.timers.tick(20_000);
+
+  root = remount(); // 새로고침
+  assert.equal(root.querySelector('#tTime').textContent, '0:40', '남은 시간이 이어짐');
+  assert.equal(root.querySelector('#tGo').textContent, '휴식 중지');
+  mock.timers.tick(5_000);
+  assert.equal(root.querySelector('#tTime').textContent, '0:35', '다시 흐름');
+
+  mock.timers.setTime(Date.now() + 45_000); // 앱이 꺼져 있던 동안 끝남(10초 전)
+  root = remount();
+  assert.equal(root.querySelector('#timerBar').classList.contains('done'), true, '그사이 끝난 휴식을 알림');
+  assert.equal(root.querySelector('#tTime').textContent, '휴식 끝+0:10', '실제로 끝난 때부터 셈');
+  assert.equal(JSON.parse(localStorage.getItem('workout-check:timer')).endAt, null);
+
+  root.querySelector('#tGo').click();
+  mock.timers.setTime(Date.now() + 10 * 60_000); // 한참 뒤에 다시 엶
+  root = remount();
+  assert.equal(root.querySelector('#timerBar').classList.contains('done'), false, '오래전에 끝난 휴식은 알리지 않음');
+  assert.equal(root.querySelector('#tTime').textContent, '1:00');
+  assert.equal(root.querySelector('#tGo').textContent, '휴식 시작');
+
+  root.querySelector('#tGo').click();
+  root.querySelector('#tGo').click(); // 중지
+  root = remount();
+  assert.equal(root.querySelector('#tGo').textContent, '휴식 시작', '중지한 휴식은 되살아나지 않음');
 });
 
 test('오늘+타이머: 세트를 체크하면 휴식이 자동으로 시작되고, 되돌리기·마지막 운동 완료·수동 모드에서는 시작하지 않음', (t) => {

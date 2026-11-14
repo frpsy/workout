@@ -1,4 +1,5 @@
 // 운동 사이 휴식 타이머의 상태. 종료 시각(endAt)으로 계산해, 화면이 꺼졌다 켜져도 정확합니다.
+// 쉬는 중이던 종료 시각은 이 브라우저에 남겨, 새로고침·앱 재실행(새 배포 자동 반영 포함) 뒤에도 이어집니다.
 
 import { readJson, writeJson } from './local-store.js';
 
@@ -34,14 +35,25 @@ function save(patch) {
 }
 const saveDuration = (duration) => save({ duration });
 
+/** 저장된 종료 시각. 없거나 믿을 수 없는 값(시계가 바뀜 등: 최대 휴식보다 먼 미래)이면 null */
+export function loadEndAt(now = Date.now) {
+  const { endAt } = readSaved();
+  return Number.isFinite(endAt) && endAt - now() <= MAX_SEC * 1000 ? endAt : null;
+}
+
 /**
- * onChange(): 화면을 다시 그릴 때, onDone(): 시간이 다 됐을 때.
+ * onChange(): 화면을 다시 그릴 때, onDone(endedAt): 시간이 다 됐을 때(끝난 시각을 넘겨, 늦게 알아챈 만큼을 알 수 있음).
  * 실행 중에는 tick()을 주기적으로 불러 주세요 (끝났는지 확인하고 알립니다).
+ * 만들 때 저장된 종료 시각이 있으면 쉬는 중인 상태로 시작합니다(이미 지났으면 첫 tick()에서 끝남).
  */
-export function createTimer({ now = Date.now, duration = loadDuration(), auto = loadAuto(), onChange = () => {}, onDone = () => {} } = {}) {
-  let endAt = null;
+export function createTimer({ now = Date.now, duration = loadDuration(), auto = loadAuto(), endAt: savedEndAt = loadEndAt(now), onChange = () => {}, onDone = () => {} } = {}) {
+  let endAt = savedEndAt;
   let dur = duration;
   let autoStart = auto;
+  const setEnd = (v) => {
+    endAt = v;
+    save({ endAt });
+  };
 
   const remaining = () => (endAt === null ? dur : Math.max(0, Math.ceil((endAt - now()) / 1000)));
 
@@ -53,6 +65,8 @@ export function createTimer({ now = Date.now, duration = loadDuration(), auto = 
       return endAt !== null;
     },
     remaining,
+    /** 남은 비율(1 → 0). 쉬는 중이 아니면 1 */
+    fraction: () => (endAt === null ? 1 : Math.max(0, Math.min(1, (endAt - now()) / (dur * 1000)))),
 
     get auto() {
       return autoStart;
@@ -64,12 +78,12 @@ export function createTimer({ now = Date.now, duration = loadDuration(), auto = 
     },
 
     start() {
-      endAt = now() + dur * 1000;
+      setEnd(now() + dur * 1000);
       onChange();
     },
 
     stop() {
-      endAt = null;
+      if (endAt !== null) setEnd(null);
       onChange();
     },
 
@@ -86,9 +100,10 @@ export function createTimer({ now = Date.now, duration = loadDuration(), auto = 
     adjust(delta) {
       const next = clampDuration(dur + delta);
       if (next === dur) return;
-      if (endAt !== null) endAt += (next - dur) * 1000;
+      const shifted = endAt === null ? null : endAt + (next - dur) * 1000;
       dur = next;
-      saveDuration(dur);
+      endAt = shifted;
+      save({ duration: dur, endAt });
       onChange();
     },
 
@@ -96,9 +111,10 @@ export function createTimer({ now = Date.now, duration = loadDuration(), auto = 
     tick() {
       if (endAt === null) return;
       if (endAt - now() <= 0) {
-        endAt = null;
+        const endedAt = endAt;
+        setEnd(null);
         onChange();
-        onDone();
+        onDone(endedAt);
       } else {
         onChange();
       }

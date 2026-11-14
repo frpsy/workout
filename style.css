@@ -770,7 +770,10 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   border-radius: var(--r-card);
   background: var(--surface);
 }
-.timer.done { border-color: var(--accent); }
+/* 쉬는 동안: 남은 시간만큼(--p) 바탕이 채워져 있다가 줄어듦 */
+.timer.running { background: linear-gradient(to right, var(--accent-soft) var(--p, 0%), var(--surface) var(--p, 0%)); border-color: var(--accent-fill); }
+.timer.done { border-color: var(--accent); background: var(--accent-soft); }
+.timer.done .tstep { display: none; } /* '휴식 끝 +0:07'이 한 줄에 들어오도록 */
 .timer .time {
   flex: 1;
   min-width: 0;
@@ -791,7 +794,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 }
 .timer .time:disabled { opacity: 1; cursor: default; }
 .timer .time:not(:disabled):active { background: var(--accent-soft); }
-.timer.running .time { color: var(--accent); }
+.timer.running .time, .timer.done .time { color: var(--accent); }
+.timer.ending .time { color: var(--warn); } /* 마지막 3초 */
+.timer .tend { margin-right: var(--gap); font-family: var(--font-body); font-size: var(--fs-md); font-weight: 700; vertical-align: 0.3em; }
 .timer button.tlabel {
   position: relative;
   display: flex;
@@ -1368,7 +1373,7 @@ tr.cur td { background: var(--accent-soft); }
 /* ── 움직임 ────────────────────────────────────────────── */
 @keyframes splash-icon { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
 @keyframes splash-word { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@keyframes timer-flash { 50% { background: var(--accent-soft); border-color: var(--accent); } }
+@keyframes timer-flash { 50% { background: var(--surface); } }
 @keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
 
 @media (prefers-reduced-motion: no-preference) {

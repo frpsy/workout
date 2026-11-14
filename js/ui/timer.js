@@ -1,4 +1,5 @@
 // 한 줄 휴식 타이머: 휴식 [−15] 1:00 [+15] [시작]
+// 쉬는 동안 줄 바탕이 남은 시간만큼 줄어들고, 끝나면 '휴식 끝 +0:07'처럼 지난 시간을 잠시 보여 줍니다.
 
 import { createTimer, fmt, STEP_SEC } from '../timer.js';
 import { playSound, unlockSound } from '../sound.js';
@@ -6,6 +7,7 @@ import { setScreenAwake } from '../screen-awake.js';
 import { $, haptic } from './dom.js';
 
 const TICK_MS = 250;
+const DONE_SHOW_MS = 60_000; // 끝난 뒤 '휴식 끝'을 보여 주는 시간. 이보다 늦게 알아챈 휴식(앱을 오래 내려 둠)은 알리지 않고 조용히 정리
 
 export function mountTimer(root) {
   root.innerHTML = `
@@ -20,14 +22,15 @@ export function mountTimer(root) {
 
   const wakeOwner = Symbol('rest-timer'); // 운동 스톱워치와 공유
   let interval = 0;
-  let doneTimer = 0;
+  let doneAt = null; // 휴식이 끝난 시각: 값이 있는 동안 '휴식 끝'과 지난 시간을 보여 줌
   let lastCount = 0; // 마지막 3초 카운트 소리를 이미 낸 초
 
   const timer = createTimer({
     onChange: render,
-    onDone() {
-      stopTicking();
+    onDone(endedAt) {
       setScreenAwake(wakeOwner, false);
+      if (Date.now() - endedAt >= DONE_SHOW_MS) return stopTicking(); // 한참 전에 끝난 휴식: 뒤늦게 울리지 않음
+      doneAt = endedAt;
       haptic();
       try {
         if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
@@ -35,20 +38,27 @@ export function mountTimer(root) {
         /* 지원하지 않는 기기 */
       }
       playSound('rest');
-      const bar = $('#timerBar', root);
-      bar.classList.add('done');
       $('#tDone', root).textContent = '휴식이 끝났습니다';
-      clearTimeout(doneTimer);
-      doneTimer = setTimeout(() => {
-        bar.classList.remove('done');
-        $('#tDone', root).textContent = '';
-      }, 4000);
+      startTicking(); // 지난 시간을 이어서 보여 줌
+      render();
     },
   });
 
   function startTicking() {
     clearInterval(interval);
-    interval = setInterval(() => timer.tick(), TICK_MS);
+    interval = setInterval(() => {
+      if (doneAt === null) return timer.tick();
+      if (Date.now() - doneAt >= DONE_SHOW_MS) clearDone();
+      else render();
+    }, TICK_MS);
+  }
+  /** '휴식 끝' 표시를 걷고 평소 모습으로 */
+  function clearDone() {
+    if (doneAt === null) return;
+    doneAt = null;
+    $('#tDone', root).textContent = '';
+    if (!timer.running) stopTicking();
+    render();
   }
   function stopTicking() {
     clearInterval(interval);
@@ -64,10 +74,17 @@ export function mountTimer(root) {
       playSound('count');
     } else if (!running || left > 3) lastCount = 0;
     const time = $('#tTime', root);
-    time.textContent = fmt(timer.remaining());
+    const done = doneAt !== null && !running;
+    const over = done ? fmt(Math.max(0, Math.floor((Date.now() - doneAt) / 1000))) : '';
+    if (done) time.innerHTML = `<span class="tend">휴식 끝</span>+${over}`;
+    else time.textContent = fmt(left);
     time.disabled = running; // 실행 중에는 프리셋을 바꾸지 않음
-    time.setAttribute('aria-label', running ? `남은 시간 ${fmt(timer.remaining())}` : `휴식 ${fmt(timer.duration)} (누르면 30·60·90초로 바뀜)`);
-    $('#timerBar', root).classList.toggle('running', running);
+    time.setAttribute('aria-label', running ? `남은 시간 ${fmt(left)}` : done ? `휴식 끝, ${over} 지남 (누르면 닫기)` : `휴식 ${fmt(timer.duration)} (누르면 30·60·90초로 바뀜)`);
+    const bar = $('#timerBar', root);
+    bar.classList.toggle('running', running);
+    bar.classList.toggle('ending', running && left <= 3);
+    bar.classList.toggle('done', done);
+    bar.style.setProperty('--p', `${(running ? timer.fraction() * 100 : 0).toFixed(2)}%`); // 남은 시간만큼 바탕이 채워짐
     const auto = $('#tAuto', root);
     auto.setAttribute('aria-pressed', String(timer.auto));
     auto.setAttribute('aria-label', timer.auto ? '세트를 체크하면 휴식이 자동으로 시작됨 (누르면 끄기)' : '세트를 체크해도 휴식이 자동으로 시작되지 않음 (누르면 켜기)');
@@ -79,8 +96,7 @@ export function mountTimer(root) {
 
   function startRest({ quiet = false } = {}) {
     unlockSound(); // 소리는 사용자가 누른 순간에만 준비할 수 있음
-    clearTimeout(doneTimer);
-    $('#timerBar', root).classList.remove('done');
+    doneAt = null;
     $('#tDone', root).textContent = '';
     timer.start();
     if (!quiet) playSound('restStart'); // 세트 체크로 자동 시작할 때는 세트 소리와 겹치지 않게 조용히
@@ -107,6 +123,7 @@ export function mountTimer(root) {
   // 오늘 체크를 모두 되돌리거나 모든 운동을 마치면 쉬는 중이던 휴식도 조용히 멈춤(더 쉴 세트가 없음)
   const quietStop = (ev) => {
     if (!root.isConnected) return document.removeEventListener(ev.type, quietStop);
+    clearDone();
     if (!timer.running) return;
     stopTicking();
     setScreenAwake(wakeOwner, false);
@@ -115,17 +132,24 @@ export function mountTimer(root) {
   document.addEventListener('workout:progress-cleared', quietStop);
   document.addEventListener('workout:all-done', quietStop);
   document.addEventListener('workout:ended', quietStop); // ■ 운동 종료 버튼을 누르면 휴식도 중지
-  $('#tTime', root).addEventListener('click', () => timer.nextPreset()); // 30 → 60 → 90초
+  $('#tTime', root).addEventListener('click', () => (doneAt !== null ? clearDone() : timer.nextPreset())); // '휴식 끝'이면 닫고, 아니면 30 → 60 → 90초
   $('#tMinus', root).addEventListener('click', () => timer.adjust(-STEP_SEC));
   $('#tPlus', root).addEventListener('click', () => timer.adjust(STEP_SEC));
 
   // 화면을 다시 켰을 때: 그동안 끝났는지 바로 확인하고 화면 켜짐 유지를 다시 요청
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
+    if (doneAt !== null && Date.now() - doneAt >= DONE_SHOW_MS) clearDone();
     timer.tick();
     if (timer.running) setScreenAwake(wakeOwner, true);
   });
 
+  // 새로고침·앱 재실행 뒤: 쉬는 중이었다면 이어서 재고, 그사이 끝났으면 바로 알림
+  if (timer.running) {
+    startTicking();
+    timer.tick();
+    if (timer.running) setScreenAwake(wakeOwner, true);
+  }
   render();
   return timer;
 }
