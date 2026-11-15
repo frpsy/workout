@@ -722,12 +722,12 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .watch.stop { background: var(--accent-fill); color: var(--on-accent); }
 .row.timing .stepper.reps input { color: var(--accent); }
 
-/* 화면 보기 2단계: 요약은 조절 줄을 접고, 기본은 모든 종목의 조절 줄을 보임 */
+/* 화면 보기 2단계: 기본(compact)은 조절 줄을 접고, 상세(normal)는 모든 종목의 조절 줄을 보임 */
 /* 시간을 재는 중(.timing)인 종목은 종료 버튼이 조절 줄에 있으므로 접지 않음 */
 [data-view="compact"] .row:not(.open):not(.timing) .ctrl { display: none; }
 [data-view="compact"] .row:not(.open):not(.timing) { grid-template-areas: "info check"; }
 .info { cursor: pointer; -webkit-tap-highlight-color: transparent; } /* 이름·목표를 눌러도 그 종목의 조절 줄을 펴고 접음 */
-/* 조절 줄 펴기·접기 버튼(⌄): 요약 보기에서만(기본은 조절 줄이 늘 펴져 있음) */
+/* 조절 줄 펴기·접기 버튼(⌄): 기본 보기에서만(상세는 조절 줄이 늘 펴져 있음) */
 .more {
   position: relative;
   align-self: center;

@@ -1,4 +1,4 @@
-// 화면 보기 2단계 버튼(요약 / 기본). 고른 단계는 이 브라우저에 기억하고, 바꿀 때마다 onChange를 부릅니다.
+// 화면 보기 2단계 버튼(기본 / 상세). 고른 단계는 이 브라우저에 기억하고, 바꿀 때마다 onChange를 부릅니다.
 
 import { loadView, saveView } from '../view.js';
 import { $ } from './dom.js';

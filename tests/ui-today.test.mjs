@@ -248,18 +248,18 @@ test('오늘: 난이도 쉬움·보통·어려움 버튼으로 그날 목표가 
   store.actions.flushAll();
 });
 
-test('보기 2단계: 요약·기본 버튼으로 바꾸고 고른 단계를 기억', () => {
+test('보기 2단계: 기본·상세 버튼으로 바꾸고 고른 단계를 기억(저장 값은 compact·normal 그대로)', () => {
   delete document.documentElement.dataset.view;
   const { store, root } = setupFull();
   const btns = [...root.querySelectorAll('#views button')];
-  assert.deepEqual(btns.map((b) => b.textContent), ['요약', '기본']);
+  assert.deepEqual(btns.map((b) => b.textContent), ['기본', '상세']);
   const pressed = () => btns.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent);
-  assert.deepEqual(pressed(), ['기본'], '기본값은 기본');
+  assert.deepEqual(pressed(), ['상세'], '처음에는 모든 조절 줄이 보이는 쪽');
   assert.equal(document.documentElement.dataset.view, 'normal');
 
   btns[0].click();
   assert.equal(document.documentElement.dataset.view, 'compact');
-  assert.deepEqual(pressed(), ['요약']);
+  assert.deepEqual(pressed(), ['기본']);
   assert.equal(localStorage.getItem('workout-check:view'), 'compact', '고른 단계를 기억');
 
   btns[1].click();
@@ -268,7 +268,7 @@ test('보기 2단계: 요약·기본 버튼으로 바꾸고 고른 단계를 기
   store.actions.flushAll();
 });
 
-test('보기 2단계: 다시 열면 기억한 단계로, 없어진 상세·이상한 값은 기본으로', () => {
+test('보기 2단계: 다시 열면 기억한 단계로, 없어진 옛 상세·이상한 값은 모든 조절 줄이 보이는 쪽으로', () => {
   localStorage.setItem('workout-check:view', 'compact');
   const a = setupFull();
   assert.equal(document.documentElement.dataset.view, 'compact');
