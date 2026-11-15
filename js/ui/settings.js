@@ -95,13 +95,15 @@ export function mountSettings(root, store, theme = null) {
       <div id="exList" class="exlist"></div>
       <div class="presets" id="presets"></div>
       <p class="errors" id="setErr" role="alert" hidden></p>
-      <div class="btnrow savebar" id="saveBar">
-        <button type="button" class="btn" id="saveCfg">저장</button>
-        <button type="button" class="btn ghost" id="resetCfg">되돌리기</button>
-        <span class="dirty-note" id="dirtyNote" hidden>저장하지 않은 변경이 있습니다</span>
-      </div>
-      <p class="status" id="configStatus" role="status" aria-live="polite"></p>
     </section>
+
+    <!-- 저장 줄은 섹션 안이 아니라 설정 화면 바로 아래에 둠: 붙박이(sticky)는 부모 상자 안에서만 붙어, 섹션 안에 있으면 위쪽(목표)을 고칠 때 저장 줄이 안 보였음 -->
+    <div class="btnrow savebar" id="saveBar">
+      <button type="button" class="btn" id="saveCfg">저장</button>
+      <button type="button" class="btn ghost" id="resetCfg">되돌리기</button>
+      <span class="dirty-note" id="dirtyNote" hidden>저장하지 않은 변경이 있습니다</span>
+    </div>
+    <p class="status" id="configStatus" role="status" aria-live="polite"></p>
 
     <p class="app-version" id="appVersion">${esc(versionLabel(VERSION))}</p>`;
 
@@ -185,6 +187,20 @@ export function mountSettings(root, store, theme = null) {
       </div>`
       )
       .join('');
+    // 값은 속성(value="…")이 아니라 직접 넣음: 사파리(WebKit)는 같은 칸을 다시 그릴 때 속성 대신 방금 입력하던 값을 되살려,
+    // '되돌리기'를 눌러도 입력창에 고치던 글자가 그대로 남았음
+    for (const item of el('exList').children) {
+      const e = draft.exercises.find((x) => x.id === item.dataset.id);
+      if (!e) continue;
+      const f = (k) => item.querySelector(`[data-k="${k}"]`);
+      f('name').value = e.name;
+      f('unit').value = e.unit;
+      f('base').value = e.base;
+      f('step').value = e.step;
+      f('max').value = e.max || '';
+      f('sets').value = e.sets;
+      f('active').checked = !!e.active;
+    }
 
     const ids = new Set(draft.exercises.map((e) => e.name));
     const full = draft.exercises.length >= LIMITS.maxExercises;
@@ -325,11 +341,13 @@ export function mountSettings(root, store, theme = null) {
     const account = store.state.adapter.account;
     if (!account) return;
     el('acctBtn').disabled = true;
+    const out = !!account.signOut;
     try {
-      if (account.signOut) await account.signOut();
+      if (out) await account.signOut();
       else await account.signIn();
     } catch {
-      acctStatus('로그인하지 못했습니다. 팝업 차단을 풀고 다시 시도해 주세요.', true);
+      // 로그아웃이 실패했을 때 로그인 안내(팝업 차단)가 뜨지 않게 문구를 나눔
+      acctStatus(out ? '로그아웃하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.' : '로그인하지 못했습니다. 팝업 차단을 풀고 다시 시도해 주세요.', true);
     }
     el('acctBtn').disabled = false;
   });

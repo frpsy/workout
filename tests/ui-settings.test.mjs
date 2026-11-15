@@ -124,3 +124,39 @@ test('설정 맨 아래에 앱 판 표시: 배포판은 커밋 번호와 배포 
   assert.equal(root.querySelector('#appVersion').textContent, '개발판');
   store.actions.flushAll();
 });
+
+test('설정: 로그인·로그아웃 실패 문구가 서로 다름(로그아웃 실패에 팝업 차단 안내가 뜨지 않음)', async () => {
+  const boom = async () => { throw new Error('x'); };
+  for (const [account, want, notWant] of [[{ signIn: boom }, /로그인하지 못했습니다/, /로그아웃/], [{ email: 'a@b.c', signOut: boom }, /로그아웃하지 못했습니다/, /팝업/]]) {
+    document.body.innerHTML = '<div id="settings"></div>';
+    const store = createStore({ ...adapter(), account });
+    const root = document.getElementById('settings');
+    store.subscribe(mountSettings(root, store));
+    root.querySelector('#acctBtn').click();
+    await tick();
+    assert.match(root.querySelector('#acctStatus').textContent, want);
+    assert.doesNotMatch(root.querySelector('#acctStatus').textContent, notWant);
+    assert.equal(root.querySelector('#acctBtn').disabled, false, '실패해도 다시 누를 수 있음');
+  }
+});
+
+test('설정: 되돌리기는 고치던 운동 이름·숫자를 저장된 값으로 되돌려 입력창에 보여 줌', () => {
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(adapter());
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  const first = () => root.querySelector('.exitem');
+  const name0 = first().querySelector('[data-k="name"]').value;
+  const sets0 = first().querySelector('[data-k="sets"]').value;
+  for (const [k, v] of [['name', '임시 이름'], ['sets', '7']]) {
+    const input = first().querySelector(`[data-k="${k}"]`);
+    input.value = v;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  assert.equal(root.querySelector('#saveBar').classList.contains('dirty'), true);
+  root.querySelector('#resetCfg').click();
+  assert.equal(first().querySelector('[data-k="name"]').value, name0);
+  assert.equal(first().querySelector('[data-k="sets"]').value, sets0);
+  assert.equal(root.querySelector('#saveBar').classList.contains('dirty'), false);
+  store.actions.flushAll();
+});
