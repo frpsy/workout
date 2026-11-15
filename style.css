@@ -840,6 +840,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer {
   position: relative;
   overflow: hidden;
+  isolation: isolate; /* 바탕 채움과 버튼·숫자의 앞뒤 순서를 이 줄 안에서만 정함 */
   display: flex;
   align-items: center;
   gap: var(--gap-sm);
@@ -849,9 +850,10 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   border-radius: var(--r-card);
   background: var(--surface);
 }
-.timer > * { position: relative; }
+/* 버튼·숫자는 늘 바탕 채움(.tfill) 앞에. 아이폰 Safari는 애니메이션 중인 요소를 따로 합성하면서 순서만으로는 뒤의 형제를 덮을 수 있어, 앞뒤를 z-index로 못 박음 */
+.timer > * { position: relative; z-index: 1; }
 /* 쉬는 동안: 남은 시간만큼 바탕이 채워져 있다가 줄어듦(ui/timer.js가 애니메이션 하나로 흘려보냄) */
-.timer > .tfill { position: absolute; inset: -1px; background: color-mix(in srgb, var(--hero-accent) 38%, var(--hero)); transform-origin: left center; transform: scaleX(0); will-change: transform; pointer-events: none; }
+.timer > .tfill { position: absolute; z-index: 0; inset: -1px; background: color-mix(in srgb, var(--hero-accent) 38%, var(--hero)); transform-origin: left center; transform: scaleX(0); will-change: transform; pointer-events: none; }
 .timer.done > .tfill { display: none; }
 .timer.running, .timer.done { height: 64px; padding: 0 10px; border-color: transparent; }
 .timer.running { background: var(--hero); }
