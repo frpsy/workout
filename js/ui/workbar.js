@@ -51,6 +51,7 @@ export function mountWorkbar(root, store) {
     const stage = running ? (paused ? '일시중지' : '진행 중') : state.ready && state.selected === state.today && store.allDone() ? '완료' : state.ready && state.selected === state.today && store.isSessionClosed() ? '종료' : '준비';
     brandState.textContent = `${round}회차 ${stage}`;
     brandState.classList.toggle('active', running && !paused);
+    brandState.classList.toggle('done', !running && stage === '완료');
     wTime.textContent = running ? fmtClock(session.elapsed()) : total ? `총 ${fmtKo(total)}` : '';
     wTime.classList.toggle('running', running);
     wTime.classList.toggle('paused', paused);

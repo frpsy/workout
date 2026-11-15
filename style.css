@@ -444,17 +444,33 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 #today { display: flex; flex-direction: column; gap: var(--gap); }
 
 /* 브랜드와 운동 진행 상태: 불필요한 장식 대신 명확한 위계 */
+/* 오늘 화면 맨 위: ① 앱 줄(로고 + 상태 알약) → 얇은 선 → ② 날짜·운동 버튼 → ③ 난이도·진행.
+   색 띠 대신 얇은 선과 간격·글자 굵기로 층을 나눠, 눈이 편하면서 어디서 어디까지가 한 묶음인지 보이게 함 */
 .head {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-md);
+  gap: var(--gap-lg);
   padding: 0 2px 4px;
 }
-.brandline { display: flex; align-items: center; min-width: 0; gap: var(--gap); }
-.brand-symbol { width: 22px; height: 22px; flex: none; border-radius: 6px; }
+.brandline { display: flex; align-items: center; min-width: 0; gap: var(--gap); padding: 0 0 var(--gap-md); border-bottom: 1px solid var(--line); }
+.brand-symbol { width: 24px; height: 24px; flex: none; border-radius: 7px; }
 .brand-name { display: block; width: 50px; height: 15px; color: var(--fg); }
-.brand-state { flex: none; margin-left: auto; color: var(--muted); font-size: var(--fs-xs); font-weight: 500; white-space: nowrap; }
-.brand-state.active { color: var(--accent); font-weight: 700; }
+/* 운동 상태 알약: 준비(회색) → 진행 중(옅은 포인트 색 + 굵게) → 완료(포인트 색 + 체크) */
+.brand-state {
+  flex: none;
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--fill);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.brand-state.active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.brand-state.done { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.brand-state.done::before { content: '✓ '; }
 .head .headline { margin-bottom: 0; }
 
 /* 머리말: 날짜(운동 중에는 스톱워치)와 진행 막대 */
