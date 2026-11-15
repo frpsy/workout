@@ -44,8 +44,8 @@ test('홈 화면 앱: 상태 표시줄 뒤를 배경색으로 덮고 html 배경
   assert.equal(value('.standalone .topcap', 'position'), 'fixed');
   assert.equal(value('.standalone .topcap', 'top'), '0');
   assert.equal(value('.standalone .topcap', 'height', { raw: true }), 'calc(env(safe-area-inset-top, 0px) + 8px)');
-  assert.equal(value('.standalone .topcap', 'background', { raw: true }), 'var(--surface)', '앱 바탕과 다른 면 색(아래 탭 막대와 같음)');
-  assert.equal(value('.standalone .topcap', 'border-bottom', { raw: true }), '1px solid var(--line)', '얇은 구분선');
+  assert.equal(value('.standalone .topcap', 'background', { raw: true }), 'var(--accent-soft)', '앱 바탕과 확실히 다른 포인트 색 띠(흰 면은 차이가 약했음)');
+  assert.match(value('.standalone .topcap', 'border-bottom', { raw: true }), /^1px solid color-mix\(in srgb, var\(--accent\)/, '같은 계열의 얇은 선');
   assert.equal(value('.standalone .topcap', 'pointer-events'), undefined, 'pointer-events: none이면 판정에 잡히지 않음');
   assert.equal(value('.standalone .wrap', 'padding-top', { raw: true }), 'calc(env(safe-area-inset-top, 0px) + 22px)', '내용은 덮개 아래에서 시작');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
