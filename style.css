@@ -195,7 +195,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   display: flex;
   flex-direction: column;
   gap: var(--gap-md);
-  min-height: 100%; /* 화면 높이만큼: 내일 날씨를 탭 막대 바로 위로 내림 */
+  min-height: 100%;
 }
 .standalone .wrap { padding-top: calc(env(safe-area-inset-top, 0px) + 14px); }
 .wrap > * { min-width: 0; }
@@ -977,26 +977,6 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer .tstep::after, .timer .tgo::after, .timer button.tlabel::after { content: ''; position: absolute; inset: -5px 0; } /* 보이는 크기는 작게, 누르는 영역은 44px */
 .timer .tstep::after { inset: -6px 0; }
 
-/* 오늘 화면 아래 빈 곳: 내일 날씨 한 줄(탭 막대 바로 위에 낮게) */
-#bottom { margin-top: auto; display: flex; flex-direction: column; gap: var(--gap-sm); }
-.weather {
-  position: relative;
-  display: block;
-  width: 100%;
-  padding: 2px 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  text-align: left; /* 날씨와 주차 안내가 모두 왼쪽 줄에 맞음(가운데 정렬과 왼쪽 정렬이 섞이지 않게) */
-  cursor: pointer;
-  touch-action: manipulation;
-  font-variant-numeric: tabular-nums;
-}
-.weather.empty { visibility: hidden; } /* 받아오는 동안·받지 못했을 때도 한 줄 자리를 비워 둬, 나타날 때 화면이 밀리지 않게 */
-.weather::after { content: ''; position: absolute; inset: -12px 0 0; } /* 누르는 영역을 위로 넓힘 */
-
 /* ── 기록 탭 ───────────────────────────────────────────── */
 .page-title { margin: 2px 0 2px; font-size: var(--fs-2xl); } /* 기록·설정 탭 제목 */
 
@@ -1463,20 +1443,17 @@ tr.cur td { background: var(--accent-soft); }
   .headline h1 { flex: 0 1 auto; font-size: var(--fs-base); }
 }
 
-/* 키가 작은 폰(높이 700px 이하): 한 화면에 들어오도록 간격을 줄임 (날씨 줄은 유지) */
+/* 키가 작은 폰(높이 700px 이하): 한 화면에 들어오도록 간격을 줄임 */
 @media (max-height: 700px) {
   .head { gap: var(--gap); }
   .row { padding: 6px 12px 8px; gap: 4px 10px; }
   .rows { gap: 4px; }
   .timer { height: 44px; }
-  #bottom { gap: 0; }
-  .weather { padding: 0 4px; line-height: 20px; }
 }
 /* 아주 작은 폰(높이 600px 이하, 아이폰 SE 1세대 등): 쉬는 중에도 스크롤 없이 한 화면에 */
 @media (max-height: 600px) {
   .wrap { gap: var(--gap-sm); }
   .head { gap: var(--gap-sm); padding-bottom: 0; }
-  .weather { display: none; }
 }
 
 /* ── 움직임 ────────────────────────────────────────────── */
