@@ -101,6 +101,7 @@ scripts/build-artifact.mjs           claude.ai용 단일 파일 빌드
 scripts/update-sw.mjs                sw.js 미리 저장 목록·캐시 이름 자동 생성
 scripts/build-firebase.mjs           Firebase SDK 묶음 만들기
 scripts/screenshots.mjs              디자인 리팩토링용 화면 비교(기준 커밋과 픽셀 단위)
+scripts/iphone-check.mjs             아이폰(WebKit) 점검: 오늘 화면의 실제 사용 흐름을 기종별로 따라가며 확인
 firestore.rules                      Firestore 보안 규칙
 ```
 
@@ -126,8 +127,11 @@ npm run sw               # sw.js 미리 저장 목록 갱신
 npm run build:artifact   # dist/artifact.html 생성
 npx serve .              # 로컬 확인 (모듈 스크립트라 file://로는 안 열림)
 npm run shots            # 화면 비교: 지금 폴더 vs origin/main (다른 커밋은 -- --base <커밋>)
+npm run check:iphone     # 아이폰 점검(WebKit, 가짜 시계): 실패가 있으면 종료 코드 1, -- --shots면 shots/iphone/에 단계별 화면 저장
 ```
 
 `npm run shots`는 화면이 바뀌면 안 되는 스타일 정리를 확인할 때 씁니다. 폭 390·320px(키 640px), 밝은·어두운 테마, 오늘(기본·요약·모두 마침·운동 중·중지)·기록·설정 화면을 첫 화면과 전체로 찍고(48장), 같은 장면에서 모든 요소(숨은 요소·::before·::after 포함)의 계산된 스타일도 비교합니다. 320px은 움직임 줄이기 설정으로 찍습니다. 시각(2026-10-28 수요일 19:30, 서울)·난수·5주치 기록을 고정하고 Firebase·날씨 요청은 막습니다. 결과는 `shots/`(`base/`·`head/`·`diff/`, 커밋 안 함)에 남고 다른 그림이 있으면 종료 코드 1입니다. Playwright 크로미움이 필요합니다(`npx playwright install chromium`).
+
+`npm run check:iphone`은 화면을 바꾸는 작업 뒤에 쓰는 사용 흐름 점검입니다. 아이폰 SE(320×568)·13(밝은·어두운)·15 Pro Max를 WebKit으로 흉내 내, 시작 화면 걷힘 · 가로 넘침 · 요약/기본 보기 차이와 요약의 한 화면 · 세트 체크로 휴식 자동 시작 · 쉬는 중 타이머 크기와 3px 진행 막대(버튼을 가리지 않음) · ±15 · 마지막 3초 · 끝남(높이 그대로) · 새로고침 뒤 이어짐 · 모두 마친 뒤 휴식 정지와 접힌 오늘의 마무리 · 맨 위 덮개 · 탭 이동 · 자바스크립트 오류를 확인합니다(88개). 화면 규칙을 일부러 바꾸면 해당 항목이 실패하는지로 점검 자체를 믿을 수 있게 했습니다. 실제 기기의 합성·소리·진동은 대신하지 못하므로 큰 변경 뒤에는 기기에서도 한 번 봅니다. Playwright WebKit이 필요합니다(`npx playwright install webkit`).
 
 PR마다 GitHub Actions(`.github/workflows/ci.yml`)가 테스트와 아티팩트 빌드를 돌리고, `main`에 머지하면 GitHub Pages에 자동 배포합니다 (Settings → Pages → Source: GitHub Actions).
