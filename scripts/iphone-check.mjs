@@ -247,6 +247,19 @@ async function run(browser, devices, origin, { device, scheme }) {
   check('모두 마치면 휴식이 멈추고 타이머는 탭 막대 위', !fin.running && m.timerBottom <= m.tabTop, JSON.stringify({ fin, m }));
   check('오늘의 마무리는 접힌 한 줄로 시작', !fin.hidden && fin.mode === 'closed', JSON.stringify(fin));
   await shot(page, '5-alldone');
+  // 오늘의 마무리를 펼치면 입력 칸과 버튼이 휴식 타이머·탭 막대 뒤에 가려지지 않아야 함
+  await page.emulateMedia({ reducedMotion: 'reduce' }); // 헤드리스 WebKit은 프로그램이 일으킨 '부드러운' 스크롤을 진행시키지 않아, 바로 스크롤되는 설정으로 확인
+  await page.locator('#jOpen').tap();
+  await page.clock.runFor(300);
+  const jr = await page.evaluate(() => {
+    const top = document.getElementById('timerBar').getBoundingClientRect().top;
+    const tabTop = document.getElementById('tabbar').getBoundingClientRect().top;
+    const limit = Math.min(top, tabTop);
+    const bottom = (id) => document.getElementById(id).getBoundingClientRect().bottom;
+    return { limit, thanks: bottom('jThanks'), later: bottom('jLater') };
+  });
+  check('마무리를 펼치면 입력 칸·버튼이 타이머·탭 막대 위에 보임', jr.thanks <= jr.limit + 0.5 && jr.later <= jr.limit + 0.5, JSON.stringify(jr));
+  await shot(page, '5b-journal-open');
 
   for (const tab of ['record', 'settings']) {
     await page.locator(`#tabbar button[data-tab="${tab}"]`).tap();

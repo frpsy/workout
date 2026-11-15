@@ -104,7 +104,7 @@ test('키가 작은 폰(높이 700px 이하): 줄 간격을 줄이고 팁은 감
   assert.equal(value('.timer', 'height', { media: MH }), '44px');
   assert.equal(value('#timer', 'position'), 'sticky', '화면 크기와 상관없이 휴식 타이머는 탭 막대 위에');
   assert.equal(value('.tip', 'display', { media: MH }), 'none');
-  assert.equal(value('.journal', 'scroll-margin-bottom', { raw: true }), 'calc(var(--tabbar-h) + 21px)', '탭 막대 높이 + 여백');
+  assert.equal(value('.journal', 'scroll-margin-bottom', { raw: true }), 'calc(var(--tabbar-h) + 84px)', '탭 막대 + 떠 있는 휴식 타이머 + 여백');
 });
 
 test('iOS Safari: 선택칸·날짜칸은 기본 모양 대신 같은 모양, details 삼각형 숨김, 입력칸 테두리는 3:1 이상 색', () => {

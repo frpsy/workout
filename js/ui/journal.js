@@ -76,7 +76,10 @@ export function mountJournal(root, store) {
   function edit() {
     editing = true;
     render(store.state);
-    feel.focus();
+    feel.focus({ preventScroll: true });
+    // 펼친 입력 칸이 휴식 타이머·탭 막대 뒤에 가려지지 않게 끌어올림(포커스가 알아서 올려 주지 않는 경우 대비)
+    const calm = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (typeof root.querySelector('#jBox').scrollIntoView === 'function') root.querySelector('#jBox').scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
   }
   $('#jDone', root).addEventListener('click', () => {
     editing = false;
