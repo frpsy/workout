@@ -124,6 +124,13 @@ test('보기 단계: 요약은 펼친 종목만, 기본은 지금 할 종목과 
   assert.equal(value('[data-view="detail"] .more', 'display'), 'none', '늘 펴져 있는 곳에서는 펴기 버튼을 숨김');
 });
 
+test('휴식 타이머: 바탕 채움(.tfill)은 늘 버튼·숫자 뒤에(아이폰에서 채움이 내용을 덮지 않게)', () => {
+  assert.equal(value('.timer', 'isolation'), 'isolate');
+  assert.equal(value('.timer > *', 'z-index'), '1');
+  assert.equal(value('.timer > .tfill', 'z-index'), '0');
+  assert.equal(value('.timer > .tfill', 'pointer-events'), 'none');
+});
+
 test('휴식 타이머: 쉬는 중·끝남은 같은 높이(64px, 아주 작은 폰 56px)의 큰 줄이고 숫자는 40px', () => {
   assert.equal(value('.timer.running', 'height'), '64px');
   assert.equal(value('.timer.done', 'height'), '64px');
