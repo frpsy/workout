@@ -158,6 +158,7 @@ async function run(browser, devices, origin, { device, scheme }) {
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.route('**/*', (r) => (r.request().url().startsWith(origin) ? r.continue() : r.abort()));
   await page.clock.install({ time: NOW });
+  await page.addInitScript(() => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('workout-check:view', 'normal'); } }); // 상세 보기로
   await page.goto(origin + '/index.html', { waitUntil: 'commit' });
   await page.waitForSelector('#splash', { state: 'attached' });
   await shot(page, '0-splash');

@@ -254,29 +254,29 @@ test('보기 2단계: 기본·상세 버튼으로 바꾸고 고른 단계를 기
   const btns = [...root.querySelectorAll('#views button')];
   assert.deepEqual(btns.map((b) => b.textContent), ['기본', '상세']);
   const pressed = () => btns.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent);
-  assert.deepEqual(pressed(), ['상세'], '처음에는 모든 조절 줄이 보이는 쪽');
-  assert.equal(document.documentElement.dataset.view, 'normal');
-
-  btns[0].click();
+  assert.deepEqual(pressed(), ['기본'], '처음에는 기본(조절 줄 접힘)');
   assert.equal(document.documentElement.dataset.view, 'compact');
-  assert.deepEqual(pressed(), ['기본']);
-  assert.equal(localStorage.getItem('workout-check:view'), 'compact', '고른 단계를 기억');
 
   btns[1].click();
   assert.equal(document.documentElement.dataset.view, 'normal');
-  assert.equal(localStorage.getItem('workout-check:view'), 'normal');
+  assert.deepEqual(pressed(), ['상세']);
+  assert.equal(localStorage.getItem('workout-check:view'), 'normal', '고른 단계를 기억');
+
+  btns[0].click();
+  assert.equal(document.documentElement.dataset.view, 'compact');
+  assert.equal(localStorage.getItem('workout-check:view'), 'compact');
   store.actions.flushAll();
 });
 
-test('보기 2단계: 다시 열면 기억한 단계로, 없어진 옛 상세·이상한 값은 모든 조절 줄이 보이는 쪽으로', () => {
-  localStorage.setItem('workout-check:view', 'compact');
+test('보기 2단계: 다시 열면 기억한 단계로, 없어진 옛 상세·이상한 값은 기본으로', () => {
+  localStorage.setItem('workout-check:view', 'normal');
   const a = setupFull();
-  assert.equal(document.documentElement.dataset.view, 'compact');
+  assert.equal(document.documentElement.dataset.view, 'normal');
   a.store.actions.flushAll();
   for (const old of ['detail', '엉뚱한값']) {
     localStorage.setItem('workout-check:view', old);
     const b = setupFull();
-    assert.equal(document.documentElement.dataset.view, 'normal', old);
+    assert.equal(document.documentElement.dataset.view, 'compact', old);
     b.store.actions.flushAll();
   }
 });
