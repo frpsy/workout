@@ -53,6 +53,16 @@ test('홈 화면 앱: 상태 표시줄 뒤를 배경색으로 덮고 html 배경
   assert.equal(value('html', 'background', { raw: true }), 'var(--bg)');
 });
 
+test('시작 화면: 로고는 뷰포트 가운데가 아니라 --splash-cy(화면 높이의 절반, 위 가장자리 기준)에 고정되고, 값이 없으면 50%', () => {
+  assert.equal(value('.splash-brand', 'position'), 'absolute');
+  assert.equal(value('.splash-brand', 'top', { raw: true }), 'calc(var(--splash-cy, 50%) - 56px)', '로고 높이 113px의 반');
+  assert.equal(value('.splash-load', 'top', { raw: true }), 'calc(var(--splash-cy, 50%) + 84px)');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /navigator\.standalone \|\| matchMedia\('\(display-mode: standalone\)'\)\.matches/, '설치형 앱에서만');
+  assert.match(html, /setProperty\('--splash-cy', Math\.round\(screen\.height \/ 2\) \+ 'px'\)/);
+  assert.ok(html.indexOf('--splash-cy') < html.indexOf('<link rel="stylesheet"'), '첫 그림 전에 값이 들어가야 함');
+});
+
 test('앱 이름: 페이지 제목·홈 화면 이름·설치 이름·시작 화면이 Repday로 통일', async () => {
   const { readFileSync } = await import('node:fs');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');

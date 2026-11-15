@@ -5,7 +5,7 @@
 //
 // 확인하는 것: 시작 화면이 걷힘 · 가로로 넘치지 않음 · 요약/기본 보기 차이 · 요약은 작은 폰에서도 스크롤 없이 한 화면 ·
 // 세트 체크로 휴식 자동 시작 · 휴식 타이머 크기와 진행 막대가 버튼을 가리지 않음 · ±15 · 마지막 3초 · 끝남(높이 그대로) ·
-// 새로고침 뒤 이어짐 · 모두 마치면 휴식 정지, 타이머가 탭 막대 위, 오늘의 마무리는 접힌 한 줄 · 맨 위 덮개 · 탭 이동 · 자바스크립트 오류 없음.
+// 새로고침 뒤 이어짐 · 모두 마치면 휴식 정지, 타이머가 탭 막대 위, 오늘의 마무리는 접힌 한 줄 · 맨 위 덮개 · 첫 실행 때 뷰포트가 바뀌어도 시작 화면 로고가 안 움직임 · 탭 이동 · 자바스크립트 오류 없음.
 // 시각은 가짜 시계로 고정하고 Firebase·날씨 요청은 막습니다. 실제 기기의 합성·소리·진동까지 대신하지는 못합니다.
 // Playwright(WebKit)가 필요합니다. 저장소 의존성에는 넣지 않았습니다: npx playwright install webkit
 
@@ -16,7 +16,7 @@ import { createRequire } from 'node:module';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/* global document, getComputedStyle, innerWidth, window */ // page.evaluate 안은 브라우저에서 실행
+/* global document, getComputedStyle, innerWidth, window, requestAnimationFrame */ // page.evaluate 안은 브라우저에서 실행
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const OUT = join(ROOT, 'shots', 'iphone');
@@ -84,8 +84,46 @@ const metrics = (page) => page.evaluate(() => {
   return { sh: p.scrollHeight, ch: p.clientHeight, pw: p.scrollWidth, docW: document.documentElement.scrollWidth, w: innerWidth, timerBottom: timer && timer.bottom, tabTop: tab.top, timerH: timer && timer.height };
 });
 
+/** 설치형 앱 첫 실행 흉내: 레이아웃 뷰포트가 화면 전체였다가 아래 34px(홈 표시줄)가 줄어들거나, 반대로 늘어나도 시작 화면 로고가 제자리인지 */
+async function splashStability(browser, devices, origin, device) {
+  const dev = devices[device];
+  const vw = dev.viewport.width;
+  const full = (dev.screen && dev.screen.height) || dev.viewport.height; // 기기 설명에 화면 크기가 없으면 뷰포트 높이
+  for (const [label, from, to] of [['줄어듦', full, full - 34], ['늘어남', full - 34, full]]) {
+    const ctx = await browser.newContext({ ...dev, viewport: { width: vw, height: from }, serviceWorkers: 'block' });
+    const page = await ctx.newPage();
+    await page.route('**/*', async (r) => {
+      const u = r.request().url();
+      if (!u.startsWith(origin)) return r.abort();
+      if (/\.(woff2|js)$/.test(u)) await new Promise((ok) => setTimeout(ok, 400)); // 시작 화면이 오래 보이게 느린 연결 흉내
+      return r.continue();
+    });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'standalone', { value: true }); // 설치형 앱처럼
+      window.__tops = [];
+      const tick = () => {
+        const e = document.querySelector('.splash-icon');
+        if (e) window.__tops.push(e.getBoundingClientRect().top);
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.goto(origin + '/index.html', { waitUntil: 'commit' });
+    await page.waitForFunction(() => window.__tops && window.__tops.length > 3, null, { timeout: 5000 });
+    await page.waitForTimeout(150);
+    await page.setViewportSize({ width: vw, height: to });
+    await page.waitForTimeout(250);
+    const tops = await page.evaluate(() => window.__tops);
+    const spread = Math.max(...tops) - Math.min(...tops);
+    // 나타나는 크기 움직임(0.96→1)만큼의 오차(약 2px)는 허용
+    check(`첫 실행 뷰포트가 ${label}: 시작 화면 로고가 안 움직임`, spread <= 3, `움직인 폭 ${spread.toFixed(1)}px`);
+    await ctx.close();
+  }
+}
+
 async function run(browser, devices, origin, { device, scheme }) {
   tag = `${device.replace(/ /g, '')}-${scheme}`;
+  if (scheme === 'light') await splashStability(browser, devices, origin, device);
   const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: join(OUT, `${tag}-${name}.png`) }); };
   const small = devices[device].viewport.height <= 600;
   const errors = [];
