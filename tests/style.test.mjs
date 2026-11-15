@@ -129,6 +129,9 @@ test('휴식 타이머: 바탕 채움(.tfill)은 늘 버튼·숫자 뒤에(아�
   assert.equal(value('.timer > *', 'z-index'), '1');
   assert.equal(value('.timer > .tfill', 'z-index'), '0');
   assert.equal(value('.timer > .tfill', 'pointer-events'), 'none');
+  assert.equal(value('.timer > .tfill', 'height'), '3px', '진행 막대는 줄 전체를 덮지 않고 얇게');
+  assert.equal(value('.timer > .tfill', 'bottom'), '4px');
+  assert.equal(value('.timer > .tfill', 'inset'), undefined);
 });
 
 test('휴식 타이머: 쉬는 중·끝남은 같은 높이(64px, 아주 작은 폰 56px)의 큰 줄이고 숫자는 40px', () => {
