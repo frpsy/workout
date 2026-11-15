@@ -147,15 +147,16 @@ test('휴식 타이머: 바탕 채움(.tfill)은 늘 버튼·숫자 뒤에(아�
   assert.equal(value('.timer > .tfill', 'z-index'), '0');
   assert.equal(value('.timer > .tfill', 'pointer-events'), 'none');
   assert.equal(value('.timer > .tfill', 'height'), '3px', '진행 막대는 줄 전체를 덮지 않고 얇게');
-  assert.equal(value('.timer > .tfill', 'bottom'), '4px');
+  assert.equal(value('.timer > .tfill', 'bottom'), '0');
   assert.equal(value('.timer > .tfill', 'inset'), undefined);
 });
 
-test('휴식 타이머: 쉬는 중·끝남은 같은 높이(64px, 아주 작은 폰 56px)의 큰 줄이고 숫자는 40px', () => {
-  assert.equal(value('.timer.running', 'height'), '64px');
-  assert.equal(value('.timer.done', 'height'), '64px');
-  assert.equal(value('.timer.running', 'height', { media: '@media (max-height: 600px)' }), '56px');
-  assert.equal(value('.timer.running .time', 'font-size'), '40px');
+test('휴식 타이머: 쉬는 중·끝남도 크기를 바꾸지 않고 색으로만 강조', () => {
+  for (const sel of ['.timer.running', '.timer.done', '.timer.running .time', '.timer.running .tstep']) {
+    for (const prop of ['height', 'width', 'font-size']) assert.equal(value(sel, prop), undefined, sel + ' ' + prop + ': 크기는 쉬기 전과 같음');
+  }
+  assert.equal(value('.timer.running', 'background', { raw: true }), 'var(--hero)');
+  assert.equal(value('.timer.running button.tlabel', 'display'), undefined, '쉬는 중에도 자리 이동 없음');
 });
 
 test('시작 화면: 걷힐 때는 전환(transition)이 아니라 투명도·크기만 바꾸는 애니메이션', () => {
@@ -173,6 +174,5 @@ test('정렬: 머리말·카드·팁의 바깥 모서리는 같은 좌우 여백
   assert.equal(value('.timer', 'padding', { raw: true }), '0 8px');
   assert.equal(value('.timer button.tlabel', 'width', { raw: true }), 'var(--tside)');
   assert.equal(value('.timer .tgo', 'min-width', { raw: true }), 'var(--tside)', '왼쪽 칸과 오른쪽 버튼의 폭이 같아야 숫자가 가운데');
-  assert.equal(value('.timer.running::before', 'width', { raw: true }), 'var(--tside)');
   assert.equal(value('.timer > .sr', 'position'), 'absolute', '숨은 안내 문구가 줄 안의 칸을 차지하면 한쪽이 틀어짐');
 });
