@@ -23,7 +23,9 @@ test('오늘: 푸시업·풀업·스쿼트 줄에 각자의 유튜브 영상으�
   for (const a of links) {
     assert.equal(a.getAttribute('target'), '_blank');
     assert.match(a.getAttribute('rel'), /noopener/);
-    assert.match(a.textContent, /영상으로 같이하기/);
+    assert.match(a.textContent, /영상으로 같이하기/, '화면에는 아이콘만, 글자는 화면 읽기용');
+    assert.ok(a.getAttribute('title'), '길게 누르면 영상 제목');
+    assert.equal(a.closest('.nameline').querySelector('.name').textContent.length > 0, true);
   }
   store.actions.flushAll();
 });

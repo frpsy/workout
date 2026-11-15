@@ -61,7 +61,7 @@ export function mountToday(root, store) {
     <header class="head">
       <div class="brandline">
         <img class="brand-symbol" src="icons/icon-192.png" width="32" height="32" alt="">
-        <span class="brand-copy"><svg class="brand-name" role="img" aria-label="Repday"><use href="#wordmark"/></svg><span class="brand-detail">한 세트부터 하루의 기록까지</span></span>
+        <svg class="brand-name" role="img" aria-label="Repday"><use href="#wordmark"/></svg>
         <span class="brand-state" id="brandState">운동 준비</span>
       </div>
       <div class="headline">
@@ -194,7 +194,7 @@ export function mountToday(root, store) {
       el.className = 'row';
       el.innerHTML = `
         <div class="info">
-          <h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>
+          <div class="nameline"><h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>${video ? `<a class="video" data-f="video" href="${esc(videoUrl(video))}" target="_blank" rel="noopener noreferrer" title="${esc(video.title)}" aria-label="${n} 유튜브 영상으로 같이하기"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4.5" fill="currentColor"/><path d="M10 9.3v5.4l4.6-2.7z" fill="var(--surface)"/></svg><span class="sr">영상으로 같이하기</span></a>` : ''}</div>
           <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button></p>
         </div>
         <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span><span class="cap" data-f="cap" aria-hidden="true"></span></button>
@@ -212,7 +212,6 @@ export function mountToday(root, store) {
             <button type="button" data-f="setsPlus" aria-label="${n} 세트 늘리기">+</button>
           </div>
         </div>
-        ${video ? `<a class="video" data-f="video" href="${esc(videoUrl(video))}" target="_blank" rel="noopener noreferrer" aria-label="${n} 유튜브 영상으로 같이하기: ${esc(video.title)}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4" fill="currentColor"/><path d="M10 9.2v5.6l5-2.8z" fill="var(--surface)"/></svg><span>영상으로 같이하기</span><small>${esc(video.title)}</small></a>` : ''}
         <p class="hint" data-f="hint"></p>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };

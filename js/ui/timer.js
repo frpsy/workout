@@ -12,6 +12,7 @@ const DONE_SHOW_MS = 60_000; // 끝난 뒤 '휴식 끝'을 보여 주는 시간.
 export function mountTimer(root) {
   root.innerHTML = `
     <div class="timer" id="timerBar">
+      <i class="tfill" id="tFill" aria-hidden="true"></i>
       <button type="button" class="tlabel" id="tAuto" aria-pressed="true"><span>휴식</span><b id="tAutoText">자동</b></button>
       <button type="button" class="tstep" id="tMinus" aria-label="휴식 ${STEP_SEC}초 줄이기">−${STEP_SEC}</button>
       <button type="button" class="time" id="tTime">1:00</button>
@@ -66,6 +67,32 @@ export function mountTimer(root) {
     interval = 0;
   }
 
+  /* 쉬는 동안 바탕 채움: 250ms마다 끊어 갱신하지 않고, 남은 시간 동안 줄어드는 애니메이션 하나로 부드럽게 흘려보냄.
+     시간을 −15/+15로 바꾸거나 화면을 다시 열어 끝나는 시각이 달라졌을 때만 새로 시작 */
+  const fill = $('#tFill', root);
+  let fillAnim = null;
+  let fillEnd = 0;
+  const calm = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function stopFill() {
+    if (fillAnim) fillAnim.cancel();
+    fillAnim = null;
+  }
+  function syncFill(running) {
+    if (!running) {
+      stopFill();
+      fill.style.transform = 'scaleX(0)';
+      return;
+    }
+    const frac = timer.fraction();
+    fill.style.transform = `scaleX(${frac.toFixed(4)})`; // 애니메이션을 못 쓰거나 줄이기 설정이면 이 값이 250ms마다 갱신됨
+    if (typeof fill.animate !== 'function' || calm()) return;
+    const end = Date.now() + frac * timer.duration * 1000;
+    if (fillAnim && Math.abs(end - fillEnd) < 500) return;
+    stopFill();
+    fillEnd = end;
+    fillAnim = fill.animate([{ transform: `scaleX(${frac})` }, { transform: 'scaleX(0)' }], { duration: Math.max(0, end - Date.now()), easing: 'linear', fill: 'forwards' });
+  }
+
   function render() {
     const running = timer.running;
     // 끝나기 3초 전부터 1초마다 짧은 소리 (3, 2, 1)
@@ -86,6 +113,7 @@ export function mountTimer(root) {
     bar.classList.toggle('ending', running && left <= 3);
     bar.classList.toggle('done', done);
     bar.style.setProperty('--p', `${(running ? timer.fraction() * 100 : 0).toFixed(2)}%`); // 남은 시간만큼 바탕이 채워짐
+    syncFill(running);
     const auto = $('#tAuto', root);
     auto.setAttribute('aria-pressed', String(timer.auto));
     auto.setAttribute('aria-label', timer.auto ? '세트를 체크하면 휴식이 자동으로 시작됨 (누르면 끄기)' : '세트를 체크해도 휴식이 자동으로 시작되지 않음 (누르면 켜기)');

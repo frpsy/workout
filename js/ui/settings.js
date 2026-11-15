@@ -4,6 +4,7 @@ import { DEFAULT_SETS, LIMITS, PRESETS, UNITS } from '../config.js';
 import { DOW, todayStr } from '../dates.js';
 import { newExerciseId, validateConfig } from '../model.js';
 import { canPlayInSilentMode, isSilentModeOn, playSound, setSilentMode } from '../sound.js';
+import { THEMES, THEME_LABEL } from '../theme.js';
 import { VERSION } from '../version.js';
 import { $, esc } from './dom.js';
 
@@ -17,7 +18,7 @@ export function versionLabel({ sha, builtAt } = {}) {
   return `버전 ${sha} · ${d.getMonth() + 1}월 ${d.getDate()}일 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function mountSettings(root, store) {
+export function mountSettings(root, store, theme = null) {
   const { actions } = store;
   let draft = null;
   let dirty = false;
@@ -28,6 +29,12 @@ export function mountSettings(root, store) {
   root.innerHTML = `
     <section class="sgroup" id="acctBox">
       <div class="slist">
+        <div class="srow col" id="themeRow" role="group" aria-labelledby="lbTheme"${theme ? '' : ' hidden'}>
+          <span id="lbTheme">화면 색</span>
+          <div class="modes three">
+            ${THEMES.map((k) => `<label class="seg"><input type="radio" name="theme" value="${k}"><span>${THEME_LABEL[k]}</span></label>`).join('')}
+          </div>
+        </div>
         <label class="srow" id="silentRow" hidden>
           <span>무음 모드에서도 효과음</span>
           <span class="switch"><input type="checkbox" role="switch" id="silentMode"><i aria-hidden="true"></i></span>
@@ -108,6 +115,14 @@ export function mountSettings(root, store) {
     setSilentMode(e.target.checked);
     playSound('set'); // 바로 들어 보기 (효과음이 꺼져 있으면 조용)
   });
+
+  /* ---------- 화면 색: 이 기기에만 저장, 바꾸면 바로 적용 ---------- */
+  if (theme) {
+    for (const r of root.querySelectorAll('input[name="theme"]')) {
+      r.checked = r.value === theme.pref;
+      r.addEventListener('change', () => theme.setPref(r.value));
+    }
+  }
 
   /* ---------- 설정 초안 ---------- */
 
