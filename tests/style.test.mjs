@@ -118,10 +118,11 @@ test('어두운 테마: 기기 설정 블록과 data-theme 블록의 값이 같�
   assert.deepEqual(byAttr, byMedia);
 });
 
-test('보기 단계: 요약은 펼친 종목만, 기본은 지금 할 종목과 펼친 종목만 조절 줄을 보임', () => {
-  assert.equal(value('[data-view="normal"] .row:not(.current):not(.open):not(.timing) .ctrl', 'display'), 'none');
+test('보기 단계: 요약은 펼친 종목만, 기본·상세는 모든 종목의 조절 줄을 보임', () => {
+  assert.equal(value('[data-view="normal"] .row:not(.current):not(.open):not(.timing) .ctrl', 'display'), undefined, '기본은 모든 종목의 조절 줄을 보임(요약과 달라야 함)');
   assert.equal(value('[data-view="compact"] .row:not(.open):not(.timing) .ctrl', 'display'), 'none', '시간을 재는 중인 종목은 접지 않음');
   assert.equal(value('[data-view="detail"] .more', 'display'), 'none', '늘 펴져 있는 곳에서는 펴기 버튼을 숨김');
+  assert.equal(value('[data-view="normal"] .more', 'display'), 'none');
 });
 
 test('휴식 타이머: 바탕 채움(.tfill)은 늘 버튼·숫자 뒤에(아이폰에서 채움이 내용을 덮지 않게)', () => {
