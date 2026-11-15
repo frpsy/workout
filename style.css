@@ -722,14 +722,12 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .watch.stop { background: var(--accent-fill); color: var(--on-accent); }
 .row.timing .stepper.reps input { color: var(--accent); }
 
-/* 화면 보기 3단계: 요약은 조절 줄을 숨기고, 상세는 다음 주 목표 안내를 보임 */
-.row .hint { grid-column: 1 / -1; margin: 0; font-size: var(--fs-xs); color: var(--muted); display: none; }
-[data-view="detail"] .row .hint { display: block; }
+/* 화면 보기 2단계: 요약은 조절 줄을 접고, 기본은 모든 종목의 조절 줄을 보임 */
 /* 시간을 재는 중(.timing)인 종목은 종료 버튼이 조절 줄에 있으므로 접지 않음 */
 [data-view="compact"] .row:not(.open):not(.timing) .ctrl { display: none; }
 [data-view="compact"] .row:not(.open):not(.timing) { grid-template-areas: "info check"; }
 .info { cursor: pointer; -webkit-tap-highlight-color: transparent; } /* 이름·목표를 눌러도 그 종목의 조절 줄을 펴고 접음 */
-/* 조절 줄 펴기·접기 버튼(⌄): 요약 보기에서만(기본·상세는 조절 줄이 늘 펴져 있음) */
+/* 조절 줄 펴기·접기 버튼(⌄): 요약 보기에서만(기본은 조절 줄이 늘 펴져 있음) */
 .more {
   position: relative;
   align-self: center;
@@ -749,7 +747,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .more::after { content: ''; position: absolute; inset: -9px -4px; } /* 누르는 영역을 넓힘(옆 되돌리기 버튼과 겹치지 않게 좌우는 조금만) */
 .more:active { background: var(--fill-press); }
 .row.open .more svg { transform: rotate(180deg); }
-[data-view="detail"] .more, [data-view="normal"] .more { display: none; }
+[data-view="normal"] .more { display: none; }
 
 /* 효과음 켜기/끄기 */
 .snd {

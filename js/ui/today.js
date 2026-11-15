@@ -117,7 +117,7 @@ export function mountToday(root, store) {
 
   mountSoundToggle(root);
   const viewSwitch = mountViewSwitch(root, () => {
-    if (rows.size) render(store.state); // 안내 줄(상세)을 바로 반영
+    if (rows.size) render(store.state);
   });
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
@@ -163,23 +163,6 @@ export function mountToday(root, store) {
     actions.setCount(id, sec);
   }
 
-  /** 상세 보기의 다음 주 목표 안내 문구 */
-  function hintFor(ex, res, state) {
-    const { config, today } = state;
-    const w = Math.max(0, weekIndex(state.selected, config.startDate));
-    const unit = UNITS[ex.unit].label;
-    const next = res.targetForWeek(ex, w + 1);
-    const sets = ex.sets > 1 ? ` × ${ex.sets}` : '';
-    const nextRec = isRecoveryWeek(w + 1, config.plan) ? ' (회복주)' : '';
-    if (config.plan.mode === 'adaptive' && weekIndex(today, config.startDate) === w) {
-      const doneDays = res.ctx.counts(ex.id).get(w) || 0;
-      const need = Math.max(0, config.plan.passDays - doneDays);
-      const more = !isRecoveryWeek(w, config.plan) && need > 0 ? ` · ${need}일 더 하면` : '';
-      return `이번 주 ${doneDays}일${more} · 다음 주 ${next}${unit}${sets}${nextRec}`;
-    }
-    return `다음 주 ${next}${unit}${sets}${nextRec}`;
-  }
-
   function buildRows(exs) {
     const box = $('#rows', root);
     if (watch) stopWatch(); // 목록이 바뀌기 전에 재던 시간은 기록하고 끝냄
@@ -211,11 +194,10 @@ export function mountToday(root, store) {
             <input data-f="setsIn" type="number" inputmode="numeric" min="1" max="10" aria-label="${n} 실제 세트 수">
             <button type="button" data-f="setsPlus" aria-label="${n} 세트 늘리기">+</button>
           </div>
-        </div>
-        <p class="hint" data-f="hint"></p>`;
+        </div>`;
       const q = (f) => el.querySelector(`[data-f="${f}"]`);
       const r = { el, ex, unit };
-      for (const f of ['target', 'sets', 'pips', 'undo', 'frac', 'cap', 'delta', 'hint', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
+      for (const f of ['target', 'sets', 'pips', 'undo', 'frac', 'cap', 'delta', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
       const step = (d) => actions.setCount(ex.id, view().count + d);
       // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
@@ -356,7 +338,6 @@ export function mountToday(root, store) {
       if (setDiff) parts.push(`세트 ${setDiff > 0 ? '+' : ''}${setDiff}`);
       r.delta.textContent = parts.join(' · ');
       r.delta.classList.toggle('over', diff > 0 || setDiff > 0);
-      r.hint.textContent = viewSwitch.current === 'detail' ? hintFor(r.ex, res, state) : '';
     }
 
     const segs = $('#segs', root);

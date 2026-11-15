@@ -248,43 +248,37 @@ test('오늘: 난이도 쉬움·보통·어려움 버튼으로 그날 목표가 
   store.actions.flushAll();
 });
 
-test('보기 3단계: 요약·기본·상세 버튼으로 바꾸고 고른 단계를 기억', () => {
+test('보기 2단계: 요약·기본 버튼으로 바꾸고 고른 단계를 기억', () => {
   delete document.documentElement.dataset.view;
   const { store, root } = setupFull();
   const btns = [...root.querySelectorAll('#views button')];
-  assert.deepEqual(btns.map((b) => b.textContent), ['요약', '기본', '상세']);
+  assert.deepEqual(btns.map((b) => b.textContent), ['요약', '기본']);
   const pressed = () => btns.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent);
   assert.deepEqual(pressed(), ['기본'], '기본값은 기본');
   assert.equal(document.documentElement.dataset.view, 'normal');
-  assert.equal(root.querySelector('.row [data-f="hint"]').textContent, '', '기본에서는 다음 주 안내가 없음');
 
   btns[0].click();
   assert.equal(document.documentElement.dataset.view, 'compact');
   assert.deepEqual(pressed(), ['요약']);
   assert.equal(localStorage.getItem('workout-check:view'), 'compact', '고른 단계를 기억');
 
-  btns[2].click();
-  assert.equal(document.documentElement.dataset.view, 'detail');
-  assert.match(root.querySelector('.row [data-f="hint"]').textContent, /다음 주 17개 × 3/, '상세에서는 다음 주 목표 안내가 보임');
-  assert.equal(document.getElementById('moreBox').open, true, '상세는 기록 자세히를 펼침');
-  assert.equal(document.getElementById('planBox').open, true, '상세는 앞으로 4주 목표를 펼침');
-
   btns[1].click();
-  assert.equal(root.querySelector('.row [data-f="hint"]').textContent, '', '기본으로 돌아오면 안내가 사라짐');
-  assert.equal(document.getElementById('moreBox').open, true, '이미 펼친 상자는 그대로 둠');
+  assert.equal(document.documentElement.dataset.view, 'normal');
+  assert.equal(localStorage.getItem('workout-check:view'), 'normal');
   store.actions.flushAll();
 });
 
-test('보기 3단계: 다시 열면 기억한 단계로, 이상한 값은 기본으로', () => {
-  localStorage.setItem('workout-check:view', 'detail');
+test('보기 2단계: 다시 열면 기억한 단계로, 없어진 상세·이상한 값은 기본으로', () => {
+  localStorage.setItem('workout-check:view', 'compact');
   const a = setupFull();
-  assert.equal(document.documentElement.dataset.view, 'detail');
-  assert.equal(document.getElementById('planBox').open, true, '상세로 열면 바로 펼쳐짐');
+  assert.equal(document.documentElement.dataset.view, 'compact');
   a.store.actions.flushAll();
-  localStorage.setItem('workout-check:view', '엉뚱한값');
-  const b = setupFull();
-  assert.equal(document.documentElement.dataset.view, 'normal');
-  b.store.actions.flushAll();
+  for (const old of ['detail', '엉뚱한값']) {
+    localStorage.setItem('workout-check:view', old);
+    const b = setupFull();
+    assert.equal(document.documentElement.dataset.view, 'normal', old);
+    b.store.actions.flushAll();
+  }
 });
 
 test('상태 줄: 정상 저장은 문구 없이 주차 안내 그대로, 저장 실패 문구만 그 자리에 보임', async () => {
