@@ -12,10 +12,13 @@ test('입력 칸 글자는 16px 이상(iOS가 포커스할 때 화면을 확대�
 
 test('더블탭 확대 지연을 없애고(touch-action) 작은 버튼의 눌리는 영역을 넓힘', () => {
   assert.equal(value('html', 'touch-action'), 'manipulation');
-  assert.equal(value('.undo::after', 'inset'), '-7px', '되돌리기: 보이는 30px + 7px씩 = 44px');
-  assert.equal(value('.check', 'width'), '88px', '세트 완료는 큰 버튼 하나로');
+  assert.equal(value('.undo::after', 'inset'), '-9px', '되돌리기: 보이는 26px + 9px씩 = 44px');
+  assert.equal(value('.check', 'width'), '72px', '세트 완료는 큰 버튼 하나로');
   assert.equal(value('.video::after', 'inset'), '-8px', '유튜브 아이콘: 보이는 28px + 8px씩 = 44px');
-  for (const sel of ['.stepper button', '.wbtn', '.wsec', '.timer .tgo']) assert.equal(value(sel, 'height'), '44px', sel + ': 손가락으로 누르기 충분한 높이');
+  for (const sel of ['.stepper button', '.wbtn', '.wsec', '.timer .tgo']) assert.equal(value(sel, 'height'), '36px', sel + ': 보이는 크기는 작게');
+  assert.equal(value('.stepper button::after', 'inset'), '-4px 0', '누르는 영역은 44px');
+  assert.match(css, /\.wbtn::after, \.wsec::after \{[^}]*inset: -4px 0/);
+  assert.match(css, /\.timer \.tstep::after, \.timer \.tgo::after[^{]*\{[^}]*inset: -5px 0/);
   assert.equal(value('.setpips button'), undefined, '세트 표시는 누르는 버튼이 아님');
   assert.equal(value('.levels button::after', 'inset'), '-7px 0', '보이는 크기는 작게, 누르는 영역은 44px');
   assert.equal(value('.views button::after', 'inset'), '-7px 0');
@@ -65,7 +68,7 @@ test('옛 iOS에서도 보이도록 :has() 선택자를 쓰지 않음', () => {
 test('키가 작은 폰(높이 700px 이하): 줄 간격을 줄이고 팁은 감추며, 마무리 칸은 탭 막대에 가려지지 않게 스크롤 여백을 둠', () => {
   assert.equal(value('.row', 'padding', { media: MH }), '7px 12px');
   assert.equal(value('.rows', 'gap', { media: MH }), '4px');
-  assert.equal(value('.timer', 'height', { media: MH }), '48px');
+  assert.equal(value('.timer', 'height', { media: MH }), '44px');
   assert.equal(value('#timer', 'position'), 'sticky', '화면 크기와 상관없이 휴식 타이머는 탭 막대 위에');
   assert.equal(value('.tip', 'display', { media: MH }), 'none');
   assert.equal(value('.journal', 'scroll-margin-bottom', { raw: true }), 'calc(var(--tabbar-h) + 21px)', '탭 막대 높이 + 여백');

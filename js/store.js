@@ -124,7 +124,7 @@ export function createStore(adapter) {
       .then(() => Promise.all([state.configSaved ? null : persistConfig(), adapter.saveDay(date, doc)]))
       .then(() => {
         if (dirtyDays.get(date) === revision) dirtyDays.delete(date);
-        if (!dirtyDays.size) setStatus('저장했습니다');
+        if (!dirtyDays.size) setStatus(''); // 정상 저장은 아무 문구도 남기지 않음(느린 저장·실패만 보임)
       })
       .catch(saveFailed)
       .finally(() => {
@@ -138,13 +138,13 @@ export function createStore(adapter) {
     clearTimeout(timers.get(date));
     dirtyDays.set(date, ++dayRevision);
     timers.set(date, setTimeout(() => flushDay(date), SAVE_DELAY));
-    state.status = { text: '저장 중…', error: false };
+    if (!state.status.error) state.status = { text: '', error: false };
   }
 
   // 페이지를 닫기 직전 대기 중인 저장을 바로 보냄
   function flushAll() {
     if (configDirty && !configWrite) persistConfig().then(() => {
-      if (!dirtyDays.size) setStatus('설정을 저장했습니다');
+      if (!dirtyDays.size) setStatus('');
     }).catch(saveFailed);
     for (const date of dirtyDays.keys()) {
       clearTimeout(timers.get(date));
@@ -421,7 +421,7 @@ export function createStore(adapter) {
       configDirty = true;
       state.configRev++;
       clearTimeout(statusTimer);
-      state.status = { text: '설정을 저장 중입니다…', error: false };
+      state.status = { text: '', error: false };
       emit();
       const pending = adapter.synced ? setTimeout(() => {
         if (!state.status.error && revision === configRevision) {
@@ -431,7 +431,7 @@ export function createStore(adapter) {
       }, 4000) : null;
       try {
         await persistConfig(true);
-        if (revision === configRevision) setStatus('설정을 저장했습니다');
+        if (revision === configRevision) setStatus('');
       } catch (e) {
         saveFailed(e);
         throw e;

@@ -121,6 +121,18 @@ test('마무리: 마지막 종목을 막 체크하면 칸을 화면으로 끌어
     store.subscribe(mountJournal(root, store));
     assert.equal(calls.length, 0, '열 때는 가만히');
 
+    // 기록을 불러오는 중에 한 번 그려진 뒤(준비 전) 모두 마친 기록이 도착해도 이동하지 않음: 처음 열 때 화면이 아래로 밀리지 않게
+    let receive;
+    const slow = { ...adapter(), subscribe(cb) { receive = cb; return () => {}; } };
+    document.body.innerHTML = '<div id="journal"></div>';
+    store = createStore(slow);
+    root = document.getElementById('journal');
+    store.subscribe(mountJournal(root, store));
+    receive.onConfig(null); // 설정만 먼저 도착: 아직 준비 전
+    receive.onDays(fullDays(1));
+    assert.equal(store.state.ready, true);
+    assert.equal(calls.length, 0, '불러온 기록이 이미 마친 날이어도 가만히');
+
     // 하나 남은 상태에서 마지막 종목을 체크하면 이동
     ad = adapter();
     document.body.innerHTML = '<div id="journal"></div>';

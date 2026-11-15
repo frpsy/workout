@@ -38,6 +38,7 @@ export function mountJournal(root, store) {
   const thanks = $('#jThanks', root);
   let date = null; // 지금 보여 주는 날
   let editing = false; // 쓰는 중이면 접지 않음
+  let wasReady = false; // 직전 그림 때 기록을 다 불러온 상태였는지
   let wasAllDone = false; // 직전 그림에서 모두 마친 상태였는지 (방금 마쳤을 때만 칸으로 데려가기 위해)
   const later = new Set(); // '나중에'를 누른 날 (이 화면을 여는 동안만)
 
@@ -113,8 +114,10 @@ export function mountJournal(root, store) {
       $('#jSaved', root).textContent = '';
       counts();
     }
-    const justFinished = allDone && !wasAllDone;
+    // 방금 마쳤을 때만 이동: 기록을 불러오는 중(준비 전)에 그려진 '아직 안 함'에서 불러온 뒤 '마침'으로 바뀐 것은 마친 게 아님
+    const justFinished = allDone && !wasAllDone && wasReady;
     wasAllDone = allDone;
+    wasReady = !!state.ready;
     // 모두 마친 날이거나 이미 써 둔 날에만 보임 (root는 탭이 숨기고 보이므로 안쪽 상자를 숨김)
     const box = $('#jBox', root);
     box.hidden = !(allDone || filled(note));

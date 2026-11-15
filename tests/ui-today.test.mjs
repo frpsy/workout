@@ -287,17 +287,19 @@ test('보기 3단계: 다시 열면 기억한 단계로, 이상한 값은 기본
   b.store.actions.flushAll();
 });
 
-test('상태 줄: 저장 문구가 있으면 주차 안내 자리에 보이고, 없으면 주차 안내가 보임', () => {
+test('상태 줄: 정상 저장은 문구 없이 주차 안내 그대로, 저장 실패 문구만 그 자리에 보임', async () => {
   const { store, root } = setupFull();
   const st = root.querySelector('#status');
   const week = root.querySelector('#weekLabel');
   assert.equal(st.hidden, true);
   assert.equal(week.hidden, false);
-  complete(root.querySelector('.row')); // 저장 중…
-  assert.equal(st.hidden, false);
-  assert.equal(st.textContent, '저장 중…');
-  assert.equal(week.hidden, true, '문구가 있는 동안은 주차 안내를 숨김');
+  complete(root.querySelector('.row'));
+  assert.equal(st.hidden, true, "'저장 중…'을 보이지 않음");
+  assert.equal(week.hidden, false);
   store.actions.flushAll();
+  await new Promise((r) => setImmediate(r));
+  assert.equal(st.hidden, true, "'저장했습니다'도 보이지 않음");
+  assert.equal(st.textContent, '');
 });
 
 test('오늘: 큰 버튼은 누를 때마다 한 세트씩만 완료하고, 마지막 세트에서 종목이 완료됨', () => {
