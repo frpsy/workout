@@ -11,7 +11,6 @@ import { mountPlan } from './ui/plan.js';
 import { mountSettings } from './ui/settings.js';
 import { mountTimer } from './ui/timer.js';
 import { mountTabs } from './ui/tabs.js';
-import { mountTip } from './ui/tip.js';
 import { mountWeather } from './ui/weather.js';
 import { mountToday } from './ui/today.js';
 
@@ -33,7 +32,6 @@ async function boot() {
   if (progress) progress.step('data');
   const store = createStore(adapter);
 
-  mountTip(document.getElementById('tip'));
   mountWeather(document.getElementById('weather')); // 받지 못하면 그냥 숨김(오프라인 등)
   mountTimer(document.getElementById('timer')); // 기록과 무관해 상태 구독 없이 스스로 갱신
 

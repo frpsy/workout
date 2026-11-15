@@ -98,12 +98,11 @@ test('옛 iOS에서도 보이도록 :has() 선택자를 쓰지 않음', () => {
   assert.doesNotMatch(css, /:has\(/);
 });
 
-test('키가 작은 폰(높이 700px 이하): 줄 간격을 줄이고 팁은 감추며, 마무리 칸은 탭 막대에 가려지지 않게 스크롤 여백을 둠', () => {
+test('키가 작은 폰(높이 700px 이하): 줄 간격을 줄이고, 마무리 칸은 탭 막대에 가려지지 않게 스크롤 여백을 둠', () => {
   assert.equal(value('.row', 'padding', { media: MH }), '6px 12px 8px');
   assert.equal(value('.rows', 'gap', { media: MH }), '4px');
   assert.equal(value('.timer', 'height', { media: MH }), '44px');
   assert.equal(value('#timer', 'position'), 'sticky', '화면 크기와 상관없이 휴식 타이머는 탭 막대 위에');
-  assert.equal(value('.tip', 'display', { media: MH }), 'none');
   assert.equal(value('.journal', 'scroll-margin-bottom', { raw: true }), 'calc(var(--tabbar-h) + 84px)', '탭 막대 + 떠 있는 휴식 타이머 + 여백');
 });
 
@@ -169,7 +168,7 @@ test('정렬: 머리말·카드·팁의 바깥 모서리는 같은 좌우 여백
   assert.equal(value('.head', 'padding', { raw: true }), '0 0 4px', '머리말에 좌우 여백을 따로 두지 않음(카드와 같은 줄)');
   assert.equal(value('.sgh', 'margin', { raw: true }), '10px 0 0', '설정 소제목도 카드 모서리에 맞음');
   assert.equal(value('.weather', 'text-align'), 'left');
-  assert.equal(value('.tip', 'justify-content'), 'flex-start');
+  assert.equal(value('.tip', 'display'), undefined, '운동 팁은 없어짐');
   assert.equal(value('.exitem', 'padding'), '16px', '같은 탭의 .slist와 안쪽 여백이 같음');
   assert.equal(value('.timer', 'padding', { raw: true }), '0 8px');
   assert.equal(value('.timer button.tlabel', 'width', { raw: true }), 'var(--tside)');
