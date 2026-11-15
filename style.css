@@ -114,18 +114,20 @@
 /* ── 기본 ──────────────────────────────────────────────── */
 /* 단독 실행(GitHub Pages)일 때만 기본 리셋과 안전 영역 */
 .standalone { -webkit-text-size-adjust: 100%; }
-/* 홈 화면 앱: 상태 표시줄 뒤를 앱 배경색으로 덮어, 내용이 비쳐 뿌옇게 보이지 않게 함 */
 .standalone body { margin: 0; }
-.standalone body::before {
-  content: '';
+/* 홈 화면 앱(iOS 26 이후): 시스템이 화면 맨 위(상태 표시줄 아래까지)에 흐림 효과를 덮어 머리말이 뿌옇게 보임.
+   WebKit은 화면 위 가장자리 몇 px 안쪽에서 '불투명하고 고정된 요소'가 눌림 판정(hit test)에 잡힐 때만 이 흐림을 걷고 그 색으로 칠함.
+   그래서 가상 요소(::before, 판정에 안 잡힘)나 pointer-events: none이 아닌 진짜 요소를 상태 표시줄보다 8px 더 내려 둠(.wrap 위 여백 안이라 내용을 가리지 않음) */
+.topcap { display: none; }
+.standalone .topcap {
+  display: block;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: env(safe-area-inset-top, 0px);
+  height: calc(env(safe-area-inset-top, 0px) + 8px);
   background: var(--bg);
   z-index: 20;
-  pointer-events: none;
 }
 [hidden] { display: none !important; }
 
