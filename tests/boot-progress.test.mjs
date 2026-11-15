@@ -55,7 +55,7 @@ test('시작 화면: 금방 끝나면 기다리지 않고 바로 사라지고, �
   assert.equal(root.querySelector('#splashBar').style.width, '100%');
   assert.equal(root.querySelector('#splashTrack').getAttribute('aria-valuenow'), '100');
   const [remove, wait] = timeouts[before];
-  assert.equal(wait, 220, '짧게 사라진 뒤 제거');
+  assert.equal(wait, 260, '짧게 사라진 뒤 제거');
   p.done(); // 두 번 불러도 한 번만
   assert.equal(timeouts.length, before + 1);
   remove();
@@ -90,7 +90,7 @@ test('진행 막대: 실패하면 멈추고 안내를 보여 줌', () => {
 test('시작 화면: 아이콘이 떠오르는 중에 준비되면 그 움직임이 끝난 뒤에 걷힘(중간에 끊기지 않게)', async () => {
   const { root, p, timeouts } = setup();
   let finish;
-  const intro = { animationName: 'splash-icon', playState: 'running', finished: new Promise((r) => (finish = r)) };
+  const intro = { animationName: 'splash-in', playState: 'running', finished: new Promise((r) => (finish = r)) };
   const other = { animationName: 'ready-pulse', playState: 'running', finished: new Promise(() => {}) };
   root.getAnimations = () => [intro, other];
   p.done();

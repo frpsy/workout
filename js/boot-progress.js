@@ -1,4 +1,4 @@
-// 시작 화면: 아이콘과 이름이 짧게 떠오르고(CSS), 준비되면 시작 화면만 투명해지며 앱이 드러납니다(앱 화면은 움직이지 않음).
+// 시작 화면: 아이콘과 이름이 한 번에 짧게 나타나고(CSS), 준비되면 시작 화면만 투명해지며 앱이 드러납니다(앱 화면은 움직이지 않음).
 // 따로 기다리는 시간은 없고, 아직 끝나지 않은 것만 기다립니다:
 //  - 떠오르는 움직임(0.3초 안팎): 중간에 끊겨 보이지 않게
 //  - 글꼴: 첫 실행에 글꼴이 늦게 오면 앱이 드러난 뒤 글자 크기가 바뀌어 화면이 커졌다 줄어드는 것처럼 보이므로
@@ -14,9 +14,9 @@ export const STEPS = [
 const BAR_AFTER_MS = 1200; // 이만큼 걸리면 진행 막대와 문구를 보여 줌
 const SLOW_MS = 8000; // 이만큼 걸리면 안내 문구를 덧붙임
 const STALL_MS = 15000; // 이만큼 걸리면 멈춘 것으로 보고 '다시 시도' 버튼을 보여 줌(끝나면 알아서 걷힘)
-const LEAVE_MS = 220; // 사라지는 시간 (style.css의 .splash 전환 시간과 맞춤)
+const LEAVE_MS = 260; // 사라지는 시간 (style.css의 .splash 전환 시간과 맞춤)
 const WAIT_MAX_MS = 1000; // 움직임·글꼴을 기다리는 최대 시간(배경 탭·느린 연결 대비)
-const INTRO = new Set(['splash-icon', 'splash-word']);
+const INTRO = new Set(['splash-in']);
 
 export function createProgress(root, { setInterval: si = setInterval, clearInterval: ci = clearInterval, setTimeout: st = setTimeout } = {}) {
   const bar = root.querySelector('#splashBar');
@@ -79,7 +79,7 @@ export function createProgress(root, { setInterval: si = setInterval, clearInter
       const leave = () => {
         if (left) return;
         left = true;
-        root.classList.add('leaving'); // CSS가 짧게 투명해지게 함
+        root.classList.add('leaving'); // CSS가 짧게 투명해지게 함(투명도·크기만 바꾸는 애니메이션)
         st(() => root.remove(), LEAVE_MS);
       };
       const waits = typeof root.getAnimations === 'function'

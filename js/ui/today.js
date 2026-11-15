@@ -195,7 +195,7 @@ export function mountToday(root, store) {
       el.innerHTML = `
         <div class="info">
           <div class="nameline"><h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>${video ? `<a class="video" data-f="video" href="${esc(videoUrl(video))}" target="_blank" rel="noopener noreferrer" title="${esc(video.title)}" aria-label="${n} 유튜브 영상으로 같이하기"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4.5" fill="currentColor"/><path d="M10 9.3v5.4l4.6-2.7z" fill="var(--surface)"/></svg><span class="sr">영상으로 같이하기</span></a>` : ''}</div>
-          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button></p>
+          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button><button type="button" class="more" data-f="more" aria-expanded="false" aria-label="${n} 개수·세트 조절 펴기"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></p>
         </div>
         <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span><span class="cap" data-f="cap" aria-hidden="true"></span></button>
         <div class="ctrl">
@@ -244,6 +244,17 @@ export function mountToday(root, store) {
       r.setsPlus.addEventListener('click', () => changeProgress(view, () => actions.setSets(ex.id, view().sets + 1)));
       r.setsIn.addEventListener('change', () => changeProgress(view, () => actions.setSets(ex.id, parseInt(r.setsIn.value, 10))));
       for (const input of [r.cnt, r.setsIn]) input.addEventListener('focus', () => input.select());
+      // 이름·목표를 누르면 이 종목의 개수·세트 조절 줄을 펴고 접음(영상 링크·되돌리기 버튼은 제외)
+      const more = q('more');
+      const toggleOpen = () => {
+        const open = el.classList.toggle('open');
+        more.setAttribute('aria-expanded', String(open));
+        more.setAttribute('aria-label', `${ex.name} 개수·세트 조절 ${open ? '접기' : '펴기'}`);
+      };
+      more.addEventListener('click', toggleOpen); // 키보드·화면 읽기용 버튼(⌄)
+      el.querySelector('.info').addEventListener('click', (ev) => {
+        if (!ev.target.closest('a, button')) toggleOpen(); // 이름·목표 어디를 눌러도 같은 동작
+      });
       box.appendChild(el);
       rows.set(ex.id, r);
     }
@@ -296,6 +307,7 @@ export function mountToday(root, store) {
     $('#dateLabel', root).textContent = `${labelMD(selected)} ${dowName(selected)}요일`;
 
     let done = 0;
+    let currentSeen = false;
     for (const r of rows.values()) {
       const v = store.view(selected, r.ex, res);
       if (v.done) done++;
@@ -319,6 +331,9 @@ export function mountToday(root, store) {
       r.undo.hidden = v.setsDone < 1;
       r.check.dataset.done = String(v.setsDone);
       r.el.classList.toggle('done', v.done);
+      // 지금 할 종목(아직 마치지 않은 첫 종목)만 조절 줄을 펴 둠: 나머지는 한 줄로 줄여 한 화면에 들어오게
+      r.el.classList.toggle('current', !v.done && !currentSeen);
+      if (!v.done) currentSeen = true;
       r.check.setAttribute('aria-pressed', String(v.done));
       // 세트를 일부만 마쳤으면 완료 버튼 테두리가 진행 정도(2/3)를 보여 줌
       const part = !v.done && v.setsDone > 0;

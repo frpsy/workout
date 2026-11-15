@@ -466,3 +466,27 @@ test('오늘: 세트 수를 줄여 체크한 세트가 전부가 되면 완료 �
     delete globalThis.AudioContext;
   }
 });
+
+test('오늘: 지금 할 종목(마치지 않은 첫 종목)만 current로 표시하고, 이름·목표를 누르면 그 종목의 조절 줄을 펴고 접음', () => {
+  const { store, root } = setup(today);
+  const rows = [...root.querySelectorAll('.row')];
+  const current = () => rows.map((r) => r.classList.contains('current'));
+  assert.deepEqual(current(), [true, false, false]);
+  complete(rows[0]);
+  assert.deepEqual(current(), [false, true, false], '마치면 다음 종목으로 넘어감');
+  const info = rows[2].querySelector('.info');
+  info.querySelector('.name').click();
+  assert.ok(rows[2].classList.contains('open'));
+  const more = rows[2].querySelector('[data-f="more"]');
+  assert.equal(more.getAttribute('aria-expanded'), 'true');
+  more.click();
+  assert.ok(!rows[2].classList.contains('open'), '⌄ 버튼으로도 접고 폄');
+  assert.match(more.getAttribute('aria-label'), /펴기/);
+  more.click();
+  rows[2].querySelector('a.video').addEventListener('click', (ev) => ev.preventDefault());
+  rows[2].querySelector('a.video').click();
+  assert.ok(rows[2].classList.contains('open'), '영상 링크를 눌러서는 접히지 않음');
+  info.querySelector('.name').click();
+  assert.ok(!rows[2].classList.contains('open'));
+  store.actions.flushAll();
+});
