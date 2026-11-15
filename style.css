@@ -126,9 +126,9 @@
   left: 0;
   right: 0;
   height: calc(env(safe-area-inset-top, 0px) + 8px);
-  /* 상태 표시줄 영역을 앱 바탕과 같은 색으로 두면 시계·배터리와 앱 머리말이 한데 섞여 보임: 아래 탭 막대와 같은 면 색(--surface)과 얇은 선으로 구분 */
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  /* 상태 표시줄 영역이 앱 바탕과 비슷한 색이면 시계·배터리와 앱 머리말이 한데 섞여 보임(흰색 면은 연한 바탕과 차이가 약해 구분이 안 느껴졌음): 앱의 포인트 색을 옅게 깐 띠와 같은 계열의 선으로 확실히 구분 */
+  background: var(--accent-soft);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
   z-index: 20;
 }
 [hidden] { display: none !important; }
