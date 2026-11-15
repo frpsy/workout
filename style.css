@@ -126,9 +126,7 @@
   left: 0;
   right: 0;
   height: calc(env(safe-area-inset-top, 0px) + 8px);
-  /* 상태 표시줄 영역이 앱 바탕과 비슷한 색이면 시계·배터리와 앱 머리말이 한데 섞여 보임(흰색 면은 연한 바탕과 차이가 약해 구분이 안 느껴졌음): 앱의 포인트 색을 옅게 깐 띠와 같은 계열의 선으로 확실히 구분 */
-  background: var(--accent-soft);
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  background: var(--bg);
   z-index: 20;
 }
 [hidden] { display: none !important; }
@@ -200,7 +198,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   gap: var(--gap-md);
   min-height: 100%; /* 화면 높이만큼: 운동 팁을 탭 막대 바로 위로 내림 */
 }
-.standalone .wrap { padding-top: calc(env(safe-area-inset-top, 0px) + 22px); } /* 덮개(상태 표시줄 + 8px) 아래로 14px 띄움 */
+.standalone .wrap { padding-top: calc(env(safe-area-inset-top, 0px) + 14px); }
 .wrap > * { min-width: 0; }
 .stack { display: flex; flex-direction: column; gap: var(--gap-lg); }
 
@@ -550,7 +548,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .wbtn::after, .wsec::after { content: ''; position: absolute; inset: -4px 0; } /* 누르는 영역 44px */
 .wcancel { color: var(--muted); }
 .wsec.resume { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-.wreset { min-width: 0; padding: 0 8px; background: transparent; font-size: var(--fs-xs); }
+.wreset { min-width: 0; padding: 0 10px; font-size: var(--fs-xs); } /* ‘시간 초기화’도 다른 머리말 버튼처럼 옅은 바탕을 가진 버튼으로(글자만 있으면 버튼으로 안 보임) */
 .headline.working h1 { display: none; }
 
 /* 안내 줄(지난 날 고치는 중·로그인 권유) */
