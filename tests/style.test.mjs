@@ -40,7 +40,16 @@ test('화면 보기·난이도·효과음 버튼은 손가락으로 누르기 �
 });
 
 test('홈 화면 앱: 상태 표시줄 뒤를 배경색으로 덮고 html 배경도 지정', () => {
-  assert.match(value('.standalone body::before', 'height'), /^env\(safe-area-inset-top/);
+  // iOS 26 이후 홈 화면 앱의 위쪽 흐림: 불투명·고정된 진짜 요소가 상태 표시줄 아래 몇 px까지 눌림 판정에 잡혀야 WebKit이 흐림을 걷음
+  assert.equal(value('.standalone .topcap', 'position'), 'fixed');
+  assert.equal(value('.standalone .topcap', 'top'), '0');
+  assert.equal(value('.standalone .topcap', 'height', { raw: true }), 'calc(env(safe-area-inset-top, 0px) + 8px)');
+  assert.equal(value('.standalone .topcap', 'background', { raw: true }), 'var(--bg)');
+  assert.equal(value('.standalone .topcap', 'pointer-events'), undefined, 'pointer-events: none이면 판정에 잡히지 않음');
+  assert.equal(value('.standalone .wrap', 'padding-top', { raw: true }), 'calc(env(safe-area-inset-top, 0px) + 14px)', '내용은 덮개 아래에서 시작');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /<body>\s*<div class="topcap" aria-hidden="true"><\/div>/);
+  assert.match(html, /apple-mobile-web-app-status-bar-style" content="default"/, 'black-translucent이면 이 방법이 통하지 않음');
   assert.equal(value('html', 'background', { raw: true }), 'var(--bg)');
 });
 
