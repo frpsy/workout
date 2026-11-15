@@ -4,7 +4,7 @@
 //   node scripts/iphone-check.mjs --shots    단계마다 화면도 shots/iphone/에 저장
 //
 // 확인하는 것: 시작 화면이 걷힘 · 가로로 넘치지 않음 · 기본/상세 보기 차이 · 기본은 작은 폰에서도 스크롤 없이 한 화면 ·
-// 세트 체크로 휴식 자동 시작 · 휴식 타이머 크기와 진행 막대가 버튼을 가리지 않음 · ±15 · 마지막 3초 · 끝남(높이 그대로) ·
+// 세트 체크로 휴식 자동 시작 · 휴식 타이머 크기 불변과 진행 막대가 버튼을 가리지 않음 · ±15 · 마지막 3초 · 끝남(높이 그대로) ·
 // 새로고침 뒤 이어짐 · 모두 마치면 휴식 정지, 타이머가 탭 막대 위, 오늘의 마무리는 접힌 한 줄 · 맨 위 덮개 · 첫 실행 때 뷰포트가 바뀌어도 시작 화면 로고가 안 움직임 · 탭 이동 · 자바스크립트 오류 없음.
 // 시각은 가짜 시계로 고정하고 Firebase·날씨 요청은 막습니다. 실제 기기의 합성·소리·진동까지 대신하지는 못합니다.
 // Playwright(WebKit)가 필요합니다. 저장소 의존성에는 넣지 않았습니다: npx playwright install webkit
@@ -125,7 +125,6 @@ async function run(browser, devices, origin, { device, scheme }) {
   tag = `${device.replace(/ /g, '')}-${scheme}`;
   if (scheme === 'light') await splashStability(browser, devices, origin, device);
   const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: join(OUT, `${tag}-${name}.png`) }); };
-  const small = devices[device].viewport.height <= 600;
   const errors = [];
 
   /* ---------- 기본 보기(조절 줄 접힘) ---------- */
@@ -197,10 +196,10 @@ async function run(browser, devices, origin, { device, scheme }) {
     const over = ['#tMinus', '#tPlus', '#tGo'].filter((s) => { const b = rect(s); return f.left < b.right && f.right > b.left && f.top < b.bottom && f.bottom > b.top; });
     return { running: bar.classList.contains('running'), h: bar.getBoundingClientRect().height, fs: getComputedStyle(document.getElementById('tTime')).fontSize, fillH: getComputedStyle(fill).height, anims: fill.getAnimations().length, work: document.querySelector('.headline').classList.contains('working'), over };
   });
-  const wantH = small ? 56 : 64;
-  const wantFs = devices[device].viewport.width <= 360 ? '34px' : '40px'; // 아주 좁은 폰은 숫자를 조금 작게(잘리지 않게)
+  const wantH = devices[device].viewport.height <= 700 ? 44 : 48; // 쉬기 전과 같은 줄 높이·숫자 크기(강조는 색으로만)
+  const wantFs = '26px';
   check('세트 체크로 휴식과 운동 시간이 자동 시작', t.running && t.work, JSON.stringify(t));
-  check(`쉬는 중 타이머: ${wantH}px 줄, 숫자 ${wantFs}`, t.h === wantH && t.fs === wantFs, JSON.stringify(t));
+  check(`쉬는 중 타이머: 크기 불변(${wantH}px 줄, 숫자 ${wantFs})`, t.h === wantH && t.fs === wantFs, JSON.stringify(t));
   check('진행 막대는 3px 한 줄이고 애니메이션 하나', t.fillH === '3px' && t.anims === 1, JSON.stringify(t));
   check('진행 막대가 버튼을 가리지 않음', t.over.length === 0, t.over.join());
   const ctr = await page.evaluate(() => {

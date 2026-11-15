@@ -56,8 +56,6 @@
   --fs-3xl: 24px; /* 탭 제목·운동 시간 */
   --fs-4xl: 24px; /* 목표 개수·누적 숫자 */
   --fs-5xl: 26px; /* 휴식 타이머(쉬기 전) */
-  --fs-timer: 40px; /* 휴식 타이머(쉬는 중): 1~2m 떨어져서도 읽히게 */
-  --fs-timer-sm: 34px; /* 같은 숫자, 아주 좁은 폰(320px대)용 */
 
   /* 자간: 한글 본문은 살짝, 제목은 조금 더 좁혀 단단하게 */
   --track: -0.01em;
@@ -851,7 +849,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   box-shadow: 0 9px 0 var(--bg), 0 -6px 0 var(--bg); /* 내용 위에 떠 있을 때 타이머 위아래 틈으로 내용이 비치지 않게 */
 }
 
-/* 휴식 타이머: 쉬기 전에는 한 줄(48px), 쉬는 동안은 어두운 바탕에 큰 숫자(64px)로 화면의 주인공이 됨 */
+/* 휴식 타이머: 늘 같은 한 줄(48px). 쉬는 동안은 크기를 바꾸지 않고 어두운 바탕·흰 숫자·진행 막대로 강조만 함 */
 .timer {
   position: relative;
   overflow: hidden;
@@ -870,19 +868,18 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer > * { position: relative; z-index: 1; }
 .timer > .sr { position: absolute; } /* 화면 읽기용 숨은 문구(#tDone)가 위 규칙 때문에 줄 안의 1px 칸이 돼 오른쪽에 7px(칸+간격) 빈 자리를 만들던 것을 막음 */
 /* 쉬는 동안: 줄 아래쪽의 얇은 막대가 남은 시간만큼 줄어듦(ui/timer.js가 애니메이션 하나로 흘려보냄) */
-.timer > .tfill { position: absolute; z-index: 0; left: 12px; right: 12px; bottom: 4px; height: 3px; border-radius: var(--r-bar); background: var(--hero-accent); transform-origin: left center; transform: scaleX(0); will-change: transform; pointer-events: none; }
+.timer > .tfill { position: absolute; z-index: 0; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: var(--r-bar); background: var(--hero-accent); transform-origin: left center; transform: scaleX(0); will-change: transform; pointer-events: none; }
 /* 진행 막대의 바닥 줄: 줄 전체를 덮는 대신 아래쪽에 얇게(3px)만 그려, 숫자·버튼을 절대 가리지 않음 */
-.timer.running::after { content: ''; position: absolute; z-index: 0; left: 12px; right: 12px; bottom: 4px; height: 3px; border-radius: var(--r-bar); background: color-mix(in srgb, var(--hero-fg) 16%, transparent); pointer-events: none; }
+.timer.running::after { content: ''; position: absolute; z-index: 0; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: var(--r-bar); background: color-mix(in srgb, var(--hero-fg) 16%, transparent); pointer-events: none; }
 .timer.done > .tfill { display: none; }
-.timer.running, .timer.done { height: 64px; padding: 0 10px; border-color: transparent; }
+.timer.running, .timer.done { border-color: transparent; } /* 쉬는 중·끝남도 크기·배치는 그대로: 색만 바뀜 */
 .timer.running { background: var(--hero); }
-.timer.running button.tlabel { display: none; } /* 쉬는 중에는 자동/수동을 바꿀 일이 없음: 숫자에 자리를 내줌 */
-.timer.running { --tside: 46px; }
-.timer.running::before { content: ''; flex: none; width: var(--tside); } /* 빈 자리로 오른쪽 버튼과 폭을 맞춰 숫자를 가운데로 */
+.timer.running button.tlabel, .timer.running button.tlabel b { color: color-mix(in srgb, var(--hero-fg) 70%, transparent); }
+.timer.running button.tlabel[aria-pressed="true"] b { color: var(--hero-accent); }
 /* 휴식 끝: 줄 전체를 초록으로 칠해, 멀리서 흘끗 봐도 알 수 있게 */
-.timer.done { padding: 0 10px 0 16px; background: var(--accent-fill); box-shadow: var(--shadow-press); }
+.timer.done { padding: 0 8px 0 16px; background: var(--accent-fill); box-shadow: var(--shadow-press); }
 .timer.done .tstep, .timer.done button.tlabel { display: none; } /* '휴식 끝 +0:07'만 크게 */
-.timer.done .time { display: flex; align-items: center; gap: var(--gap-md); height: 44px; text-align: left; color: var(--on-accent); font-size: var(--fs-5xl); }
+.timer.done .time { display: flex; align-items: center; gap: var(--gap-md); text-align: left; color: var(--on-accent); font-size: var(--fs-5xl); }
 .timer.done .time:active { background: transparent; }
 .timer.done .tgo { background: var(--surface); color: var(--accent); }
 .timer .tend { display: inline-flex; align-items: center; gap: var(--gap-sm); font-family: var(--font-body); font-size: var(--fs-xl); font-weight: 700; letter-spacing: var(--track-tight); }
@@ -918,7 +915,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 }
 .timer .time:disabled { opacity: 1; cursor: default; }
 .timer .time:not(:disabled):active { background: var(--fill); }
-.timer.running .time { height: 48px; color: var(--hero-fg); font-size: var(--fs-timer); }
+.timer.running .time { color: var(--hero-fg); }
 .timer.ending .time { color: var(--hero-warn); } /* 마지막 3초 */
 .timer.ending > .tfill { background: var(--hero-warn); }
 .timer button.tlabel {
@@ -958,7 +955,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   font-variant-numeric: tabular-nums;
 }
 .timer .tstep:active { background: var(--fill-press); }
-.timer.running .tstep { width: 46px; height: 36px; background: var(--hero-ctrl); color: var(--hero-fg); }
+.timer.running .tstep { background: var(--hero-ctrl); color: var(--hero-fg); }
 .timer .tgo {
   position: relative;
   min-width: var(--tside);
@@ -974,7 +971,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   touch-action: manipulation;
 }
 .timer .tgo.stop { background: var(--hero-ctrl); color: var(--hero-fg); font-weight: 500; }
-/* 쉬는 중의 중지 버튼은 ■ 표시만(글자는 화면 읽기용으로 남김): 좁아진 버튼 폭만큼 큰 숫자가 넓게 가운데 */
+/* 쉬는 중의 중지 버튼은 ■ 표시만(글자는 화면 읽기용으로 남김): 시작 버튼과 같은 폭이라 숫자 자리는 그대로 */
 .timer .tgo.stop { width: var(--tside); padding: 0; color: transparent; white-space: nowrap; } /* 글자는 보이지 않게(overflow를 자르면 누르는 영역도 잘려서 투명하게만) */
 .timer .tgo.stop::before { content: '■'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--hero-fg); font-size: var(--fs-lg); }
 .timer .tstep::after, .timer .tgo::after, .timer button.tlabel::after { content: ''; position: absolute; inset: -5px 0; } /* 보이는 크기는 작게, 누르는 영역은 44px */
@@ -1449,7 +1446,6 @@ tr.cur td { background: var(--accent-soft); }
   .timer .tstep { width: 36px; flex: none; }
   .timer button.tlabel { flex: none; }
   .timer .tgo { padding: 0 4px; font-size: var(--fs-sm); }
-  .timer.running .time { font-size: var(--fs-timer-sm); }
   .row { gap: 6px 8px; padding: 8px 10px 10px; }
   .stepper button { width: 38px; }
   .stepper.setstep button { width: 32px; }
@@ -1480,7 +1476,6 @@ tr.cur td { background: var(--accent-soft); }
   .wrap { gap: var(--gap-sm); }
   .head { gap: var(--gap-sm); padding-bottom: 0; }
   .weather { display: none; }
-  .timer.running, .timer.done { height: 56px; }
 }
 
 /* ── 움직임 ────────────────────────────────────────────── */
