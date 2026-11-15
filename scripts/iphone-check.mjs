@@ -144,8 +144,13 @@ async function run(browser, devices, origin, { device, scheme }) {
     check('기본 보기: ⌄를 누르면 그 종목만 펼쳐짐', (await expanded()) === 'false,true,false', await expanded());
     await page.locator('.row [data-f="more"]').nth(1).tap();
     check('기본 보기: ⌄를 다시 누르면 접힘', (await expanded()) === 'false,false,false');
-    await page.locator('.row [data-f="check"]').first().tap();
+    // 빠른 두 번 누름(더블탭)은 한 세트만 완료
+    const cb = await page.locator('.row [data-f="check"]').first().boundingBox();
+    await page.touchscreen.tap(cb.x + cb.width / 2, cb.y + cb.height / 2);
+    await page.touchscreen.tap(cb.x + cb.width / 2, cb.y + cb.height / 2);
     await page.clock.runFor(300);
+    const frac = await page.evaluate(() => document.querySelector('.row [data-f="frac"]').textContent);
+    check('기본 보기: 빠른 두 번 누름은 한 세트만 완료', frac === '1/3', frac);
     m = await metrics(page);
     check('기본 보기: 쉬는 중에도 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
     await shot(page, 'compact-resting');
@@ -260,6 +265,26 @@ async function run(browser, devices, origin, { device, scheme }) {
   });
   check('마무리를 펼치면 입력 칸·버튼이 타이머·탭 막대 위에 보임', jr.thanks <= jr.limit + 0.5 && jr.later <= jr.limit + 0.5, JSON.stringify(jr));
   await shot(page, '5b-journal-open');
+
+  // 설정: 위쪽(시작일)만 고쳐도 저장 줄이 보이고, 되돌리기가 고치던 운동 이름을 되돌림
+  await page.locator('#tabbar button[data-tab="settings"]').tap();
+  await page.clock.runFor(500);
+  await page.evaluate(() => { document.querySelector('.page[data-tab="settings"]').scrollTop = 0; });
+  await page.locator('#startDate').fill('2026-10-01');
+  await page.clock.runFor(200);
+  const sb = await page.evaluate(() => { const r = document.getElementById('saveBar').getBoundingClientRect(); return { dirty: document.getElementById('saveBar').classList.contains('dirty'), onScreen: r.top >= 0 && r.bottom <= document.getElementById('tabbar').getBoundingClientRect().top + 1 }; });
+  check('설정: 위쪽만 고쳐도 저장 줄이 화면 아래에 붙어 보임', sb.dirty && sb.onScreen, JSON.stringify(sb));
+  await page.locator('#resetCfg').tap();
+  await page.clock.runFor(300);
+  const nameInput = page.locator('.exitem input').first();
+  await nameInput.fill('임시 이름');
+  await page.clock.runFor(200);
+  await page.locator('#resetCfg').tap();
+  await page.clock.runFor(300);
+  const nv = await nameInput.inputValue();
+  check('설정: 되돌리기가 고치던 운동 이름을 저장된 값으로 되돌림', nv === '푸시업', nv);
+  await page.locator('#tabbar button[data-tab="today"]').tap();
+  await page.clock.runFor(500);
 
   for (const tab of ['record', 'settings']) {
     await page.locator(`#tabbar button[data-tab="${tab}"]`).tap();

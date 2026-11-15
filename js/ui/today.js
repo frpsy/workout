@@ -203,8 +203,14 @@ export function mountToday(root, store) {
       // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
       if (r.watch) r.watch.addEventListener('click', () => (watch && watch.id === ex.id ? stopWatch() : startWatch(ex.id)));
       // 큰 버튼: 누를 때마다 다음 한 세트만 완료(마지막 세트에서 종목 완료). 모두 마친 뒤에는 눌러도 바뀌지 않음
+      let lastTapAt = -Infinity;
       r.check.addEventListener('click', (ev) => {
         if (ev.detail >= 2) return; // 빠른 두 번 누름(더블탭)이 두 세트를 한꺼번에 완료하지 않게 두 번째는 무시
+        // click.detail이 1로만 오는 환경(아이폰 터치 등)에서도 막도록 시간으로도 거름: 실제 손가락 입력(isTrusted)만, 350ms 안의 두 번째 누름은 무시
+        if (ev.isTrusted) {
+          if (ev.timeStamp - lastTapAt < 350) return;
+          lastTapAt = ev.timeStamp;
+        }
         const v = view();
         if (v.done) return;
         haptic();
