@@ -3,7 +3,7 @@
 //   node scripts/iphone-check.mjs            점검만 (실패가 있으면 종료 코드 1)
 //   node scripts/iphone-check.mjs --shots    단계마다 화면도 shots/iphone/에 저장
 //
-// 확인하는 것: 시작 화면이 걷힘 · 가로로 넘치지 않음 · 요약/기본 보기 차이 · 요약은 작은 폰에서도 스크롤 없이 한 화면 ·
+// 확인하는 것: 시작 화면이 걷힘 · 가로로 넘치지 않음 · 기본/상세 보기 차이 · 기본은 작은 폰에서도 스크롤 없이 한 화면 ·
 // 세트 체크로 휴식 자동 시작 · 휴식 타이머 크기와 진행 막대가 버튼을 가리지 않음 · ±15 · 마지막 3초 · 끝남(높이 그대로) ·
 // 새로고침 뒤 이어짐 · 모두 마치면 휴식 정지, 타이머가 탭 막대 위, 오늘의 마무리는 접힌 한 줄 · 맨 위 덮개 · 첫 실행 때 뷰포트가 바뀌어도 시작 화면 로고가 안 움직임 · 탭 이동 · 자바스크립트 오류 없음.
 // 시각은 가짜 시계로 고정하고 Firebase·날씨 요청은 막습니다. 실제 기기의 합성·소리·진동까지 대신하지는 못합니다.
@@ -128,7 +128,7 @@ async function run(browser, devices, origin, { device, scheme }) {
   const small = devices[device].viewport.height <= 600;
   const errors = [];
 
-  /* ---------- 요약 보기 ---------- */
+  /* ---------- 기본 보기(조절 줄 접힘) ---------- */
   {
     const ctx = await browser.newContext({ ...devices[device], colorScheme: scheme, serviceWorkers: 'block', locale: 'ko-KR', timezoneId: 'Asia/Seoul' });
     const page = await ctx.newPage();
@@ -137,22 +137,22 @@ async function run(browser, devices, origin, { device, scheme }) {
     await page.clock.install({ time: NOW });
     await open(page, origin, 'compact');
     const expanded = () => page.evaluate(() => [...document.querySelectorAll('.row')].map((r) => getComputedStyle(r.querySelector('.ctrl')).display !== 'none').join());
-    check('요약: 조절 줄이 모두 접힘', (await expanded()) === 'false,false,false', await expanded());
+    check('기본 보기: 조절 줄이 모두 접힘', (await expanded()) === 'false,false,false', await expanded());
     let m = await metrics(page);
-    check('요약: 쉬기 전에 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
+    check('기본 보기: 쉬기 전에 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
     await page.locator('.row [data-f="more"]').nth(1).tap();
-    check('요약: ⌄를 누르면 그 종목만 펼쳐짐', (await expanded()) === 'false,true,false', await expanded());
+    check('기본 보기: ⌄를 누르면 그 종목만 펼쳐짐', (await expanded()) === 'false,true,false', await expanded());
     await page.locator('.row [data-f="more"]').nth(1).tap();
-    check('요약: ⌄를 다시 누르면 접힘', (await expanded()) === 'false,false,false');
+    check('기본 보기: ⌄를 다시 누르면 접힘', (await expanded()) === 'false,false,false');
     await page.locator('.row [data-f="check"]').first().tap();
     await page.clock.runFor(300);
     m = await metrics(page);
-    check('요약: 쉬는 중에도 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
+    check('기본 보기: 쉬는 중에도 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
     await shot(page, 'compact-resting');
     await ctx.close();
   }
 
-  /* ---------- 기본 보기: 운동 한 판 ---------- */
+  /* ---------- 상세 보기(조절 줄 펼침): 운동 한 판 ---------- */
   const ctx = await browser.newContext({ ...devices[device], colorScheme: scheme, serviceWorkers: 'block', locale: 'ko-KR', timezoneId: 'Asia/Seoul' });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -171,7 +171,7 @@ async function run(browser, devices, origin, { device, scheme }) {
   let m = await metrics(page);
   check('가로로 넘치지 않음', m.pw <= m.w && m.docW <= m.w, JSON.stringify(m));
   const expanded = await page.evaluate(() => [...document.querySelectorAll('.row')].map((r) => getComputedStyle(r.querySelector('.ctrl')).display !== 'none').join());
-  check('기본: 모든 종목의 조절 줄이 보임', expanded === 'true,true,true', expanded);
+  check('상세 보기: 모든 종목의 조절 줄이 보임', expanded === 'true,true,true', expanded);
   await shot(page, '1-idle');
 
   await page.locator('.row [data-f="check"]').first().tap();
