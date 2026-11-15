@@ -868,9 +868,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer > * { position: relative; z-index: 1; }
 .timer > .sr { position: absolute; } /* 화면 읽기용 숨은 문구(#tDone)가 위 규칙 때문에 줄 안의 1px 칸이 돼 오른쪽에 7px(칸+간격) 빈 자리를 만들던 것을 막음 */
 /* 쉬는 동안: 줄 아래쪽의 얇은 막대가 남은 시간만큼 줄어듦(ui/timer.js가 애니메이션 하나로 흘려보냄) */
-.timer > .tfill { position: absolute; z-index: 0; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: var(--r-bar); background: var(--hero-accent); transform-origin: left center; transform: scaleX(0); will-change: transform; pointer-events: none; }
+.timer > .tfill { position: absolute; z-index: 0; left: 16px; right: 16px; bottom: 1px; height: 2px; border-radius: var(--r-bar); background: var(--hero-accent); transform-origin: left center; transform: scaleX(0); will-change: transform; pointer-events: none; }
 /* 진행 막대의 바닥 줄: 줄 전체를 덮는 대신 아래쪽에 얇게(3px)만 그려, 숫자·버튼을 절대 가리지 않음 */
-.timer.running::after { content: ''; position: absolute; z-index: 0; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: var(--r-bar); background: color-mix(in srgb, var(--hero-fg) 16%, transparent); pointer-events: none; }
+.timer.running::after { content: ''; position: absolute; z-index: 0; left: 16px; right: 16px; bottom: 1px; height: 2px; border-radius: var(--r-bar); background: color-mix(in srgb, var(--hero-fg) 16%, transparent); pointer-events: none; }
 .timer.done > .tfill { display: none; }
 .timer.running, .timer.done { border-color: transparent; } /* 쉬는 중·끝남도 크기·배치는 그대로: 색만 바뀜 */
 .timer.running { background: var(--hero); }
@@ -1102,9 +1102,10 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .cell.wkstart::before { /* 새 목표 주차 시작 */
   content: '';
   position: absolute;
-  left: 1px;
-  top: 9px;
+  left: 3px;
+  top: 50%;
   height: 14px;
+  margin-top: -7px;
   width: 3px;
   border-radius: 2px;
   background: var(--accent);
