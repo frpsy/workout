@@ -200,7 +200,7 @@ async function run(browser, devices, origin, { device, scheme }) {
   const wantFs = '26px';
   check('세트 체크로 휴식과 운동 시간이 자동 시작', t.running && t.work, JSON.stringify(t));
   check(`쉬는 중 타이머: 크기 불변(${wantH}px 줄, 숫자 ${wantFs})`, t.h === wantH && t.fs === wantFs, JSON.stringify(t));
-  check('진행 막대는 3px 한 줄이고 애니메이션 하나', t.fillH === '3px' && t.anims === 1, JSON.stringify(t));
+  check('진행 막대는 2px 한 줄이고 애니메이션 하나', t.fillH === '2px' && t.anims === 1, JSON.stringify(t));
   check('진행 막대가 버튼을 가리지 않음', t.over.length === 0, t.over.join());
   const ctr = await page.evaluate(() => {
     const bar = document.getElementById('timerBar').getBoundingClientRect();

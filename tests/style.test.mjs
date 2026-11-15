@@ -146,8 +146,8 @@ test('휴식 타이머: 바탕 채움(.tfill)은 늘 버튼·숫자 뒤에(아�
   assert.equal(value('.timer > *', 'z-index'), '1');
   assert.equal(value('.timer > .tfill', 'z-index'), '0');
   assert.equal(value('.timer > .tfill', 'pointer-events'), 'none');
-  assert.equal(value('.timer > .tfill', 'height'), '3px', '진행 막대는 줄 전체를 덮지 않고 얇게');
-  assert.equal(value('.timer > .tfill', 'bottom'), '0');
+  assert.equal(value('.timer > .tfill', 'height'), '2px', '진행 막대는 줄 전체를 덮지 않고 얇게');
+  assert.equal(value('.timer > .tfill', 'bottom'), '1px');
   assert.equal(value('.timer > .tfill', 'inset'), undefined);
 });
 
