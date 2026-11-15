@@ -126,7 +126,9 @@
   left: 0;
   right: 0;
   height: calc(env(safe-area-inset-top, 0px) + 8px);
-  background: var(--bg);
+  /* 상태 표시줄 영역을 앱 바탕과 같은 색으로 두면 시계·배터리와 앱 머리말이 한데 섞여 보임: 아래 탭 막대와 같은 면 색(--surface)과 얇은 선으로 구분 */
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
   z-index: 20;
 }
 [hidden] { display: none !important; }
@@ -198,7 +200,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   gap: var(--gap-md);
   min-height: 100%; /* 화면 높이만큼: 운동 팁을 탭 막대 바로 위로 내림 */
 }
-.standalone .wrap { padding-top: calc(env(safe-area-inset-top, 0px) + 14px); }
+.standalone .wrap { padding-top: calc(env(safe-area-inset-top, 0px) + 22px); } /* 덮개(상태 표시줄 + 8px) 아래로 14px 띄움 */
 .wrap > * { min-width: 0; }
 .stack { display: flex; flex-direction: column; gap: var(--gap-lg); }
 

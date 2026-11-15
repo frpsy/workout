@@ -44,9 +44,10 @@ test('홈 화면 앱: 상태 표시줄 뒤를 배경색으로 덮고 html 배경
   assert.equal(value('.standalone .topcap', 'position'), 'fixed');
   assert.equal(value('.standalone .topcap', 'top'), '0');
   assert.equal(value('.standalone .topcap', 'height', { raw: true }), 'calc(env(safe-area-inset-top, 0px) + 8px)');
-  assert.equal(value('.standalone .topcap', 'background', { raw: true }), 'var(--bg)');
+  assert.equal(value('.standalone .topcap', 'background', { raw: true }), 'var(--surface)', '앱 바탕과 다른 면 색(아래 탭 막대와 같음)');
+  assert.equal(value('.standalone .topcap', 'border-bottom', { raw: true }), '1px solid var(--line)', '얇은 구분선');
   assert.equal(value('.standalone .topcap', 'pointer-events'), undefined, 'pointer-events: none이면 판정에 잡히지 않음');
-  assert.equal(value('.standalone .wrap', 'padding-top', { raw: true }), 'calc(env(safe-area-inset-top, 0px) + 14px)', '내용은 덮개 아래에서 시작');
+  assert.equal(value('.standalone .wrap', 'padding-top', { raw: true }), 'calc(env(safe-area-inset-top, 0px) + 22px)', '내용은 덮개 아래에서 시작');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /<body>\s*<div class="topcap" aria-hidden="true"><\/div>/);
   assert.match(html, /apple-mobile-web-app-status-bar-style" content="default"/, 'black-translucent이면 이 방법이 통하지 않음');
