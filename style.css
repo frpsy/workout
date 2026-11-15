@@ -35,20 +35,20 @@
   --font-body: 'Noto Sans KR', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --font-num: 'Barlow Condensed', 'Arial Narrow', 'Noto Sans KR', system-ui, sans-serif;
 
-  /* 글자 크기: 본문 16px 기준(가장 작은 글씨도 11px 이상). 입력칸은 16px(iOS가 포커스할 때 확대하지 않는 최소값), 20px 이상은 주로 숫자(--font-num)와 제목 */
-  --fs-3xs: 11px;
-  --fs-2xs: 12px; /* 꼬리표·달력 머리 */
-  --fs-xs: 13px; /* 보조 설명·작은 버튼 */
-  --fs-sm: 14px; /* 안내 문구 */
-  --fs-md: 15px; /* 목록·표·버튼 */
-  --fs-base: 16px; /* 본문 */
+  /* 글자 크기: 본문 15px 기준. 입력칸은 16px(iOS가 포커스할 때 확대하지 않는 최소값), 20px 이상은 주로 숫자(--font-num)와 제목 */
+  --fs-3xs: 10px;
+  --fs-2xs: 11px; /* 꼬리표·달력 머리 */
+  --fs-xs: 12px; /* 보조 설명·작은 버튼 */
+  --fs-sm: 13px; /* 안내 문구 */
+  --fs-md: 14px; /* 목록·표·버튼 */
+  --fs-base: 15px; /* 본문 */
   --fs-input: 16px;
-  --fs-lg: 18px; /* 종목 이름·카드 제목 */
-  --fs-xl: 20px;
-  --fs-2xl: 24px; /* 날짜 제목·개수 입력 */
-  --fs-3xl: 28px; /* 탭 제목·운동 시간 */
-  --fs-4xl: 32px; /* 목표 개수 */
-  --fs-5xl: 34px; /* 휴식 타이머·누적 숫자 */
+  --fs-lg: 16px; /* 종목 이름·카드 제목 */
+  --fs-xl: 18px;
+  --fs-2xl: 20px; /* 날짜 제목·개수 입력 */
+  --fs-3xl: 24px; /* 탭 제목·운동 시간 */
+  --fs-4xl: 26px; /* 목표 개수 */
+  --fs-5xl: 28px; /* 휴식 타이머·누적 숫자 */
 
   /* 자간: 한글 본문은 살짝, 제목은 조금 더 좁혀 단단하게 */
   --track: -0.01em;
@@ -238,8 +238,8 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 }
 .btnrow { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: center; }
 .btn {
-  height: 44px;
-  padding: 0 20px;
+  height: 40px;
+  padding: 0 18px;
   border: 0;
   border-radius: var(--r-ctrl);
   background: var(--accent-fill);
@@ -276,11 +276,11 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 /* 입력칸·선택칸·날짜칸 */
 input[type="date"], input[type="number"], input:not([type]), select {
   min-width: 0;
-  height: 44px;
+  height: 40px;
   border: 1px solid var(--ctrl-line);
   border-radius: var(--r-ctrl);
   background: var(--surface);
-  padding: 0 12px;
+  padding: 0 10px;
   font-size: var(--fs-input);
   color: var(--fg);
 }
@@ -316,8 +316,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   background: transparent;
 }
 .stepper button {
-  width: 48px;
-  height: 44px;
+  position: relative;
+  width: 42px;
+  height: 36px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -330,11 +331,12 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   -webkit-touch-callout: none;
   font-variant-numeric: tabular-nums;
 }
+.stepper button::after { content: ''; position: absolute; inset: -4px 0; } /* 보이는 크기는 작게, 누르는 영역은 44px */
 .stepper button:active:not(:disabled) { background: var(--accent-soft); }
 .stepper input[type="number"] {
   min-width: 0;
-  width: 56px;
-  height: 44px;
+  width: 50px;
+  height: 36px;
   padding: 0;
   text-align: center;
   border: 0;
@@ -493,8 +495,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .wbtn {
   position: relative;
   flex: none;
-  min-width: 72px;
-  height: 44px;
+  min-width: 68px;
+  height: 36px;
   padding: 0 12px;
   border: 1px solid var(--accent);
   border-radius: var(--r-ctrl);
@@ -511,7 +513,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   position: relative;
   flex: none;
   min-width: 44px;
-  height: 44px;
+  height: 36px;
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: var(--r-ctrl);
@@ -523,6 +525,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   touch-action: manipulation;
   white-space: nowrap;
 }
+.wbtn::after, .wsec::after { content: ''; position: absolute; inset: -4px 0; } /* 누르는 영역 44px */
 .wcancel { color: var(--muted); }
 .wsec.resume { background: var(--accent-soft); border-color: var(--accent); }
 .wreset { min-width: 0; padding: 0 8px; font-size: var(--fs-xs); }
@@ -554,9 +557,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "info check" "ctrl ctrl";
-  gap: 6px 12px;
+  gap: 6px 10px;
   align-items: center;
-  padding: 10px 14px;
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: var(--surface);
@@ -567,7 +570,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .name {
   margin: 0;
   font-size: var(--fs-lg);
-  line-height: 24px;
+  line-height: 22px;
   font-weight: 700;
   letter-spacing: var(--track-tight);
   overflow: hidden;
@@ -579,19 +582,19 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .goal .num {
   font-family: var(--font-num);
   font-size: var(--fs-4xl);
-  line-height: 32px;
+  line-height: 28px;
   font-weight: 700;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 .goal .unit { font-size: var(--fs-sm); color: var(--muted); }
-.goal .sets { font-family: var(--font-num); font-size: var(--fs-xl); line-height: 32px; font-weight: 700; color: var(--accent); }
+.goal .sets { font-family: var(--font-num); font-size: var(--fs-xl); line-height: 28px; font-weight: 700; color: var(--accent); }
 .delta { margin-left: 6px; font-size: var(--fs-xs); font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .delta.over { color: var(--accent); font-weight: 700; }
 
 /* 세트 진행 표시: 누르는 버튼이 아니라 점(마친 세트는 채움, 다음 세트는 테두리 강조). 체크는 오른쪽 큰 버튼 하나로만 */
 .setpips { display: inline-flex; gap: 5px; margin-left: 6px; align-self: center; }
-.setpips i { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--line); }
+.setpips i { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
 .setpips i.next { background: transparent; box-shadow: inset 0 0 0 2px var(--accent); }
 .setpips i.on { background: var(--accent-fill); }
 
@@ -602,8 +605,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   flex: none;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   margin-left: 6px;
   padding: 0;
   border: 1px solid var(--line);
@@ -613,7 +616,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   cursor: pointer;
   touch-action: manipulation;
 }
-.undo::after { content: ''; position: absolute; inset: -7px; } /* 누르는 영역 44px */
+.undo::after { content: ''; position: absolute; inset: -9px; } /* 누르는 영역 44px */
 .undo:active:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
 
 /* 큰 완료 버튼: 지금 눌러야 하는 버튼이라 가장 진하게. 누를 때마다 한 세트씩 완료, 글자로 무엇이 완료되는지(2세트 완료)와 진행(1/3)을 알림.
@@ -621,9 +624,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .check {
   position: relative;
   grid-area: check;
-  width: 88px;
-  height: 64px;
-  border-radius: 18px;
+  width: 72px;
+  height: 50px;
+  border-radius: 14px;
   border: 2px solid var(--accent-fill);
   background: var(--accent-fill);
   color: var(--on-accent);
@@ -638,20 +641,20 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   box-shadow: var(--shadow-press);
   touch-action: manipulation;
 }
-.check::after { content: ''; position: absolute; inset: -6px; border-radius: 22px; } /* 누르는 영역을 조금 더 넓힘 */
-.check svg { width: 26px; height: 26px; }
+.check::after { content: ''; position: absolute; inset: -6px; border-radius: 18px; } /* 누르는 영역을 조금 더 넓힘 */
+.check svg { width: 22px; height: 22px; }
 .check .frac {
   font-family: var(--font-num);
-  font-size: var(--fs-2xl);
-  line-height: 24px;
+  font-size: var(--fs-xl);
+  line-height: 20px;
   font-weight: 700;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
-.check .cap { font-size: var(--fs-xs); line-height: 16px; font-weight: 700; white-space: nowrap; letter-spacing: var(--track-tight); }
+.check .cap { font-size: var(--fs-2xs); line-height: 14px; font-weight: 700; white-space: nowrap; letter-spacing: var(--track-tight); }
 .check.multi svg, .check:not(.multi) .frac { display: none; }
 /* 진행 막대: 버튼 아래쪽에서 마친 세트만큼 채워짐 */
-.check.part::before { content: ''; position: absolute; left: 0; bottom: 0; height: 5px; width: var(--p, 0%); background: var(--on-accent); opacity: 0.6; }
+.check.part::before { content: ''; position: absolute; left: 0; bottom: 0; height: 4px; width: var(--p, 0%); background: var(--on-accent); opacity: 0.6; }
 .row.done .check { background: var(--accent-soft); color: var(--accent); box-shadow: none; cursor: default; }
 
 /* 영상으로 같이하기: 이름 옆의 작은 유튜브 아이콘(누르면 유튜브로 열려, 앱을 오가도 영상 소리가 이어짐) */
@@ -674,8 +677,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .ctrl { grid-area: ctrl; display: flex; align-items: center; gap: var(--gap); }
 .stepper.reps { flex: 1; }
 .stepper.reps input[type="number"] { flex: 1; width: auto; }
-.stepper.setstep button { width: 40px; }
-.stepper.setstep input[type="number"] { width: 34px; }
+.stepper.setstep button { width: 36px; }
+.stepper.setstep input[type="number"] { width: 30px; }
 .times { flex: none; color: var(--muted); font-size: var(--fs-md); }
 
 /* 초 단위 운동의 시간 재기 버튼 */
@@ -792,8 +795,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   display: flex;
   align-items: center;
   gap: var(--gap-sm);
-  height: 56px;
-  padding: 0 8px;
+  height: 48px;
+  padding: 0 6px 0 8px;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: var(--surface);
@@ -805,11 +808,11 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer.done > .tfill { display: none; }
 .timer.running { border-color: var(--accent-fill); }
 /* 휴식 끝: 줄 전체를 초록으로 칠하고 키워, 멀리서 흘끗 봐도 알 수 있게 */
-.timer.done { height: 64px; padding: 0 8px 0 16px; border-color: var(--accent-fill); background: var(--accent-fill); box-shadow: var(--shadow-press); }
+.timer.done { height: 56px; padding: 0 8px 0 14px; border-color: var(--accent-fill); background: var(--accent-fill); box-shadow: var(--shadow-press); }
 .timer.done .tstep, .timer.done button.tlabel { display: none; } /* '휴식 끝 +0:07'만 크게 */
-.timer.done .time { display: flex; align-items: center; gap: var(--gap-md); height: 48px; text-align: left; color: var(--on-accent); }
+.timer.done .time { display: flex; align-items: center; gap: var(--gap-md); height: 44px; text-align: left; color: var(--on-accent); }
 .timer.done .time:active { background: transparent; }
-.timer.done .tgo { height: 44px; background: var(--surface); color: var(--accent); }
+.timer.done .tgo { height: 40px; background: var(--surface); color: var(--accent); }
 .timer .tend { display: inline-flex; align-items: center; gap: var(--gap-sm); font-family: var(--font-body); font-size: var(--fs-xl); font-weight: 700; letter-spacing: var(--track-tight); }
 .timer .tend::before { /* 종 모양 */
   content: '';
@@ -819,7 +822,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   -webkit-mask: var(--bell) center / contain no-repeat;
   mask: var(--bell) center / contain no-repeat;
 }
-.timer .tover { font-size: var(--fs-2xl); opacity: 0.85; }
+.timer .tover { font-size: var(--fs-xl); opacity: 0.85; }
 /* 화면 가장자리 번쩍임: 타이머가 화면 밖에 있거나 폰을 내려놓고 있어도 끝난 것을 알아챔 */
 .restflash { position: fixed; inset: 0; z-index: 30; pointer-events: none; opacity: 0; box-shadow: inset 0 0 0 6px var(--accent-fill), inset 0 0 48px var(--accent-fill); }
 .timer .time {
@@ -883,9 +886,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 }
 .timer .tgo {
   position: relative;
-  min-width: 84px;
-  height: 44px;
-  padding: 0 var(--gap-lg);
+  min-width: 76px;
+  height: 36px;
+  padding: 0 var(--gap-md);
   border: 0;
   border-radius: var(--r-ctrl);
   background: var(--accent-fill);
@@ -1382,9 +1385,9 @@ tr.cur td { background: var(--accent-soft); }
   .timer .tstep { width: 36px; flex: none; }
   .timer button.tlabel { width: 32px; flex: none; }
   .row { gap: 6px 8px; padding: 10px; }
-  .stepper button { width: 40px; }
-  .stepper.setstep button { width: 36px; }
-  .stepper input[type="number"] { width: 46px; }
+  .stepper button { width: 38px; }
+  .stepper.setstep button { width: 32px; }
+  .stepper input[type="number"] { width: 44px; }
   .stepper.setstep input[type="number"] { width: 28px; }
   .goal .label { display: none; }
   .watch { min-width: 38px; padding: 0 4px; }
@@ -1402,11 +1405,8 @@ tr.cur td { background: var(--accent-soft); }
   .head { gap: var(--gap); }
   .row { padding: 7px 12px; gap: 4px 10px; }
   .rows { gap: 4px; }
-  .check { width: 80px; height: 54px; }
-  .check .frac { font-size: var(--fs-xl); line-height: 20px; }
-  .timer { height: 48px; }
-  .timer .tgo { height: 38px; }
-  .stepper button, .stepper input[type="number"] { height: 40px; }
+  .check { height: 46px; }
+  .timer { height: 44px; }
   .tip { display: none; }
   #bottom { gap: 0; }
   .weather { padding: 0 4px; line-height: 20px; }

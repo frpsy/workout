@@ -58,7 +58,7 @@ test('저장 중 이전 스냅샷·이전 쓰기 완료가 와도 후속 변경�
   assert.deepEqual(Object.keys(docs[1].entries), ['push', 'pull']);
   acks[1]();
   await tick();
-  assert.equal(store.state.status.text, '저장했습니다');
+  assert.equal(store.state.status.text, '', '정상 저장은 문구를 남기지 않음');
 });
 
 test('첫 설정 응답이 느려도 기록을 보내며, 동기화 대기 뒤 늦은 실패를 알리고 재시도', async (t) => {
