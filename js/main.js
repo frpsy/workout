@@ -2,6 +2,7 @@
 
 import { createProgress } from './boot-progress.js';
 import { restoreSound } from './sound.js';
+import { mountTheme } from './theme.js';
 import { createStorage } from './storage/index.js';
 import { createStore } from './store.js';
 import { mountHistory } from './ui/history.js';
@@ -25,6 +26,8 @@ async function requestPersistentStorage() {
 const splash = document.getElementById('splash');
 const progress = splash ? createProgress(splash) : null;
 
+const theme = mountTheme(); // 화면 색: 앱을 오가며 순간적으로 어둡게 읽히는 값에 흔들리지 않게
+
 async function boot() {
   const adapter = await createStorage({ onStep: (id) => progress && progress.step(id) });
   if (progress) progress.step('data');
@@ -39,7 +42,7 @@ async function boot() {
     mountJournal(document.getElementById('journal'), store),
     mountHistory(document.getElementById('history'), store),
     mountPlan(document.getElementById('plan-sec'), store),
-    mountSettings(document.getElementById('settings'), store),
+    mountSettings(document.getElementById('settings'), store, theme),
   ];
 
   mountTabs(document.getElementById('tabbar'), document.getElementById('pager'));

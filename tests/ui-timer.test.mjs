@@ -56,6 +56,40 @@ test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림',
   assert.equal(time(), '0:45');
 });
 
+test('타이머: 바탕 채움은 끊어 갱신하지 않고 남은 시간 동안 줄어드는 애니메이션 하나로 흐르고, 시간을 바꾸면 새로 시작', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  document.body.innerHTML = '<div id="timer"></div>';
+  const root = document.getElementById('timer');
+  mountTimer(root);
+  const realMatchMedia = globalThis.matchMedia;
+  globalThis.matchMedia = () => ({ matches: false }); // 움직임 줄이기 설정이 아닌 기기
+  t.after(() => { globalThis.matchMedia = realMatchMedia; });
+  const fill = root.querySelector('#tFill');
+  const anims = [];
+  fill.animate = (keyframes, opts) => {
+    const a = { keyframes, opts, cancelled: false, cancel() { this.cancelled = true; } };
+    anims.push(a);
+    return a;
+  };
+  assert.equal(fill.style.transform, 'scaleX(0)', '쉬지 않을 때는 비어 있음');
+  root.querySelector('#tGo').click();
+  assert.equal(anims.length, 1, '시작할 때 한 번');
+  assert.equal(anims[0].opts.duration, 60_000, '남은 시간 동안');
+  assert.equal(anims[0].opts.easing, 'linear');
+  assert.deepEqual(anims[0].keyframes.map((k) => k.transform), ['scaleX(1)', 'scaleX(0)']);
+  mock.timers.tick(10_000);
+  assert.equal(anims.length, 1, '250ms마다 다시 만들지 않음');
+  root.querySelector('#tPlus').click(); // 끝나는 시각이 15초 늦어짐
+  mock.timers.tick(250);
+  assert.equal(anims.length, 2, '시간을 바꾸면 새로 시작');
+  assert.equal(anims[0].cancelled, true);
+  assert.ok(Math.abs(anims[1].opts.duration - 65_000) < 600, '늘어난 남은 시간 동안');
+  root.querySelector('#tGo').click(); // 중지
+  assert.equal(anims.at(-1).cancelled, true);
+  assert.equal(fill.style.transform, 'scaleX(0)');
+});
+
 test('타이머: 휴식 끝 표시는 시간을 누르면 닫히고(프리셋은 그대로), 새 휴식을 시작해도 걷힘', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());

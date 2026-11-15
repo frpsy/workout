@@ -14,7 +14,7 @@ test('더블탭 확대 지연을 없애고(touch-action) 작은 버튼의 눌리
   assert.equal(value('html', 'touch-action'), 'manipulation');
   assert.equal(value('.undo::after', 'inset'), '-7px', '되돌리기: 보이는 30px + 7px씩 = 44px');
   assert.equal(value('.check', 'width'), '88px', '세트 완료는 큰 버튼 하나로');
-  assert.equal(value('.video', 'min-height'), '44px', '영상으로 같이하기 버튼');
+  assert.equal(value('.video::after', 'inset'), '-8px', '유튜브 아이콘: 보이는 28px + 8px씩 = 44px');
   for (const sel of ['.stepper button', '.wbtn', '.wsec', '.timer .tgo']) assert.equal(value(sel, 'height'), '44px', sel + ': 손가락으로 누르기 충분한 높이');
   assert.equal(value('.setpips button'), undefined, '세트 표시는 누르는 버튼이 아님');
   assert.equal(value('.levels button::after', 'inset'), '-7px 0', '보이는 크기는 작게, 누르는 영역은 44px');

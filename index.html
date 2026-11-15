@@ -14,6 +14,16 @@
 <meta property="og:site_name" content="Repday">
 <meta property="og:title" content="Repday · 매일 운동 기록">
 <meta property="og:description" content="운동을 한 세트씩, 세션별로 기록하는 나만의 운동 기록장">
+<script>
+/* 첫 화면이 그려지기 전에 화면 색을 정해 깜빡임을 막음(js/theme.js와 같은 규칙) */
+(function () {
+  try {
+    var p = localStorage.getItem('workout-check:theme');
+    var dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', p === 'light' || p === 'dark' ? p : dark ? 'dark' : 'light');
+  } catch (e) { /* 저장이 막힌 브라우저: CSS가 기기 설정을 따름 */ }
+})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -53,7 +63,6 @@
   <div class="page" data-tab="record">
     <div class="wrap">
       <h1 class="page-title" id="recordTitle">기록</h1>
-      <p class="page-intro">하루하루 쌓이는 운동의 흐름</p>
       <div id="history" class="stack"></div>
       <div id="plan-sec"></div>
     </div>
@@ -61,7 +70,6 @@
   <div class="page" data-tab="settings">
     <div class="wrap">
       <h1 class="page-title" id="settingsTitle">설정</h1>
-      <p class="page-intro">나에게 맞는 운동과 목표 관리</p>
       <div id="settings" class="stack"></div>
     </div>
   </div>
