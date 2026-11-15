@@ -48,6 +48,7 @@ async function boot() {
   mountTabs(document.getElementById('tabbar'), document.getElementById('pager'));
 
   let frame = 0;
+  let leaving = false;
   store.subscribe((state) => {
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
@@ -59,7 +60,12 @@ async function boot() {
           console.error(err);
         }
       });
-      if (state.ready && progress) progress.done(); // 처음 그린 뒤 막대를 채우고 시작 화면을 걷음
+      // 처음 그린 화면이 실제로 칠해진 다음(두 프레임 뒤)에 시작 화면을 걷음: 무거운 첫 그리기와 사라지는 움직임이 같은 프레임에 겹쳐 끊겨 보이지 않게
+      if (state.ready && progress && !leaving) {
+        leaving = true;
+        requestAnimationFrame(() => requestAnimationFrame(() => progress.done()));
+        setTimeout(() => progress.done(), 150); // 프레임이 오지 않는 상황(화면이 가려진 채 시작 등)에서도 반드시 걷힘. done()은 한 번만 동작
+      }
     });
     if (state.ready && progress) progress.step('ready');
   });
@@ -91,11 +97,25 @@ boot().catch((err) => {
 if ('serviceWorker' in navigator && document.documentElement.classList.contains('standalone')) {
   const hadController = !!navigator.serviceWorker.controller; // 처음 설치될 때는 새로 불러오지 않음
   let reloading = false;
+  // 운동 시간을 재거나 쉬는 중에는 새로 불러오지 않음(운동 도중 시작 화면이 다시 뜨지 않게). 끝난 뒤 앱을 다시 볼 때 반영
+  // 멈춰 둔(중지) 스톱워치는 기다리지 않고, 아무리 길어도 30분 뒤에는 반영
+  const DEFER_MAX_MS = 30 * 60_000;
+  const busy = () => !!document.querySelector('.wtime.running:not(.paused), .timer.running') && Date.now() - pendingAt < DEFER_MAX_MS;
+  let pending = false;
+  let pendingAt = 0;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloading) return;
+    pending = true;
+    pendingAt = Date.now();
+    reloadWhenIdle();
+    setInterval(reloadWhenIdle, 60_000); // 운동·휴식이 끝났는지 가끔 확인
+  });
+  function reloadWhenIdle() {
+    if (reloading || !pending || document.hidden || busy()) return;
     reloading = true;
     location.reload();
-  });
+  }
+  document.addEventListener('visibilitychange', reloadWhenIdle);
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then((reg) => {
       document.addEventListener('visibilitychange', () => {

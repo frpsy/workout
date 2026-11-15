@@ -13,10 +13,17 @@ test('입력 칸 글자는 16px 이상(iOS가 포커스할 때 화면을 확대�
 test('더블탭 확대 지연을 없애고(touch-action) 작은 버튼의 눌리는 영역을 넓힘', () => {
   assert.equal(value('html', 'touch-action'), 'manipulation');
   assert.equal(value('.undo::after', 'inset'), '-9px', '되돌리기: 보이는 26px + 9px씩 = 44px');
-  assert.equal(value('.check', 'width'), '72px', '세트 완료는 큰 버튼 하나로');
+  assert.equal(value('.check', 'width'), '64px', '세트 완료는 버튼 하나로(보이는 64×44, 누르는 영역은 ::after로 넓힘)');
+  assert.equal(value('.check::after', 'inset'), '-6px');
   assert.equal(value('.video::after', 'inset'), '-8px', '유튜브 아이콘: 보이는 28px + 8px씩 = 44px');
-  for (const sel of ['.stepper button', '.wbtn', '.wsec', '.timer .tgo']) assert.equal(value(sel, 'height'), '36px', sel + ': 보이는 크기는 작게');
-  assert.equal(value('.stepper button::after', 'inset'), '-4px 0', '누르는 영역은 44px');
+  for (const sel of ['.wbtn', '.wsec', '.timer .tgo']) assert.equal(value(sel, 'height'), '36px', sel + ': 보이는 크기는 작게');
+  for (const sel of ['.stepper button', '.timer .tstep']) {
+    assert.equal(value(sel, 'height'), '32px', sel + ': 가끔 쓰는 조절 버튼은 더 작게');
+    assert.equal(value(sel + '::after', 'inset'), '-6px 0', sel + ': 누르는 영역은 44px');
+  }
+  assert.equal(value('.rows .check', 'touch-action'), 'pan-y pinch-zoom', '조작부에서 손가락이 옆으로 미끄러져도 옆 탭으로 넘어가지 않음');
+  assert.equal(value('.rows', 'touch-action'), undefined, '카드의 빈 곳에서는 옆으로 밀어 탭을 넘길 수 있음');
+  assert.equal(value('.page', 'overscroll-behavior-y'), 'contain');
   assert.match(css, /\.wbtn::after, \.wsec::after \{[^}]*inset: -4px 0/);
   assert.match(css, /\.timer \.tstep::after, \.timer \.tgo::after[^{]*\{[^}]*inset: -5px 0/);
   assert.equal(value('.setpips button'), undefined, '세트 표시는 누르는 버튼이 아님');
@@ -100,4 +107,23 @@ test('어두운 테마: 기기 설정 블록과 data-theme 블록의 값이 같�
   const byAttr = dark((r) => !r.media && r.selectors.includes(':root[data-theme="dark"]'));
   assert.ok(byMedia.length >= 15);
   assert.deepEqual(byAttr, byMedia);
+});
+
+test('보기 단계: 요약은 펼친 종목만, 기본은 지금 할 종목과 펼친 종목만 조절 줄을 보임', () => {
+  assert.equal(value('[data-view="normal"] .row:not(.current):not(.open):not(.timing) .ctrl', 'display'), 'none');
+  assert.equal(value('[data-view="compact"] .row:not(.open):not(.timing) .ctrl', 'display'), 'none', '시간을 재는 중인 종목은 접지 않음');
+  assert.equal(value('[data-view="detail"] .more', 'display'), 'none', '늘 펴져 있는 곳에서는 펴기 버튼을 숨김');
+});
+
+test('휴식 타이머: 쉬는 중·끝남은 같은 높이(64px, 아주 작은 폰 56px)의 큰 줄이고 숫자는 40px', () => {
+  assert.equal(value('.timer.running', 'height'), '64px');
+  assert.equal(value('.timer.done', 'height'), '64px');
+  assert.equal(value('.timer.running', 'height', { media: '@media (max-height: 600px)' }), '56px');
+  assert.equal(value('.timer.running .time', 'font-size'), '40px');
+});
+
+test('시작 화면: 걷힐 때는 전환(transition)이 아니라 투명도·크기만 바꾸는 애니메이션', () => {
+  assert.match(value('.splash.leaving', 'animation'), /^splash-out 0\.26s/);
+  assert.equal(value('.splash', 'transition'), undefined);
+  assert.match(css, /@keyframes splash-out \{ to \{ opacity: 0; visibility: hidden; \} \}/);
 });
