@@ -15,7 +15,10 @@ test('마무리: 모두 마친 날에만 소감·감사한 일 칸이 보이고,
 
   for (const id of ['push', 'pull', 'squat']) store.actions.toggle(id);
   assert.equal(box.hidden, false, '모두 마치면 보임');
-  assert.equal(root.querySelector('#jForm').hidden, false);
+  assert.equal(box.dataset.mode, 'closed', '처음에는 한 줄로 접혀 있음');
+  assert.equal(root.querySelector('#jForm').hidden, true);
+  root.querySelector('#jOpen').click();
+  assert.equal(root.querySelector('#jForm').hidden, false, '누르면 펼쳐 씀');
 
   const feel = root.querySelector('#jFeel');
   const thanks = root.querySelector('#jThanks');
@@ -67,17 +70,18 @@ test('마무리: 아무것도 안 썼으면 나중에로 한 줄로 접고, 접�
   store.subscribe(mountJournal(root, store));
   const box = root.querySelector('#jBox');
   const q = (id) => root.querySelector(id);
-  assert.equal(box.dataset.mode, 'form', '마치면 바로 쓸 수 있게 열림');
+  assert.equal(box.dataset.mode, 'closed', '마쳐도 처음에는 접힌 한 줄');
   assert.equal(q('#jTitle').textContent, '오늘의 마무리');
-  assert.equal(q('#jDone').hidden, true, '빈 채로는 완료 대신');
-  assert.equal(q('#jLater').hidden, false, '나중에만');
-
-  q('#jLater').click();
-  assert.equal(box.dataset.mode, 'closed');
+  assert.equal(q('#jForm').hidden, true);
   assert.equal(q('#jOpen').hidden, false);
   assert.match(q('#jOpen').textContent, /오늘의 마무리 쓰기/);
   q('#jOpen').click();
-  assert.equal(box.dataset.mode, 'form');
+  assert.equal(box.dataset.mode, 'form', '누르면 펼침');
+  assert.equal(q('#jDone').hidden, true, '빈 채로는 완료 대신');
+  assert.equal(q('#jLater').hidden, false, '나중에만');
+  q('#jLater').click();
+  assert.equal(box.dataset.mode, 'closed', '나중에를 누르면 다시 한 줄로');
+  q('#jOpen').click();
 
   q('#jThanks').value = '따뜻한 차';
   q('#jThanks').dispatchEvent(new Event('input', { bubbles: true }));
