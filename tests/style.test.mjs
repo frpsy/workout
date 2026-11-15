@@ -54,6 +54,12 @@ test('홈 화면 앱: 상태 표시줄 뒤를 배경색으로 덮고 html 배경
   assert.equal(value('html', 'background', { raw: true }), 'var(--bg)');
 });
 
+test('오늘 머리말: 앱 줄(로고·상태 알약) 아래에 얇은 선, 상태는 알약 모양', () => {
+  assert.equal(value('.brandline', 'border-bottom', { raw: true }), '1px solid var(--line)');
+  assert.equal(value('.brand-state', 'border-radius'), '999px');
+  assert.equal(value('.brand-state.done', 'background', { raw: true }), 'var(--accent-soft)');
+});
+
 test('시작 화면: 로고는 뷰포트 가운데가 아니라 --splash-cy(화면 높이의 절반, 위 가장자리 기준)에 고정되고, 값이 없으면 50%', () => {
   assert.equal(value('.splash-brand', 'position'), 'absolute');
   assert.equal(value('.splash-brand', 'top', { raw: true }), 'calc(var(--splash-cy, 50%) - 56px)', '로고 높이 113px의 반');
