@@ -297,7 +297,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 /* 입력칸·선택칸·날짜칸 */
 input[type="date"], input[type="number"], input:not([type]), select {
   min-width: 0;
-  height: 40px;
+  height: 44px; /* 입력칸 자체가 누르는 영역이라 44px */
   border: 1px solid var(--ctrl-line);
   border-radius: var(--r-ctrl);
   background: var(--surface);
@@ -787,7 +787,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 
 /* 오늘의 마무리: 운동 소감·감사한 일 */
 .journal {
-  scroll-margin-bottom: calc(var(--tabbar-h) + 21px);
+  scroll-margin-bottom: calc(var(--tabbar-h) + 84px); /* 탭 막대 + 그 위에 떠 있는 휴식 타이머(최대 64px) + 여백 */
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
