@@ -57,6 +57,7 @@
   --fs-4xl: 24px; /* 목표 개수·누적 숫자 */
   --fs-5xl: 26px; /* 휴식 타이머(쉬기 전) */
   --fs-timer: 40px; /* 휴식 타이머(쉬는 중): 1~2m 떨어져서도 읽히게 */
+  --fs-timer-sm: 34px; /* 같은 숫자, 아주 좁은 폰(320px대)용 */
 
   /* 자간: 한글 본문은 살짝, 제목은 조금 더 좁혀 단단하게 */
   --track: -0.01em;
@@ -450,7 +451,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   display: flex;
   flex-direction: column;
   gap: var(--gap-lg);
-  padding: 0 2px 4px;
+  padding: 0 0 4px; /* 좌우 여백 없음: 로고·날짜·버튼의 바깥 모서리가 아래 카드의 바깥 모서리와 같은 줄에 맞음 */
 }
 .brandline { display: flex; align-items: center; min-width: 0; gap: var(--gap); padding: 0 0 var(--gap-md); border-bottom: 1px solid var(--line); }
 .brand-symbol { width: 24px; height: 24px; flex: none; border-radius: 7px; }
@@ -595,7 +596,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   grid-template-areas: "info check" "ctrl ctrl";
   gap: 8px 10px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 8px 12px 10px; /* 위가 글자 윗줄 간격만큼 더 비어 보이지 않게 아래보다 조금 적게 */
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: var(--surface);
@@ -858,14 +859,16 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   display: flex;
   align-items: center;
   gap: var(--gap-sm);
+  --tside: 76px; /* 숫자 왼쪽(휴식 자동 칸)과 오른쪽(시작·중지 버튼)의 너비를 같게 해, 숫자가 줄의 한가운데에 오게 함 */
   height: 48px;
-  padding: 0 6px 0 8px;
+  padding: 0 8px; /* 좌우 같게 */
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: var(--surface);
 }
 /* 버튼·숫자는 늘 바탕 채움(.tfill) 앞에. 아이폰 Safari는 애니메이션 중인 요소를 따로 합성하면서 순서만으로는 뒤의 형제를 덮을 수 있어, 앞뒤를 z-index로 못 박음 */
 .timer > * { position: relative; z-index: 1; }
+.timer > .sr { position: absolute; } /* 화면 읽기용 숨은 문구(#tDone)가 위 규칙 때문에 줄 안의 1px 칸이 돼 오른쪽에 7px(칸+간격) 빈 자리를 만들던 것을 막음 */
 /* 쉬는 동안: 줄 아래쪽의 얇은 막대가 남은 시간만큼 줄어듦(ui/timer.js가 애니메이션 하나로 흘려보냄) */
 .timer > .tfill { position: absolute; z-index: 0; left: 12px; right: 12px; bottom: 4px; height: 3px; border-radius: var(--r-bar); background: var(--hero-accent); transform-origin: left center; transform: scaleX(0); will-change: transform; pointer-events: none; }
 /* 진행 막대의 바닥 줄: 줄 전체를 덮는 대신 아래쪽에 얇게(3px)만 그려, 숫자·버튼을 절대 가리지 않음 */
@@ -874,6 +877,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer.running, .timer.done { height: 64px; padding: 0 10px; border-color: transparent; }
 .timer.running { background: var(--hero); }
 .timer.running button.tlabel { display: none; } /* 쉬는 중에는 자동/수동을 바꿀 일이 없음: 숫자에 자리를 내줌 */
+.timer.running { --tside: 46px; }
+.timer.running::before { content: ''; flex: none; width: var(--tside); } /* 빈 자리로 오른쪽 버튼과 폭을 맞춰 숫자를 가운데로 */
 /* 휴식 끝: 줄 전체를 초록으로 칠해, 멀리서 흘끗 봐도 알 수 있게 */
 .timer.done { padding: 0 10px 0 16px; background: var(--accent-fill); box-shadow: var(--shadow-press); }
 .timer.done .tstep, .timer.done button.tlabel { display: none; } /* '휴식 끝 +0:07'만 크게 */
@@ -920,12 +925,12 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 1px;
-  width: 44px;
+  width: var(--tside);
   height: 36px;
-  padding: 0;
+  padding: 0 0 0 4px;
   border: 0;
   border-radius: var(--r-ctrl);
   background: transparent;
@@ -956,9 +961,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer.running .tstep { width: 46px; height: 36px; background: var(--hero-ctrl); color: var(--hero-fg); }
 .timer .tgo {
   position: relative;
-  min-width: 76px;
+  min-width: var(--tside);
   height: 36px;
-  padding: 0 var(--gap-md);
+  padding: 0 var(--gap);
   border: 0;
   border-radius: var(--r-ctrl);
   background: var(--accent-fill);
@@ -969,6 +974,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   touch-action: manipulation;
 }
 .timer .tgo.stop { background: var(--hero-ctrl); color: var(--hero-fg); font-weight: 500; }
+/* 쉬는 중의 중지 버튼은 ■ 표시만(글자는 화면 읽기용으로 남김): 좁아진 버튼 폭만큼 큰 숫자가 넓게 가운데 */
+.timer .tgo.stop { width: var(--tside); padding: 0; color: transparent; white-space: nowrap; } /* 글자는 보이지 않게(overflow를 자르면 누르는 영역도 잘려서 투명하게만) */
+.timer .tgo.stop::before { content: '■'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--hero-fg); font-size: var(--fs-lg); }
 .timer .tstep::after, .timer .tgo::after, .timer button.tlabel::after { content: ''; position: absolute; inset: -5px 0; } /* 보이는 크기는 작게, 누르는 영역은 44px */
 .timer .tstep::after { inset: -6px 0; }
 
@@ -978,13 +986,13 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   position: relative;
   display: block;
   width: 100%;
-  padding: 2px 4px;
+  padding: 2px 0;
   border: 0;
   background: transparent;
   color: var(--muted);
   font-size: var(--fs-sm);
   font-weight: 500;
-  text-align: center;
+  text-align: left; /* 날씨·팁·주차 안내가 모두 왼쪽 줄에 맞음(가운데 정렬과 왼쪽 정렬이 섞이지 않게) */
   cursor: pointer;
   touch-action: manipulation;
   font-variant-numeric: tabular-nums;
@@ -994,10 +1002,10 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .tip {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--gap);
   width: 100%;
-  padding: 8px 4px;
+  padding: 8px 0;
   border: 0;
   border-radius: var(--r-ctrl);
   background: transparent;
@@ -1223,9 +1231,9 @@ tr.cur td { background: var(--accent-soft); }
 /* ── 설정 탭 ───────────────────────────────────────────── */
 /* 작은 제목 아래 줄 목록(왼쪽 이름, 오른쪽 값·조작) */
 .sgroup { display: flex; flex-direction: column; gap: var(--gap); }
-.sgh { margin: 10px 4px 0; font-size: var(--fs-base); font-weight: 700; color: var(--fg); }
+.sgh { margin: 10px 0 0; font-size: var(--fs-base); font-weight: 700; color: var(--fg); }
 .sgroup > .sgh + .sub { margin-top: -4px; }
-.sgroup > .sub, .sgroup > .status { margin: 0 4px; }
+.sgroup > .sub, .sgroup > .status { margin: 0; }
 .shint { font-size: var(--fs-xs); color: var(--muted); }
 .slist { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 0 16px; }
 .srow {
@@ -1280,7 +1288,7 @@ tr.cur td { background: var(--accent-soft); }
 .exitem {
   border: 1px solid var(--line);
   border-radius: var(--r-card);
-  padding: 14px;
+  padding: 16px; /* 같은 탭의 다른 카드(.slist)와 안쪽 여백을 같게 해, 카드 안 내용의 왼쪽 줄이 맞음 */
   display: flex;
   flex-direction: column;
   gap: var(--gap-md);
@@ -1457,10 +1465,12 @@ tr.cur td { background: var(--accent-soft); }
   .wbtn { min-width: 64px; padding: 0 8px; }
 }
 @media (max-width: 360px) {
-  .timer { gap: var(--gap-xs); }
+  .timer { gap: var(--gap-xs); --tside: 64px; }
   .timer .tstep { width: 36px; flex: none; }
-  .timer button.tlabel { width: 32px; flex: none; }
-  .row { gap: 6px 8px; padding: 10px; }
+  .timer button.tlabel { flex: none; }
+  .timer .tgo { padding: 0 4px; font-size: var(--fs-sm); }
+  .timer.running .time { font-size: var(--fs-timer-sm); }
+  .row { gap: 6px 8px; padding: 8px 10px 10px; }
   .stepper button { width: 38px; }
   .stepper.setstep button { width: 32px; }
   .stepper input[type="number"] { width: 44px; }
@@ -1479,7 +1489,7 @@ tr.cur td { background: var(--accent-soft); }
 /* 키가 작은 폰(높이 700px 이하): 한 화면에 들어오도록 간격을 줄이고, 자리를 못 얻는 운동 팁은 감춤 (날씨 줄은 유지) */
 @media (max-height: 700px) {
   .head { gap: var(--gap); }
-  .row { padding: 7px 12px; gap: 4px 10px; }
+  .row { padding: 6px 12px 8px; gap: 4px 10px; }
   .rows { gap: 4px; }
   .timer { height: 44px; }
   .tip { display: none; }

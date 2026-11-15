@@ -171,6 +171,13 @@ async function run(browser, devices, origin, { device, scheme }) {
 
   let m = await metrics(page);
   check('가로로 넘치지 않음', m.pw <= m.w && m.docW <= m.w, JSON.stringify(m));
+  const edges = await page.evaluate(() => {
+    const L = (sel) => { const e = document.querySelector(sel); const r = e.getBoundingClientRect(); return [sel, +r.left.toFixed(1), +(innerWidth - r.right).toFixed(1)]; };
+    return ['.brandline', '.headline h1', '#wBtn', '.prog', '.row', '.statusrow', '#timerBar'].map(L);
+  });
+  const gut = edges.find((e) => e[0] === '.row');
+  const bad = edges.filter((e) => e[0] !== '.headline h1' && e[0] !== '#wBtn' ? Math.abs(e[1] - gut[1]) > 0.6 || Math.abs(e[2] - gut[2]) > 0.6 : e[0] === '.headline h1' ? Math.abs(e[1] - gut[1]) > 0.6 : Math.abs(e[2] - gut[2]) > 0.6);
+  check('머리말·카드·상태 줄·타이머의 좌우 모서리가 같은 줄', bad.length === 0, JSON.stringify(bad));
   const expanded = await page.evaluate(() => [...document.querySelectorAll('.row')].map((r) => getComputedStyle(r.querySelector('.ctrl')).display !== 'none').join());
   check('상세 보기: 모든 종목의 조절 줄이 보임', expanded === 'true,true,true', expanded);
   await shot(page, '1-idle');
@@ -186,10 +193,21 @@ async function run(browser, devices, origin, { device, scheme }) {
     return { running: bar.classList.contains('running'), h: bar.getBoundingClientRect().height, fs: getComputedStyle(document.getElementById('tTime')).fontSize, fillH: getComputedStyle(fill).height, anims: fill.getAnimations().length, work: document.querySelector('.headline').classList.contains('working'), over };
   });
   const wantH = small ? 56 : 64;
+  const wantFs = devices[device].viewport.width <= 360 ? '34px' : '40px'; // 아주 좁은 폰은 숫자를 조금 작게(잘리지 않게)
   check('세트 체크로 휴식과 운동 시간이 자동 시작', t.running && t.work, JSON.stringify(t));
-  check(`쉬는 중 타이머: ${wantH}px 줄, 숫자 40px`, t.h === wantH && t.fs === '40px', JSON.stringify(t));
+  check(`쉬는 중 타이머: ${wantH}px 줄, 숫자 ${wantFs}`, t.h === wantH && t.fs === wantFs, JSON.stringify(t));
   check('진행 막대는 3px 한 줄이고 애니메이션 하나', t.fillH === '3px' && t.anims === 1, JSON.stringify(t));
   check('진행 막대가 버튼을 가리지 않음', t.over.length === 0, t.over.join());
+  const ctr = await page.evaluate(() => {
+    const bar = document.getElementById('timerBar').getBoundingClientRect();
+    const r = document.createRange();
+    r.selectNodeContents(document.getElementById('tTime'));
+    const tr = r.getBoundingClientRect();
+    return { off: Math.abs(bar.left + bar.width / 2 - (tr.left + tr.width / 2)) };
+  });
+  check('쉬는 중 숫자가 줄의 가운데', ctr.off <= 1, `어긋남 ${ctr.off.toFixed(1)}px`);
+  const clip = await page.evaluate(() => { const e = document.getElementById('tTime'); return e.scrollWidth - e.clientWidth; });
+  check('쉬는 중 숫자가 잘리지 않음', clip <= 0, `넘침 ${clip}px`);
   m = await metrics(page);
   check('쉬는 중 타이머가 탭 막대 위에 보임', m.timerBottom <= m.tabTop, JSON.stringify(m));
   await page.clock.runFor(20000);
