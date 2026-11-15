@@ -1,6 +1,6 @@
 // 운동을 모두 마친 날: 운동 소감과 감사한 일 한 가지를 남기는 칸.
-// 입력하는 대로 저장하고, 다 쓰면 짧게 접어 보여 줍니다. 접힌 내용이나 연필 버튼을 누르면 다시 고침.
-// 쓰고 싶지 않은 날은 '나중에'로 한 줄짜리 버튼만 남겨 둠.
+// 처음에는 한 줄짜리 '오늘의 마무리 쓰기' 버튼으로 접어 두고, 누르면 펼쳐 입력하는 대로 저장합니다.
+// 다 쓰면 짧게 접어 보여 주고, 접힌 내용이나 연필 버튼을 누르면 다시 고침. 쓰다가 '나중에'를 누르면 다시 한 줄로 접음.
 
 import { labelMD } from '../dates.js';
 import { NOTE_MAX } from '../model.js';
@@ -40,7 +40,6 @@ export function mountJournal(root, store) {
   let editing = false; // 쓰는 중이면 접지 않음
   let wasReady = false; // 직전 그림 때 기록을 다 불러온 상태였는지
   let wasAllDone = false; // 직전 그림에서 모두 마친 상태였는지 (방금 마쳤을 때만 칸으로 데려가기 위해)
-  const later = new Set(); // '나중에'를 누른 날 (이 화면을 여는 동안만)
 
   const noteOf = (state, d) => (state.days[d] && state.days[d].note) || null;
   const text = (v) => (v || '').trim();
@@ -56,7 +55,6 @@ export function mountJournal(root, store) {
 
   function save() {
     editing = true;
-    later.delete(date);
     store.actions.setNote(date, { feel: feel.value, thanks: thanks.value });
     $('#jSaved', root).innerHTML = `${CHECK}자동 저장`;
     counts();
@@ -77,7 +75,6 @@ export function mountJournal(root, store) {
 
   function edit() {
     editing = true;
-    later.delete(date);
     render(store.state);
     feel.focus();
   }
@@ -88,7 +85,6 @@ export function mountJournal(root, store) {
   });
   $('#jLater', root).addEventListener('click', () => {
     editing = false;
-    later.add(date);
     render(store.state);
   });
   $('#jEdit', root).addEventListener('click', edit);
@@ -126,7 +122,7 @@ export function mountJournal(root, store) {
     $('#jTitle', root).textContent = date === state.today ? '오늘의 마무리' : `${labelMD(date)}의 마무리`;
     $('#jOpen span', root).textContent = date === state.today ? '오늘의 마무리 쓰기' : '그날의 마무리 쓰기';
     const has = filled(note);
-    const mode = editing ? 'form' : has ? 'view' : later.has(date) ? 'closed' : 'form';
+    const mode = editing ? 'form' : has ? 'view' : 'closed'; // 아직 안 썼으면 접힌 한 줄로 시작
     box.dataset.mode = mode;
     $('#jForm', root).hidden = mode !== 'form';
     $('#jView', root).hidden = mode !== 'view';
@@ -135,8 +131,8 @@ export function mountJournal(root, store) {
     $('#jDone', root).hidden = !has; // 아무것도 안 썼으면 '나중에'만
     $('#jLater', root).hidden = has;
 
-    // 마지막 종목을 막 체크했으면 마무리 칸이 탭 막대 아래에 가려지지 않게 살며시 끌어올림 (포커스는 뺏지 않음)
-    if (justFinished && mode === 'form' && !root.hidden && !root.closest('[inert]')) { // 다른 탭을 보는 중(오늘 화면이 inert)에는 이동하지 않음
+    // 마지막 종목을 막 체크했으면 마무리 칸(접힌 한 줄)이 탭 막대 아래에 가려지지 않게 살며시 끌어올림 (포커스는 뺏지 않음)
+    if (justFinished && mode !== 'view' && !root.hidden && !root.closest('[inert]')) { // 다른 탭을 보는 중(오늘 화면이 inert)에는 이동하지 않음
       const calm = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       box.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
     }
