@@ -1377,13 +1377,16 @@ tr.cur td { background: var(--accent-soft); }
 /* 걷힐 때: 투명도와 크기만 바꾸는 애니메이션(합성 단계에서만 처리돼, 앱이 첫 화면을 그리느라 바빠도 끊기지 않음) */
 .splash.leaving { pointer-events: none; animation: splash-out 0.26s cubic-bezier(0.4, 0, 0.2, 1) both; }
 .splash.leaving .splash-brand { animation: splash-brand-out 0.26s cubic-bezier(0.4, 0, 0.2, 1) both; }
-.splash-brand { display: flex; flex-direction: column; align-items: center; gap: 14px; will-change: transform, opacity; }
+/* 로고 높이 = 아이콘 72 + 간격 14 + 이름 27 = 113px. 가운데(--splash-cy)에서 반(56px)만큼 올려 둠.
+   홈 화면 앱에서는 index.html 머리의 스크립트가 --splash-cy를 '화면 전체 높이의 절반'(px)으로 넣어, 첫 실행 때 뷰포트 크기가 바뀌어도 로고가 움직이지 않음.
+   그 밖(사파리 탭)에서는 50%라 뷰포트 가운데 */
+.splash-brand { position: absolute; left: 0; right: 0; top: calc(var(--splash-cy, 50%) - 56px); display: flex; flex-direction: column; align-items: center; gap: 14px; will-change: transform, opacity; }
 .splash-icon { display: block; width: 72px; height: 72px; border-radius: 18px; }
 .splash-word { display: block; width: 92px; height: 27px; color: var(--fg); }
 /* 막대·문구는 이름 아래 따로 두어, 나타나도 아이콘 위치가 흔들리지 않게 함. 오래 걸릴 때(.slow)와 실패했을 때(.failed)만 보임 */
 .splash-load {
   position: absolute;
-  top: calc(50% + 84px);
+  top: calc(var(--splash-cy, 50%) + 84px);
   left: 0;
   right: 0;
   display: flex;

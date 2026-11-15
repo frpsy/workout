@@ -22,6 +22,13 @@
     var dark = matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.setAttribute('data-theme', p === 'light' || p === 'dark' ? p : dark ? 'dark' : 'light');
   } catch (e) { /* 저장이 막힌 브라우저: CSS가 기기 설정을 따름 */ }
+  /* 홈 화면 앱의 시작 화면 위치: 아이폰은 첫 실행 때 화면 크기(레이아웃 뷰포트)가 처음엔 화면 전체였다가 아래가 줄어드는 식으로 바뀌어,
+     뷰포트 가운데에 맞춘 로고가 위로 튕김. 화면 전체 높이는 처음부터 일정하므로 그 절반을 위 가장자리에서 잰 고정 값(--splash-cy)으로 둠 */
+  try {
+    if ((navigator.standalone || matchMedia('(display-mode: standalone)').matches) && screen.height > 0) {
+      document.documentElement.style.setProperty('--splash-cy', Math.round(screen.height / 2) + 'px');
+    }
+  } catch (e) { /* 값을 못 얻으면 CSS가 뷰포트 가운데(50%)에 둠 */ }
 })();
 </script>
 <link rel="manifest" href="manifest.webmanifest">
