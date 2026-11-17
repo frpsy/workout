@@ -125,18 +125,26 @@ export function paintRow(r, v, { current = false, ready = true, countValue = nul
   r.target.closest('.goal').title = `목표 ${v.target}${r.unit.label} × ${v.sets}세트`;
   // 세트가 여러 개면 세트 수만큼 진행 표시(누르는 버튼이 아님), 하나면 완료 버튼만
   const nSets = v.sets;
-  r.sets.hidden = nSets > 1;
-  r.sets.textContent = '';
+  r.sets.hidden = false;
+  r.sets.textContent = `×${nSets}`; // 접힌 줄에서 보이는 세트 수(펼친 종목은 점으로 보여 줌)
   const pipKey = `${nSets}`;
   if (r.pips.dataset.n !== pipKey) {
     r.pips.dataset.n = pipKey;
     r.pips.innerHTML = nSets > 1 ? Array.from({ length: nSets }, (_, i) => `<i data-set="${i + 1}"></i>`).join('') : '';
   }
   r.pips.hidden = nSets <= 1;
+  // 방금 마친 세트의 점만 한 번 튀어 무엇이 바뀌었는지 보여 줌(움직임 줄이기 설정이면 CSS가 움직이지 않음)
+  const justDone = r.prevSetsDone !== undefined && v.setsDone === r.prevSetsDone + 1 ? v.setsDone : 0;
+  r.prevSetsDone = v.setsDone;
   for (const b of r.pips.children) {
     const i = Number(b.dataset.set);
     b.classList.toggle('on', i <= v.setsDone);
     b.classList.toggle('next', !v.done && i === v.setsDone + 1);
+    if (i === justDone) {
+      b.classList.remove('pop');
+      void b.offsetWidth; // 같은 점이 다시 튈 수 있게 움직임을 새로 시작
+      b.classList.add('pop');
+    }
   }
   r.undo.hidden = v.setsDone < 1;
   r.check.dataset.done = String(v.setsDone);

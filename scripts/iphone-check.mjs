@@ -3,7 +3,7 @@
 //   node scripts/iphone-check.mjs            점검만 (실패가 있으면 종료 코드 1)
 //   node scripts/iphone-check.mjs --shots    단계마다 화면도 shots/iphone/에 저장
 //
-// 확인하는 것: 시작 화면이 걷힘 · 가로로 넘치지 않음 · 기본/상세 보기 차이 · 기본은 작은 폰에서도 스크롤 없이 한 화면 ·
+// 확인하는 것: 시작 화면이 걷힘 · 가로로 넘치지 않음 · 지금 할 종목만 펼침·폭 전체 완료 버튼·나머지 한 줄 · 작은 폰에서도 스크롤 없이 한 화면 ·
 // 세트 체크로 휴식 자동 시작 · 휴식 타이머 크기 불변과 진행 막대가 버튼을 가리지 않음 · ±15 · 마지막 3초 · 끝남(높이 그대로) ·
 // 새로고침 뒤 이어짐 · 모두 마치면 휴식 정지, 타이머가 탭 막대 위, 오늘의 마무리는 접힌 한 줄 · 맨 위 덮개 · 첫 실행 때 뷰포트가 바뀌어도 시작 화면 로고가 안 움직임 · 탭 이동 · 자바스크립트 오류 없음.
 // 시각은 가짜 시계로 고정하고 Firebase·날씨 요청은 막습니다. 실제 기기의 합성·소리·진동까지 대신하지는 못합니다.
@@ -62,14 +62,13 @@ let tag = '';
 const check = (name, ok, detail = '') => results.push({ ok: !!ok, line: `${ok ? 'PASS' : 'FAIL'}  [${tag}] ${name}${!ok && detail ? `  ${detail}` : ''}` });
 
 /** 앱을 새로 열고 시작 화면이 걷힐 때까지 시계를 돌림 */
-async function open(page, origin, view) {
-  await page.addInitScript((v) => {
+async function open(page, origin) {
+  await page.addInitScript(() => {
     if (!sessionStorage.getItem('seeded')) {
       localStorage.clear();
       sessionStorage.setItem('seeded', '1');
-      localStorage.setItem('workout-check:view', v);
     }
-  }, view);
+  });
   await page.goto(origin + '/index.html', { waitUntil: 'commit' });
   await page.clock.runFor(2000);
   await page.waitForFunction(() => !document.getElementById('splash'), null, { timeout: 8000 }).catch(() => {});
@@ -127,42 +126,55 @@ async function run(browser, devices, origin, { device, scheme }) {
   const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: join(OUT, `${tag}-${name}.png`) }); };
   const errors = [];
 
-  /* ---------- 기본 보기(조절 줄 접힘) ---------- */
+  /* ---------- 종목 줄: 지금 할 종목만 펼침 ---------- */
   {
     const ctx = await browser.newContext({ ...devices[device], colorScheme: scheme, serviceWorkers: 'block', locale: 'ko-KR', timezoneId: 'Asia/Seoul' });
     const page = await ctx.newPage();
     page.on('pageerror', (e) => errors.push(String(e)));
     await page.route('**/*', (r) => (r.request().url().startsWith(origin) ? r.continue() : r.abort()));
     await page.clock.install({ time: NOW });
-    await open(page, origin, 'compact');
+    await open(page, origin);
+    const tall = devices[device].viewport.height >= 760; // 키가 큰 화면은 지금 할 종목의 조절 줄까지 펴 둠
+    const first = tall ? 'true' : 'false';
     const expanded = () => page.evaluate(() => [...document.querySelectorAll('.row')].map((r) => getComputedStyle(r.querySelector('.ctrl')).display !== 'none').join());
-    check('기본 보기: 조절 줄이 모두 접힘', (await expanded()) === 'false,false,false', await expanded());
+    const current = await page.evaluate(() => [...document.querySelectorAll('.row')].map((r) => r.classList.contains('current')).join());
+    check('지금 할 종목 하나만 펼침', current === 'true,false,false', current);
+    check(`조절 줄은 ${tall ? '지금 할 종목만' : '모두 접힘'}`, (await expanded()) === `${first},false,false`, await expanded());
+    const big = await page.evaluate(() => {
+      const row = document.querySelector('.row.current');
+      const b = row.querySelector('[data-f="check"]').getBoundingClientRect();
+      const st = getComputedStyle(row);
+      const inner = row.getBoundingClientRect().width - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight) - parseFloat(st.borderLeftWidth) - parseFloat(st.borderRightWidth);
+      const rest = [...document.querySelectorAll('.row:not(.current)')].map((r) => r.getBoundingClientRect().height);
+      return { h: b.height, w: +b.width.toFixed(1), inner: +inner.toFixed(1), rest };
+    });
+    check('지금 할 종목: 폭 전체·56px 완료 버튼', big.h === 56 && Math.abs(big.w - big.inner) < 1, JSON.stringify(big));
+    check('나머지 종목은 한 줄(64px 이하)', big.rest.every((h) => h <= 64), JSON.stringify(big.rest));
     let m = await metrics(page);
-    check('기본 보기: 쉬기 전에 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
+    check('쉬기 전에 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
     await page.locator('.row [data-f="more"]').nth(1).tap();
-    check('기본 보기: ⌄를 누르면 그 종목만 펼쳐짐', (await expanded()) === 'false,true,false', await expanded());
+    check('⌄를 누르면 그 종목도 펼쳐짐', (await expanded()) === `${first},true,false`, await expanded());
     await page.locator('.row [data-f="more"]').nth(1).tap();
-    check('기본 보기: ⌄를 다시 누르면 접힘', (await expanded()) === 'false,false,false');
+    check('⌄를 다시 누르면 접힘', (await expanded()) === `${first},false,false`);
     // 빠른 두 번 누름(더블탭)은 한 세트만 완료
     const cb = await page.locator('.row [data-f="check"]').first().boundingBox();
     await page.touchscreen.tap(cb.x + cb.width / 2, cb.y + cb.height / 2);
     await page.touchscreen.tap(cb.x + cb.width / 2, cb.y + cb.height / 2);
     await page.clock.runFor(300);
     const frac = await page.evaluate(() => document.querySelector('.row [data-f="frac"]').textContent);
-    check('기본 보기: 빠른 두 번 누름은 한 세트만 완료', frac === '1/3', frac);
+    check('빠른 두 번 누름은 한 세트만 완료', frac === '1/3', frac);
     m = await metrics(page);
-    check('기본 보기: 쉬는 중에도 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
-    await shot(page, 'compact-resting');
+    check('쉬는 중에도 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
+    await shot(page, 'resting');
     await ctx.close();
   }
 
-  /* ---------- 상세 보기(조절 줄 펼침): 운동 한 판 ---------- */
+  /* ---------- 운동 한 판 ---------- */
   const ctx = await browser.newContext({ ...devices[device], colorScheme: scheme, serviceWorkers: 'block', locale: 'ko-KR', timezoneId: 'Asia/Seoul' });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.route('**/*', (r) => (r.request().url().startsWith(origin) ? r.continue() : r.abort()));
   await page.clock.install({ time: NOW });
-  await page.addInitScript(() => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('workout-check:view', 'normal'); } }); // 상세 보기로
   await page.goto(origin + '/index.html', { waitUntil: 'commit' });
   await page.waitForSelector('#splash', { state: 'attached' });
   await shot(page, '0-splash');
@@ -177,13 +189,13 @@ async function run(browser, devices, origin, { device, scheme }) {
   check('가로로 넘치지 않음', m.pw <= m.w && m.docW <= m.w, JSON.stringify(m));
   const edges = await page.evaluate(() => {
     const L = (sel) => { const e = document.querySelector(sel); const r = e.getBoundingClientRect(); return [sel, +r.left.toFixed(1), +(innerWidth - r.right).toFixed(1)]; };
-    return ['.brandline', '.headline h1', '#wBtn', '.prog', '.row', '.statusrow', '#timerBar'].map(L);
+    return ['.brandline', '.brand-date', '#weekLabel', '#wBtn', '.prog', '.row', '#timerBar'].map(L);
   });
   const gut = edges.find((e) => e[0] === '.row');
-  const bad = edges.filter((e) => e[0] !== '.headline h1' && e[0] !== '#wBtn' ? Math.abs(e[1] - gut[1]) > 0.6 || Math.abs(e[2] - gut[2]) > 0.6 : e[0] === '.headline h1' ? Math.abs(e[1] - gut[1]) > 0.6 : Math.abs(e[2] - gut[2]) > 0.6);
-  check('머리말·카드·상태 줄·타이머의 좌우 모서리가 같은 줄', bad.length === 0, JSON.stringify(bad));
-  const expanded = await page.evaluate(() => [...document.querySelectorAll('.row')].map((r) => getComputedStyle(r.querySelector('.ctrl')).display !== 'none').join());
-  check('상세 보기: 모든 종목의 조절 줄이 보임', expanded === 'true,true,true', expanded);
+  const leftOnly = ['#weekLabel'];
+  const rightOnly = ['.brand-date', '#wBtn'];
+  const bad = edges.filter((e) => leftOnly.includes(e[0]) ? Math.abs(e[1] - gut[1]) > 0.6 : rightOnly.includes(e[0]) ? Math.abs(e[2] - gut[2]) > 0.6 : Math.abs(e[1] - gut[1]) > 0.6 || Math.abs(e[2] - gut[2]) > 0.6);
+  check('머리말·카드·타이머의 좌우 모서리가 같은 줄', bad.length === 0, JSON.stringify(bad));
   await shot(page, '1-idle');
 
   await page.locator('.row [data-f="check"]').first().tap();

@@ -27,7 +27,10 @@ test('효과음: 세트 체크·종목 완료·모두 완료·되돌림·운동 
   try {
     const { store, root } = setup(today);
     const row = root.querySelector('.row');
-    const snd = root.querySelector('#sndBtn');
+    const sroot = document.getElementById('settings');
+    store.subscribe(mountSettings(sroot, store)); // 효과음 버튼은 설정 탭에
+    assert.equal(root.querySelector('#sndBtn'), null, '오늘 화면에는 없음');
+    const snd = sroot.querySelector('#sndBtn');
     assert.equal(snd.getAttribute('aria-pressed'), 'true', '기본은 켜짐');
 
     played.length = 0;

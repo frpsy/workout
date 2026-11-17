@@ -1,11 +1,11 @@
-// 오늘 화면의 효과음: 켜기/끄기 버튼과, 종목 상태가 바뀐 뒤 알맞은 소리 내기.
+// 효과음: 설정 탭의 켜기/끄기 버튼과, 종목 상태가 바뀐 뒤 알맞은 소리 내기.
 
 import { isSoundOn, playSound, setSoundOn } from '../sound.js';
 import { $ } from './dom.js';
 
 const SPEAKER = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/>';
 
-/** 머리말 아래 스피커 버튼(#sndBtn)을 동작시킴 */
+/** 설정 탭의 스피커 버튼(#sndBtn)을 동작시킴 */
 export function mountSoundToggle(root) {
   function render() {
     const on = isSoundOn();

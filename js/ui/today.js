@@ -4,11 +4,9 @@ import { LEVEL_ORDER, LEVELS } from '../config.js';
 import { dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { currentStreak } from '../stats.js';
-import { VIEW_LABEL, VIEW_ORDER } from '../view.js';
 import { $, haptic } from './dom.js';
 import { mountLoginNote } from './login-note.js';
-import { mountSoundToggle, soundFor } from './sound-ui.js';
-import { mountViewSwitch } from './view-switch.js';
+import { soundFor } from './sound-ui.js';
 import { mountWorkbar } from './workbar.js';
 import { createRow, paintRow } from './exercise-row.js';
 import { EV, emit } from '../events.js';
@@ -23,11 +21,13 @@ export function mountToday(root, store) {
       <div class="brandline">
         <img class="brand-symbol" src="icons/icon-192.png" width="32" height="32" alt="">
         <svg class="brand-name" role="img" aria-label="Repday"><use href="#wordmark"/></svg>
-        <span class="brand-state" id="brandState">운동 준비</span>
+        <span class="brand-state" id="brandState" hidden>운동 준비</span>
+        <h1 class="brand-date" id="dateLabel" tabindex="-1"></h1>
       </div>
       <div class="headline">
         <div class="hdate">
-          <h1 id="dateLabel" tabindex="-1"></h1>
+          <p class="eyebrow" id="weekLabel"></p>
+          <p class="status" id="status" role="status" aria-live="polite" hidden></p>
           <span class="wtime" id="wTime" aria-live="off"></span>
         </div>
         <div class="work">
@@ -62,24 +62,10 @@ export function mountToday(root, store) {
         <button type="button" class="link" id="backBtn">오늘로 돌아가기</button>
       </div>
     </header>
-    <section aria-label="운동 체크" class="rows" id="rows"></section>
-    <div class="statusrow">
-      <div class="msg">
-        <p class="eyebrow" id="weekLabel"></p>
-        <p class="status" id="status" role="status" aria-live="polite" hidden></p>
-      </div>
-      <button type="button" class="snd" id="sndBtn" aria-pressed="true"></button>
-      <div class="views" id="views" role="group" aria-label="화면 보기">
-        ${VIEW_ORDER.map((k) => `<button type="button" data-view="${k}" aria-pressed="false">${VIEW_LABEL[k]}</button>`).join('')}
-      </div>
-    </div>`;
+    <section aria-label="운동 체크" class="rows" id="rows"></section>`;
 
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
 
-  mountSoundToggle(root);
-  const viewSwitch = mountViewSwitch(root, () => {
-    if (rows.size) render(store.state);
-  });
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
     if (b && !b.disabled) actions.setLevel(b.dataset.level);
@@ -255,6 +241,5 @@ export function mountToday(root, store) {
     st.classList.toggle('err', state.status.error);
   }
 
-  viewSwitch.apply(viewSwitch.current);
   return render;
 }

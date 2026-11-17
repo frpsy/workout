@@ -50,11 +50,9 @@ const ASSETS = [
   './js/ui/tabs.js',
   './js/ui/timer.js',
   './js/ui/today.js',
-  './js/ui/view-switch.js',
   './js/ui/workbar.js',
   './js/vendor/firebase.js',
   './js/version.js',
-  './js/view.js',
 ];
 
 self.addEventListener('install', (e) => {
