@@ -79,5 +79,10 @@ test('기록 탭: 세트별 개수와 최근 7일 총 개수(지난 7일 대비)
   const { root } = setup(history, { days });
   const push = [...root.querySelectorAll('#dayCard .dayex li')].find((li) => li.textContent.includes('푸시업'));
   assert.equal(push.querySelector('b').textContent, '15·15·12');
-  assert.match(root.querySelector('#volText').textContent, /최근 7일 총 개수 · 푸시업 42개 \(\+12\)/);
+  assert.equal(root.querySelector('#historyVolume').hidden, false);
+  const li = root.querySelector('#vol li');
+  assert.match(li.textContent, /푸시업42개 \(\+12\)/);
+  const bars = [...li.querySelectorAll('.vol-bars i')];
+  assert.equal(bars.length, 7, '하루 막대 7개');
+  assert.equal(bars[6].classList.contains('today') && bars[6].style.height, '100%', '오늘 막대가 가장 높음');
 });
