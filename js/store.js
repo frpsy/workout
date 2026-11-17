@@ -1,6 +1,7 @@
 // 앱 상태와 동작. 화면은 subscribe로 상태를 받아 그리기만 합니다.
 
-import { LEVELS, LIMITS, UNITS } from './config.js';
+import { LEVELS, LIMITS } from './config.js';
+import { entryView, hasChecks, markDone, markProgress, markSets, markUndone, mergeRounds, plannedTarget } from './day.js';
 import { isDateStr, todayStr } from './dates.js';
 import { MAX_SESSIONS, NOTE_MAX, normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
 import { createTargetResolver } from './progression.js';
@@ -168,22 +169,8 @@ export function createStore(adapter) {
     const day = state.days[date];
     const entries = !aggregate && date === state.today && date === state.selected && day?.rounds?.length
       ? day.activeEntries || {} : day?.entries || {};
-    const e = entries[ex.id];
-    const done = !!(e && e.done);
-    // 그날 난이도(쉬움 0.8 / 보통 1 / 어려움 1.2)를 곱함. 단위(개 1, 초 5)에 맞춰 반올림, 최소 한 단위
-    const level = (state.days[date] && state.days[date].level) || 'normal';
-    const factor = (LEVELS[level] || LEVELS.normal).factor;
-    const inc = (UNITS[ex.unit] || UNITS.reps).inc;
-    const base = res.targetForDate(ex, date);
-    const planned = factor === 1 ? base : Math.max(inc, Math.round((base * factor) / inc) * inc);
-    const target = done && Number.isFinite(e.target) ? e.target : planned;
-    const count = e && Number.isFinite(e.count) ? e.count : target;
-    // 직접 고친 세트 수가 있으면 그 값, 완료했는데 기록에 없으면 1(예전 기록), 아직이면 지금 설정
-    const hasSets = !!(e && Number.isFinite(e.sets));
-    const sets = hasSets ? e.sets : done ? 1 : ex.sets;
-    // 세트별 체크: 완료한 종목은 전부, 아니면 체크한 세트 수(세트 수보다 많을 수 없음)
-    const setsDone = done ? sets : Math.min(sets, (e && e.setsDone) || 0);
-    return { done, target, count, sets, setsDone, setsKnown: hasSets || !done, level };
+    const level = (day && day.level) || 'normal';
+    return entryView(entries[ex.id], ex, plannedTarget(res.targetForDate(ex, date), level, ex.unit), level);
   }
 
   const findExercise = (id) => state.config.exercises.find((e) => e.id === id);
@@ -216,26 +203,14 @@ export function createStore(adapter) {
   function hasProgress(date, { current = false } = {}) {
     const day = state.days[date];
     if (!day) return false;
-    const entries = current && date === state.today && day.rounds?.length
-      ? day.activeEntries || {} : day.entries || {};
-    return Object.values(entries).some((e) => e.done || e.setsDone > 0);
+    return hasChecks(current && date === state.today && day.rounds?.length ? day.activeEntries : day.entries);
   }
 
   /** 세션별 운동을 하루 기록으로 합산: 달성·연속·목표 집계는 기존과 동일하게 일 단위로 계산합니다. */
   function updateAggregate(date) {
     const day = state.days[date];
     if (!day?.rounds?.length || date !== state.today) return;
-    const all = [...day.rounds.map((r) => r.entries), day.activeEntries || {}];
-    const aggregate = {};
-    for (const entries of all) for (const [id, entry] of Object.entries(entries)) {
-      const before = aggregate[id];
-      // 완료된 회차를 우선하고, 같은 단계라면 가장 많이 진행한 회차를 사용
-      if (!before || (entry.done && !before.done) ||
-          (entry.done === before.done && (entry.setsDone || 0) > (before.setsDone || 0))) {
-        aggregate[id] = { ...entry };
-      }
-    }
-    day.entries = aggregate;
+    day.entries = mergeRounds(day);
   }
 
   /** 세트 기록을 남길 회차: 오늘은 지금 회차, 회차가 나뉜 지난 날은 어느 회차인지 알 수 없어 남기지 않음(null) */
@@ -296,18 +271,8 @@ export function createStore(adapter) {
       const date = state.selected;
       const v = view(date, ex);
       const entry = ensureEntry(date, id);
-      delete entry.setsDone;
-      if (v.done) {
-        entry.done = false;
-        if (entry.count === entry.target) delete entry.count; // 목표 그대로 했던 개수는 다시 목표(난이도)를 따라가게
-        delete entry.target;
-        if (entry.sets === ex.sets) delete entry.sets; // 직접 고친 세트 수는 해제해도 그대로 둠
-      } else {
-        entry.done = true;
-        entry.count = v.count;
-        entry.target = v.target;
-        entry.sets = v.sets;
-      }
+      if (v.done) markUndone(entry, v, ex);
+      else markDone(entry, v);
       logSets(date, id);
       commitDay(date);
     },
@@ -320,22 +285,7 @@ export function createStore(adapter) {
       const date = state.selected;
       const v = view(date, ex);
       const k = Math.max(0, Math.min(v.sets, Math.round(n)));
-      const entry = ensureEntry(date, id);
-      if (k >= v.sets) {
-        entry.done = true;
-        entry.count = v.count;
-        entry.target = v.target;
-        entry.sets = v.sets;
-        delete entry.setsDone;
-      } else {
-        if (entry.done) {
-          entry.done = false;
-          delete entry.target;
-          entry.sets = v.sets; // 세트 수는 그대로 둬야 남은 세트가 맞게 보임(직접 고친 세트 수 유지)
-        }
-        if (k > 0) entry.setsDone = k;
-        else delete entry.setsDone;
-      }
+      markProgress(ensureEntry(date, id), v, k);
       logSets(date, id);
       commitDay(date);
     },
@@ -405,15 +355,7 @@ export function createStore(adapter) {
       const date = state.selected;
       const v = view(date, ex);
       const k = Math.max(LIMITS.sets[0], Math.min(LIMITS.sets[1], Math.round(n)));
-      const entry = ensureEntry(date, id);
-      // 마친 종목은 세트 수만 고침(실제로 한 세트 수 기록). 진행 중에 세트를 줄여 체크한 세트가 전부가 되면 종목 완료
-      if (!v.done && v.setsDone > 0 && v.setsDone >= k) {
-        entry.done = true;
-        entry.count = v.count;
-        entry.target = v.target;
-        delete entry.setsDone;
-      }
-      entry.sets = k;
+      markSets(ensureEntry(date, id), v, k);
       logSets(date, id);
       commitDay(date);
     },

@@ -10,6 +10,7 @@ import { mountLoginNote } from './login-note.js';
 import { mountSoundToggle, soundFor } from './sound-ui.js';
 import { mountViewSwitch } from './view-switch.js';
 import { mountWorkbar } from './workbar.js';
+import { EV, emit } from '../events.js';
 
 const CHECK_SVG =
   '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -265,13 +266,13 @@ export function mountToday(root, store) {
   function notifyRestStart(before, after) {
     if (after.setsDone > before.setsDone && !store.allDone() &&
         !store.isSessionClosed() && store.state.selected === store.state.today) {
-      document.dispatchEvent(new Event('workout:set-checked'));
+      emit(EV.setChecked);
     }
   }
 
   /** 오늘 운동을 방금 모두 마쳤으면 알림(쉬는 중이던 휴식 타이머를 멈추게) */
   function notifyAllDone(wasDone) {
-    if (!wasDone && store.allDone() && store.state.selected === store.state.today) document.dispatchEvent(new Event('workout:all-done'));
+    if (!wasDone && store.allDone() && store.state.selected === store.state.today) emit(EV.allDone);
   }
 
   function render(state) {

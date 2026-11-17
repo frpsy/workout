@@ -7,6 +7,7 @@ import { playSound } from '../sound.js';
 import { setScreenAwake } from '../screen-awake.js';
 import { MAX_SESSIONS } from '../model.js';
 import { $, haptic } from './dom.js';
+import { EV, emit, on } from '../events.js';
 
 /** 돌려주는 값: render(저장 상태가 바뀔 때 다시 그림), autoStart(세트 체크 전후 상태를 받아 첫 세트면 시작) */
 export function mountWorkbar(root, store) {
@@ -32,7 +33,7 @@ export function mountWorkbar(root, store) {
       session.cancel();
     }
     // 체크를 되돌리는 것은 시간 기록 삭제가 아닙니다. 저장된 운동시간은 명시적으로 초기화할 때만 지웁니다.
-    document.dispatchEvent(new Event('workout:progress-cleared'));
+    emit(EV.progressCleared);
   }
 
   function renderWork() {
@@ -93,7 +94,7 @@ export function mountWorkbar(root, store) {
     if (!session.running) return;
     ticking(false);
     const done = session.stop(); // 멈춘 시각을 먼저 확정해 중복 저장 방지
-    document.dispatchEvent(new Event('workout:ended')); // 명시적 운동 종료 시 휴식 타이머도 즉시 중지
+    emit(EV.ended); // 명시적 운동 종료 시 휴식 타이머도 즉시 중지
     if (done) actions.addWorkSec(done.date, done.sec, { s: done.s, e: done.e });
     if (done && done.date === store.state.today) actions.closeSession();
     if (sound) playSound('stop');
@@ -110,7 +111,7 @@ export function mountWorkbar(root, store) {
   });
   // 마지막 세트 완료 시 운동시간도 자동 종료하고 기록합니다.
   // 완료 팡파르와 종료 효과음이 겹치지 않도록 별도 종료음은 내지 않습니다.
-  document.addEventListener('workout:all-done', () => {
+  on(EV.allDone, () => {
     if (!store.state.ready || store.state.selected !== store.state.today || !store.allDone()) return;
     finishWork({ sound: false });
     actions.closeSession();

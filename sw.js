@@ -20,6 +20,8 @@ const ASSETS = [
   './js/boot-progress.js',
   './js/config.js',
   './js/dates.js',
+  './js/day.js',
+  './js/events.js',
   './js/firebase-config.js',
   './js/local-store.js',
   './js/main.js',

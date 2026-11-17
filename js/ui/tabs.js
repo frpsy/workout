@@ -2,6 +2,8 @@
 // 화면을 옆으로 밀면 옆 화면이 함께 따라오고, 손을 떼면 가까운 화면에 붙습니다(브라우저 기본 가로 스크롤·스냅이라 휴대폰 관성 그대로).
 // 화면마다 세로 스크롤 위치를 따로 기억하고, 주소 뒤 #record 처럼 현재 탭을 남겨 새로고침·뒤로 가기에도 같은 탭이 열립니다.
 
+import { EV } from '../events.js';
+
 export const TABS = ['today', 'record', 'settings'];
 const ALIAS = { '': 'today', log: 'record', stats: 'record' }; // 기록·통계를 하나로 합친 뒤의 이름(#log·#stats)도 기록 탭으로
 
@@ -131,7 +133,7 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
     placeIndicator();
   });
   win.addEventListener('popstate', () => go(tabFromHash(win.location.hash), { push: false }));
-  doc.addEventListener('workout:goto-tab', (ev) => go(ev.detail));
+  doc.addEventListener(EV.gotoTab, (ev) => go(ev.detail));
 
   // 주소의 #settings 같은 조각은 같은 id(#settings)를 가진 요소로 화면을 내려 버리므로, 주소에서 열 때는 그 탭 화면을 맨 위로 맞춤.
   // 뒤로 가기에서는 브라우저가 스크롤 위치를 건드리지 않게 함(화면마다 위치를 따로 기억)
