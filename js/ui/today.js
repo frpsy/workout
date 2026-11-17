@@ -1,57 +1,17 @@
 // 머리말(날짜·진행)과 오늘의 운동 체크 행
 
-import { EXERCISE_VIDEOS, LEVEL_ORDER, LEVELS, UNITS, videoUrl } from '../config.js';
+import { LEVEL_ORDER, LEVELS } from '../config.js';
 import { dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { currentStreak } from '../stats.js';
 import { VIEW_LABEL, VIEW_ORDER } from '../view.js';
-import { $, esc, haptic } from './dom.js';
+import { $, haptic } from './dom.js';
 import { mountLoginNote } from './login-note.js';
 import { mountSoundToggle, soundFor } from './sound-ui.js';
 import { mountViewSwitch } from './view-switch.js';
 import { mountWorkbar } from './workbar.js';
+import { createRow, paintRow } from './exercise-row.js';
 import { EV, emit } from '../events.js';
-
-const CHECK_SVG =
-  '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-const UNDO_SVG =
-  '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 4 9l4 4"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>';
-
-const HOLD_MS = 450; // 이만큼 누르고 있으면 '꾹 누름'
-const REPEAT_MS = 200; // 꾹 누르는 동안 큰 단위로 바뀌는 간격
-
-/**
- * 짧게 누르면 onTap, 꾹 누르면 onHold를 바로 한 번 하고 떼기 전까지 반복.
- * 꾹 누른 뒤에 따라오는 click은 무시하고, 키보드(Enter/Space)는 onTap으로 동작합니다.
- */
-function holdStep(btn, onTap, onHold) {
-  let timer = 0;
-  let repeat = 0;
-  let held = false;
-  const stop = () => {
-    clearTimeout(timer);
-    clearInterval(repeat);
-    timer = repeat = 0;
-  };
-  btn.addEventListener('pointerdown', () => {
-    if (btn.disabled) return;
-    held = false;
-    stop();
-    timer = setTimeout(() => {
-      held = true;
-      haptic();
-      onHold();
-      repeat = setInterval(onHold, REPEAT_MS);
-    }, HOLD_MS);
-  });
-  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) btn.addEventListener(ev, stop);
-  btn.addEventListener('click', () => {
-    if (held) held = false;
-    else onTap();
-  });
-  btn.addEventListener('contextmenu', (e) => e.preventDefault()); // 꾹 누를 때 메뉴가 뜨지 않게
-}
 
 export function mountToday(root, store) {
   const { actions } = store;
@@ -170,81 +130,30 @@ export function mountToday(root, store) {
     box.innerHTML = '';
     rows = new Map();
     for (const ex of exs) {
-      const unit = UNITS[ex.unit];
-      const u = esc(unit.label);
-      const n = esc(ex.name);
-      const video = EXERCISE_VIDEOS[ex.id];
-      const el = document.createElement('article');
-      el.className = 'row';
-      el.innerHTML = `
-        <div class="info">
-          <div class="nameline"><h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>${video ? `<a class="video" data-f="video" href="${esc(videoUrl(video))}" target="_blank" rel="noopener noreferrer" title="${esc(video.title)}" aria-label="${n} 유튜브 영상으로 같이하기"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4.5" fill="currentColor"/><path d="M10 9.3v5.4l4.6-2.7z" fill="var(--surface)"/></svg><span class="sr">영상으로 같이하기</span></a>` : ''}</div>
-          <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button><button type="button" class="more" data-f="more" aria-expanded="false" aria-label="${n} 개수·세트 조절 펴기"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></p>
-        </div>
-        <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span><span class="cap" data-f="cap" aria-hidden="true"></span></button>
-        <div class="ctrl">
-          ${unit.timed ? `<button type="button" class="watch" data-f="watch" aria-label="${n} 시간 재기 시작">시작</button>` : ''}
-          <div class="stepper reps" role="group" aria-label="${n} 세트당 ${u}">
-            <button type="button" data-f="minus" aria-label="${n} ${unit.inc}${u} 줄이기 (길게 누르면 ${unit.big}${u}씩)">−</button>
-            <input data-f="cnt" type="number" inputmode="numeric" min="0" max="99999" aria-label="${n} 세트당 실제 ${u}">
-            <button type="button" data-f="plus" aria-label="${n} ${unit.inc}${u} 늘리기 (길게 누르면 ${unit.big}${u}씩)">+</button>
-          </div>
-          <span class="times" aria-hidden="true">×</span>
-          <div class="stepper setstep" role="group" aria-label="${n} 세트 수">
-            <button type="button" data-f="setsMinus" aria-label="${n} 세트 줄이기">−</button>
-            <input data-f="setsIn" type="number" inputmode="numeric" min="1" max="10" aria-label="${n} 실제 세트 수">
-            <button type="button" data-f="setsPlus" aria-label="${n} 세트 늘리기">+</button>
-          </div>
-        </div>`;
-      const q = (f) => el.querySelector(`[data-f="${f}"]`);
-      const r = { el, ex, unit };
-      for (const f of ['target', 'sets', 'pips', 'undo', 'frac', 'cap', 'delta', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus']) r[f] = q(f);
       const view = () => store.view(store.state.selected, ex);
       const step = (d) => actions.setCount(ex.id, view().count + d);
-      // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
-      if (r.watch) r.watch.addEventListener('click', () => (watch && watch.id === ex.id ? stopWatch() : startWatch(ex.id)));
-      // 큰 버튼: 누를 때마다 다음 한 세트만 완료(마지막 세트에서 종목 완료). 모두 마친 뒤에는 눌러도 바뀌지 않음
-      let lastTapAt = -Infinity;
-      r.check.addEventListener('click', (ev) => {
-        if (ev.detail >= 2) return; // 빠른 두 번 누름(더블탭)이 두 세트를 한꺼번에 완료하지 않게 두 번째는 무시
-        // click.detail이 1로만 오는 환경(아이폰 터치 등)에서도 막도록 시간으로도 거름: 실제 손가락 입력(isTrusted)만, 350ms 안의 두 번째 누름은 무시
-        if (ev.isTrusted) {
-          if (ev.timeStamp - lastTapAt < 350) return;
-          lastTapAt = ev.timeStamp;
-        }
-        const v = view();
-        if (v.done) return;
-        haptic();
-        changeProgress(view, () => actions.setProgress(ex.id, v.setsDone + 1));
+      const r = createRow(ex, {
+        // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
+        watch: () => (watch && watch.id === ex.id ? stopWatch() : startWatch(ex.id)),
+        check() {
+          const v = view();
+          if (v.done) return;
+          haptic();
+          changeProgress(view, () => actions.setProgress(ex.id, v.setsDone + 1));
+        },
+        undo() {
+          const v = view();
+          if (v.setsDone < 1) return;
+          haptic();
+          changeProgress(view, () => actions.setProgress(ex.id, v.setsDone - 1));
+        },
+        step,
+        countTo: (n) => actions.setCount(ex.id, n),
+        // 세트 수를 바꿔 종목이 완료되거나 다시 진행 중이 되면 체크와 똑같이 소리·완료 처리
+        setsBy: (d) => changeProgress(view, () => actions.setSets(ex.id, view().sets + d)),
+        setsTo: (n) => changeProgress(view, () => actions.setSets(ex.id, n)),
       });
-      // 되돌리기: 마지막으로 체크한 한 세트만 취소(세트 표시는 누르는 버튼이 아님)
-      r.undo.addEventListener('click', () => {
-        const v = view();
-        if (v.setsDone < 1) return;
-        haptic();
-        changeProgress(view, () => actions.setProgress(ex.id, v.setsDone - 1));
-      });
-      // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
-      holdStep(r.minus, () => step(-unit.inc), () => step(-unit.big));
-      holdStep(r.plus, () => step(unit.inc), () => step(unit.big));
-      r.cnt.addEventListener('change', () => actions.setCount(ex.id, parseInt(r.cnt.value, 10)));
-      // 세트 수를 바꿔 종목이 완료되거나 다시 진행 중이 되면 체크와 똑같이 소리·완료 처리
-      r.setsMinus.addEventListener('click', () => changeProgress(view, () => actions.setSets(ex.id, view().sets - 1)));
-      r.setsPlus.addEventListener('click', () => changeProgress(view, () => actions.setSets(ex.id, view().sets + 1)));
-      r.setsIn.addEventListener('change', () => changeProgress(view, () => actions.setSets(ex.id, parseInt(r.setsIn.value, 10))));
-      for (const input of [r.cnt, r.setsIn]) input.addEventListener('focus', () => input.select());
-      // 이름·목표를 누르면 이 종목의 개수·세트 조절 줄을 펴고 접음(영상 링크·되돌리기 버튼은 제외)
-      const more = q('more');
-      const toggleOpen = () => {
-        const open = el.classList.toggle('open');
-        more.setAttribute('aria-expanded', String(open));
-        more.setAttribute('aria-label', `${ex.name} 개수·세트 조절 ${open ? '접기' : '펴기'}`);
-      };
-      more.addEventListener('click', toggleOpen); // 키보드·화면 읽기용 버튼(⌄)
-      el.querySelector('.info').addEventListener('click', (ev) => {
-        if (!ev.target.closest('a, button')) toggleOpen(); // 이름·목표 어디를 눌러도 같은 동작
-      });
-      box.appendChild(el);
+      box.appendChild(r.el);
       rows.set(ex.id, r);
     }
     if (!exs.length) box.innerHTML = '<p class="empty">사용 중인 운동이 없습니다. 아래 운동 설정에서 추가해 주세요.</p>';
@@ -300,51 +209,8 @@ export function mountToday(root, store) {
     for (const r of rows.values()) {
       const v = store.view(selected, r.ex, res);
       if (v.done) done++;
-      r.target.textContent = v.target;
-      r.target.closest('.goal').title = `목표 ${v.target}${r.unit.label} × ${v.sets}세트`;
-      // 세트가 여러 개면 세트 수만큼 진행 표시(누르는 버튼이 아님), 하나면 완료 버튼만
-      const nSets = v.sets;
-      r.sets.hidden = nSets > 1;
-      r.sets.textContent = '';
-      const pipKey = `${nSets}`;
-      if (r.pips.dataset.n !== pipKey) {
-        r.pips.dataset.n = pipKey;
-        r.pips.innerHTML = nSets > 1 ? Array.from({ length: nSets }, (_, i) => `<i data-set="${i + 1}"></i>`).join('') : '';
-      }
-      r.pips.hidden = nSets <= 1;
-      for (const b of r.pips.children) {
-        const i = Number(b.dataset.set);
-        b.classList.toggle('on', i <= v.setsDone);
-        b.classList.toggle('next', !v.done && i === v.setsDone + 1);
-      }
-      r.undo.hidden = v.setsDone < 1;
-      r.check.dataset.done = String(v.setsDone);
-      r.el.classList.toggle('done', v.done);
-      // 지금 할 종목(아직 마치지 않은 첫 종목)만 조절 줄을 펴 둠: 나머지는 한 줄로 줄여 한 화면에 들어오게
-      r.el.classList.toggle('current', !v.done && !currentSeen);
+      paintRow(r, v, { current: !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null });
       if (!v.done) currentSeen = true;
-      r.check.setAttribute('aria-pressed', String(v.done));
-      // 세트를 일부만 마쳤으면 완료 버튼 테두리가 진행 정도(2/3)를 보여 줌
-      const part = !v.done && v.setsDone > 0;
-      r.check.classList.toggle('part', part);
-      r.check.style.setProperty('--p', `${Math.round((v.setsDone / v.sets) * 100)}%`);
-      const multi = !v.done && v.sets > 1;
-      r.check.classList.toggle('multi', multi);
-      r.frac.textContent = multi ? `${v.setsDone}/${v.sets}` : '';
-      // 버튼이 하는 일을 글자로 알림: 눌렀을 때 완료되는 세트(마친 뒤에는 '완료')
-      r.cap.textContent = v.done ? '완료' : v.sets > 1 ? `${v.setsDone + 1}세트 완료` : '완료';
-      r.check.setAttribute('aria-label', v.done ? `${r.ex.name} 완료됨` : v.sets > 1 ? `${r.ex.name} ${v.setsDone + 1}세트 완료 (${v.setsDone}/${v.sets}세트 마침)` : `${r.ex.name} 완료`);
-      for (const b of [r.check, r.undo, r.watch, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) if (b) b.disabled = !state.ready;
-      if (document.activeElement !== r.cnt) r.cnt.value = watch && watch.id === r.ex.id ? elapsed() : v.count;
-      if (document.activeElement !== r.setsIn) r.setsIn.value = v.sets;
-      // 목표와 다르게 한 부분만 짧게 알려 줌 (예: +2개 · 세트 -1)
-      const diff = v.count - v.target;
-      const setDiff = v.setsKnown ? v.sets - r.ex.sets : 0;
-      const parts = [];
-      if (diff) parts.push(`${diff > 0 ? '+' : ''}${diff}${r.unit.label}`);
-      if (setDiff) parts.push(`세트 ${setDiff > 0 ? '+' : ''}${setDiff}`);
-      r.delta.textContent = parts.join(' · ');
-      r.delta.classList.toggle('over', diff > 0 || setDiff > 0);
     }
 
     const segs = $('#segs', root);

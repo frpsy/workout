@@ -40,6 +40,7 @@ const ASSETS = [
   './js/theme.js',
   './js/timer.js',
   './js/ui/dom.js',
+  './js/ui/exercise-row.js',
   './js/ui/history.js',
   './js/ui/journal.js',
   './js/ui/login-note.js',
