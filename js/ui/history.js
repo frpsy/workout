@@ -7,6 +7,7 @@ import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, is
 import { activeSessionDate, fmtKo, SESSION_EVENT } from '../session.js';
 import { setsOf, volume } from '../setlog.js';
 import { $, esc } from './dom.js';
+import { EV, emit } from '../events.js';
 
 const MAX_PIPS = 6;
 
@@ -95,7 +96,7 @@ export function mountHistory(root, store) {
     if (!b) return;
     store.actions.select(b.dataset.edit);
     // 고칠 날을 골랐으면 오늘 탭으로 (탭이 없는 환경에서는 알릴 곳이 없어도 무방)
-    document.dispatchEvent(new window.CustomEvent('workout:goto-tab', { detail: 'today' }));
+    emit(EV.gotoTab, 'today');
     const title = document.getElementById('dateLabel');
     if (title) title.focus({ preventScroll: true });
   });

@@ -4,6 +4,7 @@
 import { addDays } from '../dates.js';
 import { readJson, writeJson } from '../local-store.js';
 import { $ } from './dom.js';
+import { EV, emit } from '../events.js';
 
 const NUDGE_KEY = 'workout-check:login-nudge';
 const NUDGE_MIN_DAYS = 3;
@@ -19,7 +20,7 @@ export function mountLoginNote(root, store) {
     $('#loginNote', root).hidden = !due;
   }
   $('#loginGo', root).addEventListener('click', () => {
-    document.dispatchEvent(new window.CustomEvent('workout:goto-tab', { detail: 'settings' }));
+    emit(EV.gotoTab, 'settings');
     const box = document.getElementById('acctBox');
     if (box) {
       box.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });

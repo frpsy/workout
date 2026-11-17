@@ -5,6 +5,7 @@ import { createTimer, fmt, STEP_SEC } from '../timer.js';
 import { playSound, unlockSound } from '../sound.js';
 import { setScreenAwake } from '../screen-awake.js';
 import { $, haptic } from './dom.js';
+import { EV, on } from '../events.js';
 
 const TICK_MS = 250;
 const DONE_SHOW_MS = 60_000; // 끝난 뒤 '휴식 끝'을 보여 주는 시간. 이보다 늦게 알아챈 휴식(앱을 오래 내려 둠)은 알리지 않고 조용히 정리
@@ -145,10 +146,10 @@ export function mountTimer(root) {
   $('#tAuto', root).addEventListener('click', () => timer.setAuto(!timer.auto));
   // 오늘 화면에서 세트를 체크하면 알려 줌: 자동이 켜져 있고 쉬는 중이 아니면 휴식 시작
   const onSetChecked = () => {
-    if (!root.isConnected) return document.removeEventListener('workout:set-checked', onSetChecked); // 화면에서 사라진 타이머는 정리
+    if (!root.isConnected) return offSetChecked(); // 화면에서 사라진 타이머는 정리
     if (timer.auto && !timer.running) startRest({ quiet: true });
   };
-  document.addEventListener('workout:set-checked', onSetChecked);
+  const offSetChecked = on(EV.setChecked, onSetChecked);
   // 오늘 체크를 모두 되돌리거나 모든 운동을 마치면 쉬는 중이던 휴식도 조용히 멈춤(더 쉴 세트가 없음)
   const quietStop = (ev) => {
     if (!root.isConnected) return document.removeEventListener(ev.type, quietStop);
@@ -158,9 +159,9 @@ export function mountTimer(root) {
     setScreenAwake(wakeOwner, false);
     timer.stop();
   };
-  document.addEventListener('workout:progress-cleared', quietStop);
-  document.addEventListener('workout:all-done', quietStop);
-  document.addEventListener('workout:ended', quietStop); // ■ 운동 종료 버튼을 누르면 휴식도 중지
+  on(EV.progressCleared, quietStop);
+  on(EV.allDone, quietStop);
+  on(EV.ended, quietStop); // ■ 운동 종료 버튼을 누르면 휴식도 중지
   $('#tTime', root).addEventListener('click', () => (doneAt !== null ? clearDone() : timer.nextPreset())); // '휴식 끝'이면 닫고, 아니면 30 → 60 → 90초
   $('#tMinus', root).addEventListener('click', () => timer.adjust(-STEP_SEC));
   $('#tPlus', root).addEventListener('click', () => timer.adjust(STEP_SEC));
