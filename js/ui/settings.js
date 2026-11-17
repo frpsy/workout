@@ -7,6 +7,7 @@ import { canPlayInSilentMode, isSilentModeOn, playSound, setSilentMode } from '.
 import { THEMES, THEME_LABEL } from '../theme.js';
 import { VERSION } from '../version.js';
 import { $, esc } from './dom.js';
+import { mountSoundToggle } from './sound-ui.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
@@ -34,6 +35,10 @@ export function mountSettings(root, store, theme = null) {
           <div class="modes three">
             ${THEMES.map((k) => `<label class="seg"><input type="radio" name="theme" value="${k}"><span>${THEME_LABEL[k]}</span></label>`).join('')}
           </div>
+        </div>
+        <div class="srow">
+          <span id="lbSnd">효과음</span>
+          <button type="button" class="snd" id="sndBtn" aria-pressed="true" aria-describedby="lbSnd"></button>
         </div>
         <label class="srow" id="silentRow" hidden>
           <span>무음 모드에서도 효과음</span>
@@ -110,6 +115,7 @@ export function mountSettings(root, store, theme = null) {
   const el = (id) => $('#' + id, root);
 
   /* ---------- 효과음: 이 기기에만 저장, 바꾸면 바로 적용 ---------- */
+  mountSoundToggle(root);
   const silentOk = canPlayInSilentMode();
   el('silentRow').hidden = !silentOk; // 지원하지 않는 브라우저에서는 보이지 않음
   el('silentMode').checked = silentOk && isSilentModeOn();

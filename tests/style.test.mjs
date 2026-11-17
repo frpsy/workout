@@ -28,7 +28,7 @@ test('더블탭 확대 지연을 없애고(touch-action) 작은 버튼의 눌리
   assert.match(css, /\.timer \.tstep::after, \.timer \.tgo::after[^{]*\{[^}]*inset: -5px 0/);
   assert.equal(value('.setpips button'), undefined, '세트 표시는 누르는 버튼이 아님');
   assert.equal(value('.levels button::after', 'inset'), '-7px 0', '보이는 크기는 작게, 누르는 영역은 44px');
-  assert.equal(value('.views button::after', 'inset'), '-7px 0');
+  assert.equal(value('.levels button::after', 'inset'), '-7px 0');
 });
 
 test('화면 보기·난이도·효과음 버튼은 손가락으로 누르기 충분한 크기', () => {
@@ -134,11 +134,15 @@ test('어두운 테마: 기기 설정 블록과 data-theme 블록의 값이 같�
   assert.deepEqual(byAttr, byMedia);
 });
 
-test('보기 단계: 기본(compact)은 펼친 종목만, 상세(normal)는 모든 종목의 조절 줄을 보임', () => {
-  assert.equal(value('[data-view="normal"] .row:not(.current):not(.open):not(.timing) .ctrl', 'display'), undefined, '상세는 모든 종목의 조절 줄을 보임(기본과 달라야 함)');
-  assert.equal(value('[data-view="compact"] .row:not(.open):not(.timing) .ctrl', 'display'), 'none', '시간을 재는 중인 종목은 접지 않음');
+test('종목 줄 세 상태: 지금 할 종목만 펼치고, 조절 줄은 ⌄로 편 종목·시간 재는 종목에만', () => {
+  assert.equal(value('.row:not(.open):not(.timing) .ctrl', 'display'), 'none');
+  assert.equal(value('.row.current .check', 'width'), '100%', '지금 할 종목은 폭 전체 완료 버튼');
+  assert.equal(value('.row.current .check', 'height'), '56px');
+  assert.equal(value('.row.current .goal .num', 'font-size', { raw: true }), 'var(--fs-hero)');
+  assert.equal(value('.row:not(.current)', 'min-height'), '52px', '나머지는 한 줄');
+  assert.equal(value('.row.done', 'background', { raw: true }), 'var(--fill)');
   assert.equal(value('.row .hint', 'display'), undefined, '다음 주 안내(상세)는 없어짐');
-  assert.equal(value('[data-view="normal"] .more', 'display'), 'none');
+  assert.equal(value('[data-view="normal"] .more', 'display'), undefined, '기본/상세 보기는 없어짐');
 });
 
 test('휴식 타이머: 바탕 채움(.tfill)은 늘 버튼·숫자 뒤에(아이폰에서 채움이 내용을 덮지 않게)', () => {

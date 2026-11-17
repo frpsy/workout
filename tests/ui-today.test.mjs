@@ -248,37 +248,15 @@ test('오늘: 난이도 쉬움·보통·어려움 버튼으로 그날 목표가 
   store.actions.flushAll();
 });
 
-test('보기 2단계: 기본·상세 버튼으로 바꾸고 고른 단계를 기억(저장 값은 compact·normal 그대로)', () => {
-  delete document.documentElement.dataset.view;
+test('종목 줄: 아직 마치지 않은 첫 종목 하나만 지금 할 종목으로 펼침, 보기 버튼은 없음', () => {
   const { store, root } = setupFull();
-  const btns = [...root.querySelectorAll('#views button')];
-  assert.deepEqual(btns.map((b) => b.textContent), ['기본', '상세']);
-  const pressed = () => btns.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent);
-  assert.deepEqual(pressed(), ['기본'], '처음에는 기본(조절 줄 접힘)');
-  assert.equal(document.documentElement.dataset.view, 'compact');
-
-  btns[1].click();
-  assert.equal(document.documentElement.dataset.view, 'normal');
-  assert.deepEqual(pressed(), ['상세']);
-  assert.equal(localStorage.getItem('workout-check:view'), 'normal', '고른 단계를 기억');
-
-  btns[0].click();
-  assert.equal(document.documentElement.dataset.view, 'compact');
-  assert.equal(localStorage.getItem('workout-check:view'), 'compact');
+  assert.equal(root.querySelector('#views'), null);
+  const cur = () => [...root.querySelectorAll('.row')].map((r) => r.classList.contains('current'));
+  assert.deepEqual(cur(), [true, false, false]);
+  complete(root.querySelector('.row'));
+  assert.deepEqual(cur(), [false, true, false], '마치면 다음 종목이 펼쳐짐');
+  assert.equal(root.querySelector('.row [data-f="sets"]').textContent, '×3', '접힌 줄은 세트 수를 글자로');
   store.actions.flushAll();
-});
-
-test('보기 2단계: 다시 열면 기억한 단계로, 없어진 옛 상세·이상한 값은 기본으로', () => {
-  localStorage.setItem('workout-check:view', 'normal');
-  const a = setupFull();
-  assert.equal(document.documentElement.dataset.view, 'normal');
-  a.store.actions.flushAll();
-  for (const old of ['detail', '엉뚱한값']) {
-    localStorage.setItem('workout-check:view', old);
-    const b = setupFull();
-    assert.equal(document.documentElement.dataset.view, 'compact', old);
-    b.store.actions.flushAll();
-  }
 });
 
 test('상태 줄: 정상 저장은 문구 없이 주차 안내 그대로, 저장 실패 문구만 그 자리에 보임', async () => {
@@ -422,10 +400,11 @@ test('브랜드: 첫 화면에 앱 이름과 현재 운동 회차 상태를 표�
   assert.equal(root.querySelector('.brand-name use').getAttribute('href'), '#wordmark');
   const pill = root.querySelector('#brandState');
   assert.equal(pill.textContent, '1회차 준비');
-  assert.ok(!pill.classList.contains('active') && !pill.classList.contains('done'), '준비: 회색 알약');
+  assert.equal(pill.hidden, true, '첫 회차 시작 전에는 숨김');
   assert.equal(root.querySelector('#segs').getAttribute('aria-valuemax'), '3');
   setTo(root.querySelector('.row'), 1);
   assert.equal(root.querySelector('#brandState').textContent, '1회차 진행 중');
+  assert.equal(pill.hidden, false);
   assert.ok(pill.classList.contains('active'), '진행 중: 포인트 색 알약');
   assert.equal(root.querySelector('#segs').getAttribute('aria-valuenow'), '0');
   for (const row of root.querySelectorAll('.row')) complete(row);

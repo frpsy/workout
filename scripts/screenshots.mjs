@@ -30,7 +30,6 @@ const VIEWPORTS = [
 const SCHEMES = ['light', 'dark'];
 const SCENES = [
   { name: 'today', hash: '', view: 'normal' },
-  { name: 'today-compact', hash: '', view: 'compact' },
   { name: 'today-done', hash: '', view: 'normal', allDone: true }, // 마무리 칸
   { name: 'record', hash: '#record', view: 'normal' },
   { name: 'settings', hash: '#settings', view: 'normal' },
