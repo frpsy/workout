@@ -1,6 +1,6 @@
 # Repday (운동 기록 앱) — 작업 규칙
 
-- 빌드 없는 정적 사이트(바닐라 JS ES 모듈). 구조·기능은 `README.md`를 먼저 봅니다.
+- 빌드 없는 정적 사이트(바닐라 JS ES 모듈). 구조는 `README.md`, 기능 상세는 `docs/FEATURES.md`, 정해 둔 결정은 `docs/DECISIONS.md`를 먼저 봅니다. 기능을 바꾸면 FEATURES.md를, 결정을 바꾸면 DECISIONS.md를 함께 고칩니다.
 - 변경 후 `npm run lint`, `npm test` 통과를 확인하고, feature 브랜치 → PR → squash 머지까지 묻지 않고 진행합니다.
 - 화면이 바뀌면 안 되는 스타일 정리는 `npm run shots`로 기준 커밋과 비교합니다. 디자인 값은 `style.css` 맨 위 변수(`--fs-*`, `--gap-*`, `--r-*`, `--shadow-*`)로만 바꿉니다.
 - 문구는 존댓말, 간결하게.
