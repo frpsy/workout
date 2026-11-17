@@ -235,7 +235,7 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
 }
 
 /* 카드류: 테두리 위에 옅은 그림자(어두운 테마는 그림자가 거의 없고 테두리가 구분) */
-.journal, .timer, .slist, .exitem, #history > section, #plan-sec details.block { box-shadow: var(--shadow-card); }
+.journal, .timer, .slist, .exitem, #history > .hmain { box-shadow: var(--shadow-card); }
 
 /* 버튼 */
 .link {
@@ -1029,24 +1029,23 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 /* ── 기록 탭 ───────────────────────────────────────────── */
 .page-title { margin: 2px 0 2px; font-size: var(--fs-2xl); } /* 기록·설정 탭 제목 */
 
-/* 내용 묶음을 카드로: 이번 주 달력, 자세히(늘 펼침)의 각 묶음, 앞으로 4주 */
-#history > section {
+/* 카드는 맨 위 하나(달력 + 고른 날 기록)만. 그 아래 통계는 카드 없이 구분선으로 나눠 위계를 만듦 */
+#history > .hmain, #history > .history-empty {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   padding: 16px;
 }
+.hmain .daycard { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.hmain .daycard[hidden] { display: none; }
+#history > .hflat { padding: 16px 0 4px; border-top: 1px solid var(--line); }
+#history > .hflat[hidden] { display: none; }
 #history .totals { margin-top: 0; }
 #history .history-empty { text-align: center; padding: var(--gutter); }
 .history-empty .btn { margin-top: var(--gap-lg); }
 .empty-symbol { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: var(--fs-3xl); margin-bottom: var(--gap-lg); }
 .page.history-empty-state #plan-sec { display: none; }
-#plan-sec details.block {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-card);
-  padding: 12px 16px;
-}
+#plan-sec details.block { padding: 12px 0 0; border-top: 1px solid var(--line); } /* 앞으로 4주 목표: 기본은 접힌 한 줄 */
 #planBox > summary { min-height: 0; margin-bottom: 12px; }
 
 /* 달력 */
@@ -1190,6 +1189,18 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   line-height: 1.5;
 }
 .note-line b { margin-right: 6px; }
+
+/* 최근 7일 총 개수: 종목마다 이름·합계(차이) / 하루 막대 7개 */
+.vol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.vol li { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name sum" "bars bars"; gap: 6px 10px; align-items: baseline; }
+.vol-name { grid-area: name; font-size: var(--fs-md); font-weight: 700; }
+.vol-sum { grid-area: sum; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+.vol-sum b { font-family: var(--font-num); font-size: var(--fs-xl); color: var(--fg); font-variant-numeric: tabular-nums; }
+.vol-diff.up { color: var(--accent); font-weight: 700; }
+.vol-bars { grid-area: bars; display: grid; grid-template-columns: repeat(7, 1fr); align-items: end; gap: 4px; height: 36px; }
+.vol-bars i { display: block; min-height: 2px; border-radius: var(--r-bar) var(--r-bar) 0 0; background: var(--accent-soft); }
+.vol-bars i.today { background: var(--accent-fill); }
+.vol-bars i.zero { background: var(--line); }
 
 /* 종목별 꾸준함 */
 .perex { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }

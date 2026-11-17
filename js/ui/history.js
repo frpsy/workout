@@ -25,7 +25,7 @@ const HEAD = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목'
 
 export function mountHistory(root, store) {
   root.innerHTML = `
-    <section aria-label="달력">
+    <section class="hmain" aria-label="달력과 그날 기록">
       <div class="cal-bar">
         <h2 class="sec" id="calTitle">이번 주</h2>
         <button type="button" class="infobtn" id="calInfo" aria-label="달력 보는 법" aria-expanded="false" aria-controls="calSub">i</button>
@@ -38,6 +38,7 @@ export function mountHistory(root, store) {
       <div id="cal" class="cal"></div>
       <p class="tallytext" id="periodText"></p>
       <p class="sub" id="calSub" hidden></p>
+      <div class="daycard" id="dayCard" aria-live="polite"></div>
     </section>
     <section class="history-empty" id="emptyHistory" hidden>
       <span class="empty-symbol" aria-hidden="true">✓</span>
@@ -45,15 +46,18 @@ export function mountHistory(root, store) {
       <p class="sub">오늘 탭에서 마친 세트를 체크해 주세요.<br>기록이 쌓이면 달성률과 꾸준함을 보여드려요.</p>
       <button type="button" class="btn" id="firstRecord" data-edit="">오늘 운동하러 가기</button>
     </section>
-    <section class="daycard" id="dayCard" aria-live="polite"></section>
-    <section id="historySummary">
+    <section class="hflat" id="historySummary">
       <h2 class="sec">달성·연속</h2>
       <dl class="totals" id="summary"></dl>
       <p class="tallytext" id="tallyText"></p>
       <p class="tallytext" id="workText"></p>
-      <p class="tallytext" id="volText"></p>
     </section>
-    <section id="historyPerExercise">
+    <section class="hflat" id="historyVolume" hidden>
+      <h2 class="sec">최근 7일 총 개수</h2>
+      <ul class="vol" id="vol"></ul>
+      <p class="sub">막대는 하루 총 개수, 괄호는 그 전 7일과의 차이입니다.</p>
+    </section>
+    <section class="hflat" id="historyPerExercise">
       <h2 class="sec">종목별 꾸준함</h2>
       <ul class="perex" id="perEx"></ul>
       <p class="sub">달성률은 최근 30일 중 해야 했던 날(쉬는 요일·시작 전 제외) 대비 마친 날입니다.</p>
@@ -180,19 +184,30 @@ export function mountHistory(root, store) {
       ? `운동시간 오늘 <b>${secOf(today) ? fmtKo(secOf(today)) : '없음'}</b> · 최근 7일 <b>${fmtKo(week)}</b> <span class="nowrap">(하루 평균 ${fmtKo(Math.round(week / active))})</span>`
       : '운동시간은 오늘 탭의 ▶ 운동 시작·■ 종료로 잴 수 있습니다.';
 
-    /* 총 개수(볼륨): 최근 7일과 그 전 7일 비교. 세트 기록이 없는 예전 날은 세트당 개수 × 세트로 계산 */
+    /* 총 개수(볼륨): 종목마다 최근 7일 하루 총 개수 막대와 합계, 그 전 7일과의 차이. 세트 기록이 없는 예전 날은 세트당 개수 × 세트로 계산 */
     const volFrom = addDays(today, -6);
+    const week7 = Array.from({ length: 7 }, (_, i) => addDays(volFrom, i));
     const vols = exs
       .map((e) => {
-        const now = volume(days, e.id, volFrom, today);
+        const per = week7.map((d) => volume(days, e.id, d, d));
+        const now = per.reduce((a, b) => a + b, 0);
+        if (!now) return '';
         const before = volume(days, e.id, addDays(volFrom, -7), addDays(volFrom, -1));
         const unit = (UNITS[e.unit] || UNITS.reps).label;
         const diff = now - before;
-        return now ? `${esc(e.name)} <b>${now}</b>${unit}${before ? ` <span class="nowrap">(${diff >= 0 ? '+' : ''}${diff})</span>` : ''}` : '';
+        const top = Math.max(...per);
+        const bars = per
+          .map((n, i) => `<i class="${week7[i] === today ? 'today' : ''}${n ? '' : ' zero'}" style="height:${n ? Math.max(8, Math.round((n / top) * 100)) : 0}%" title="${labelMD(week7[i])} ${n}${unit}"></i>`)
+          .join('');
+        return (
+          `<li><span class="vol-name">${esc(e.name)}</span>` +
+          `<span class="vol-sum"><b>${now}</b>${unit}${before ? ` <span class="vol-diff${diff > 0 ? ' up' : ''}">(${diff >= 0 ? '+' : ''}${diff})</span>` : ''}</span>` +
+          `<span class="vol-bars" role="img" aria-label="${esc(e.name)} 최근 7일 하루 총 개수 ${per.join(', ')}${unit}">${bars}</span></li>`
+        );
       })
       .filter(Boolean);
-    $('#volText', root).hidden = !vols.length;
-    $('#volText', root).innerHTML = vols.length ? `최근 7일 총 개수 · ${vols.join(' · ')}` : '';
+    $('#historyVolume', root).hidden = !vols.length;
+    $('#vol', root).innerHTML = vols.join('');
 
     /* 연속·달성률 (모든 운동을 마친 날 기준) */
     const opts = { rest, startDate: config.startDate };
