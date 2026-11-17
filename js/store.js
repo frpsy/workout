@@ -4,6 +4,7 @@ import { LEVELS, LIMITS, UNITS } from './config.js';
 import { isDateStr, todayStr } from './dates.js';
 import { MAX_SESSIONS, NOTE_MAX, normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
 import { createTargetResolver } from './progression.js';
+import { setSetCount, syncSets } from './setlog.js';
 
 const SAVE_DELAY = 350;
 
@@ -237,6 +238,25 @@ export function createStore(adapter) {
     day.entries = aggregate;
   }
 
+  /** 세트 기록을 남길 회차: 오늘은 지금 회차, 회차가 나뉜 지난 날은 어느 회차인지 알 수 없어 남기지 않음(null) */
+  function roundOf(date) {
+    const n = state.days[date]?.rounds?.length || 0;
+    if (!n) return 0;
+    return date === state.today ? n : null;
+  }
+
+  /** 체크 상태가 바뀐 종목의 세트 기록을 맞춤: 마친 세트 수만큼, 새 세트는 지금 세트당 개수로 */
+  function logSets(date, id) {
+    const r = roundOf(date);
+    const ex = findExercise(id);
+    if (r === null || !ex) return;
+    const v = view(date, ex);
+    const day = ensureDay(date);
+    const log = syncSets(day.log, id, r, v.done ? v.sets : v.setsDone, v.count, Date.now());
+    if (log.length) day.log = log;
+    else delete day.log;
+  }
+
   /** 그날 기록을 바꾼 뒤: 저장 예약 + 화면 갱신 */
   function commitDay(date) {
     updateAggregate(date);
@@ -288,6 +308,7 @@ export function createStore(adapter) {
         entry.target = v.target;
         entry.sets = v.sets;
       }
+      logSets(date, id);
       commitDay(date);
     },
 
@@ -315,6 +336,7 @@ export function createStore(adapter) {
         if (k > 0) entry.setsDone = k;
         else delete entry.setsDone;
       }
+      logSets(date, id);
       commitDay(date);
     },
 
@@ -322,9 +344,14 @@ export function createStore(adapter) {
       if (!state.ready) return;
       const ex = findExercise(id);
       if (!ex || !Number.isFinite(n)) return emit();
-      const entry = ensureEntry(state.selected, id);
+      const date = state.selected;
+      const entry = ensureEntry(date, id);
       entry.count = Math.max(LIMITS.count[0], Math.min(LIMITS.count[1], Math.round(n)));
-      commitDay(state.selected);
+      // 마친 종목의 개수를 고치면 그 회차 세트 기록도 같이 고침(진행 중이면 다음 세트부터 새 개수)
+      const r = roundOf(date);
+      const day = state.days[date];
+      if (entry.done && r !== null && day.log) day.log = setSetCount(day.log, id, r, entry.count);
+      commitDay(date);
     },
 
     /** 그날 난이도(easy/normal/hard). 아직 완료하지 않은 종목의 목표가 바뀜 */
@@ -387,6 +414,7 @@ export function createStore(adapter) {
         delete entry.setsDone;
       }
       entry.sets = k;
+      logSets(date, id);
       commitDay(date);
     },
 

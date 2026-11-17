@@ -3,9 +3,10 @@
 
 import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LEVELS, LIMITS, SCHEMA_VERSION, UNITS } from './config.js';
 import { isDateStr } from './dates.js';
+import { MAX_LOG } from './setlog.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'rounds', 'activeEntries', 'sessionClosed']);
+const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'rounds', 'activeEntries', 'sessionClosed', 'log']);
 const MAX_WORK_SEC = 86400; // 하루 총 운동시간 상한(24시간)
 export const NOTE_MAX = 200; // 운동 소감·감사한 일 글자 수 상한
 export const MAX_SESSIONS = 20; // 하루에 남기는 운동 구간(시작·종료) 수 상한
@@ -109,6 +110,19 @@ export function normalizeSessions(raw) {
   return out.sort((a, b) => a.s - b.s).slice(-MAX_SESSIONS);
 }
 
+/** 세트 기록 [{ ex, n, t, r }] — 잘못된 줄은 버리고 순서는 그대로(마친 순서) */
+export function normalizeLog(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (const v of raw) {
+    if (!isObj(v) || typeof v.ex !== 'string' || !ID_RE.test(v.ex) || RESERVED.has(v.ex)) continue;
+    if (!inRange(v.n, LIMITS.count) || !inRange(v.t, [1, 4e12])) continue;
+    const r = inRange(v.r, [0, MAX_SESSIONS]) ? Math.round(v.r) : 0;
+    out.push({ ex: v.ex, n: Math.round(v.n), t: Math.round(v.t), r });
+  }
+  return out.slice(-MAX_LOG);
+}
+
 function normalizeEntries(src) {
   const entries = {};
   for (const [id, v] of Object.entries(src)) {
@@ -148,7 +162,8 @@ export function normalizeDay(raw) {
     entries: normalizeEntries(isObj(v.entries) ? v.entries : {}),
   })) : [];
   const activeEntries = isObj(raw.activeEntries) && rounds.length ? normalizeEntries(raw.activeEntries) : null;
-  return { entries, ...(rounds.length ? { rounds, activeEntries: activeEntries || {} } : {}), ...(raw.sessionClosed === true ? { sessionClosed: true } : {}), ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
+  const log = normalizeLog(raw.log);
+  return { entries, ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: activeEntries || {} } : {}), ...(raw.sessionClosed === true ? { sessionClosed: true } : {}), ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeDay(date, day) {
@@ -156,7 +171,8 @@ export function serializeDay(date, day) {
   const note = normalizeNote(day.note);
   const sessions = normalizeSessions(day.sessions);
   const rounds = Array.isArray(day.rounds) ? day.rounds.slice(0, MAX_SESSIONS).map((v) => ({ entries: normalizeEntries(v.entries || {}) })) : [];
-  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(rounds.length ? { rounds, activeEntries: normalizeEntries(day.activeEntries || {}) } : {}), ...(day.sessionClosed === true ? { sessionClosed: true } : {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
+  const log = normalizeLog(day.log);
+  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: normalizeEntries(day.activeEntries || {}) } : {}), ...(day.sessionClosed === true ? { sessionClosed: true } : {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
 }
 
 export function serializeConfig(config) {
