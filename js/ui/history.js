@@ -5,6 +5,7 @@ import { addDays, diffDays, dowName, fmt, labelMD, mondayOf, pad, parse, shortMD
 import { weekIndex } from '../progression.js';
 import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent, periodSummary } from '../stats.js';
 import { activeSessionDate, fmtKo, SESSION_EVENT } from '../session.js';
+import { setsOf, volume } from '../setlog.js';
 import { $, esc } from './dom.js';
 
 const MAX_PIPS = 6;
@@ -49,6 +50,7 @@ export function mountHistory(root, store) {
       <dl class="totals" id="summary"></dl>
       <p class="tallytext" id="tallyText"></p>
       <p class="tallytext" id="workText"></p>
+      <p class="tallytext" id="volText"></p>
     </section>
     <section id="historyPerExercise">
       <h2 class="sec">종목별 꾸준함</h2>
@@ -177,6 +179,20 @@ export function mountHistory(root, store) {
       ? `운동시간 오늘 <b>${secOf(today) ? fmtKo(secOf(today)) : '없음'}</b> · 최근 7일 <b>${fmtKo(week)}</b> <span class="nowrap">(하루 평균 ${fmtKo(Math.round(week / active))})</span>`
       : '운동시간은 오늘 탭의 ▶ 운동 시작·■ 종료로 잴 수 있습니다.';
 
+    /* 총 개수(볼륨): 최근 7일과 그 전 7일 비교. 세트 기록이 없는 예전 날은 세트당 개수 × 세트로 계산 */
+    const volFrom = addDays(today, -6);
+    const vols = exs
+      .map((e) => {
+        const now = volume(days, e.id, volFrom, today);
+        const before = volume(days, e.id, addDays(volFrom, -7), addDays(volFrom, -1));
+        const unit = (UNITS[e.unit] || UNITS.reps).label;
+        const diff = now - before;
+        return now ? `${esc(e.name)} <b>${now}</b>${unit}${before ? ` <span class="nowrap">(${diff >= 0 ? '+' : ''}${diff})</span>` : ''}` : '';
+      })
+      .filter(Boolean);
+    $('#volText', root).hidden = !vols.length;
+    $('#volText', root).innerHTML = vols.length ? `최근 7일 총 개수 · ${vols.join(' · ')}` : '';
+
     /* 연속·달성률 (모든 운동을 마친 날 기준) */
     const opts = { rest, startDate: config.startDate };
     const cur = currentStreak(days, today, exs, rest);
@@ -226,7 +242,12 @@ export function mountHistory(root, store) {
         .map(({ ex, v }) => {
           const unit = (UNITS[ex.unit] || UNITS.reps).label === '초' ? '초' : '';
           const reps = `${v.count}${unit}`;
-          const val = v.done ? `${reps}${v.setsKnown ? `×${v.sets}` : ''}` : v.setsDone ? `${reps}×${v.setsDone}/${v.sets}` : '–';
+          // 세트마다 개수가 달랐으면 ‘15·15·12’처럼 세트별로 보여 줌(세트 기록이 있는 날만)
+          const each = day?.log?.some((x) => x.ex === ex.id) ? setsOf(day, ex.id) : [];
+          const uneven = each.length > 1 && each.some((n) => n !== each[0]);
+          const val = uneven
+            ? `${each.join('·')}${unit}${v.done ? '' : `/${v.sets}세트`}`
+            : v.done ? `${reps}${v.setsKnown ? `×${v.sets}` : ''}` : v.setsDone ? `${reps}×${v.setsDone}/${v.sets}` : '–';
           return `<li class="${v.done ? 'done' : v.setsDone ? 'part' : ''}"><span>${esc(ex.name)}</span><b>${val}</b></li>`;
         })
         .join('') +
