@@ -1278,6 +1278,7 @@ tr.cur td { background: var(--accent-soft); }
 .timeadd .btn { flex: none; }
 .timeitem .icon.danger.armed { background: var(--err); color: var(--on-accent); } /* 한 번 누른 뒤: 한 번 더 누르면 지움 */
 .timelist > .empty { padding: 14px 0; margin: 0; }
+.timemore { margin-top: var(--gap); }
 .srow {
   display: flex;
   align-items: center;
