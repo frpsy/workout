@@ -189,3 +189,30 @@ test('부분 수행 후 회차 종료 시 목표 미달성이어도 소감과 �
   assert.equal(root.querySelector('#jBox').hidden, false);
   store.actions.flushAll();
 });
+
+test('마무리: 쓰는 칸을 누르면 칸을 화면 맨 위로 올리고(키보드에 가리지 않게), 칸을 벗어나면 원래대로', async () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div class="page" data-tab="today"><div class="wrap"><div id="journal"></div></div></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('journal');
+  store.subscribe(mountJournal(root, store));
+  for (const id of ['push', 'pull', 'squat']) store.actions.toggle(id);
+  const page = document.querySelector('.page');
+  const box = root.querySelector('#jBox');
+  page.getBoundingClientRect = () => ({ top: 0 });
+  let st = 100;
+  Object.defineProperty(page, 'scrollTop', { configurable: true, get: () => st, set: (v) => { st = v; } });
+  box.getBoundingClientRect = () => ({ top: 400 - (page.scrollTop - 100) });
+  root.querySelector('#jOpen').click();
+  const html = document.documentElement;
+  assert.equal(html.classList.contains('typing'), true, '쓰는 중 표시(아래 여백·탭 막대 숨김)');
+  assert.equal(page.scrollTop, 500, '칸이 화면 맨 위로');
+
+  root.querySelector('#jThanks').focus(); // 소감 → 감사한 일
+  await new Promise((r) => setTimeout(r, 250));
+  assert.equal(html.classList.contains('typing'), true, '칸 사이를 옮길 때는 유지');
+  root.querySelector('#jThanks').blur();
+  await new Promise((r) => setTimeout(r, 250));
+  assert.equal(html.classList.contains('typing'), false, '칸을 벗어나면 원래대로');
+  store.actions.flushAll();
+});
