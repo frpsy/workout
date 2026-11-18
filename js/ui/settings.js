@@ -115,6 +115,7 @@ export function mountSettings(root, store, theme = null) {
       <h2 class="sgh">운동 시간 기록</h2>
       <p class="sub">잘못 기록된 날의 운동 시간을 분 단위로 고치거나 지우고, 빠뜨린 날은 아래에서 직접 넣습니다(이미 시간이 있는 날은 더해집니다). 세트 체크는 그대로입니다.</p>
       <ul class="timelist" id="timeList"></ul>
+      <button type="button" class="btn ghost sm timemore" id="timeMore" hidden></button>
       <form class="timeadd" id="timeAdd">
         <label class="sr" for="addDate">날짜</label>
         <input id="addDate" type="date" required>
@@ -376,15 +377,21 @@ export function mountSettings(root, store, theme = null) {
   let confirmTime = null; // 지우기 확인 중인 날짜
   let confirmTimeTimer;
   let editTime = null; // 분을 직접 고치는 중인 날짜
+  let showAllTimes = false; // 처음엔 최근 14일만, ‘더 보기’로 전부
+  const TIME_FIRST = 14;
   const minutesOf = (sec) => Math.max(1, Math.round(sec / 60));
   function renderTimes(state, { force = false } = {}) {
     // 고치는 중에 저장소가 바뀌어도(다른 기기 동기화 등) 입력 중인 칸을 다시 그려 지우지 않음
     if (!force && editTime && el('timeList').contains(document.activeElement)) return;
-    const days = Object.keys(state.days)
+    const all = Object.keys(state.days)
       .filter((d) => state.days[d] && state.days[d].workSec > 0)
       .sort()
-      .reverse()
-      .slice(0, 14); // 최근 14일
+      .reverse();
+    const days = showAllTimes ? all : all.slice(0, TIME_FIRST);
+    const more = el('timeMore');
+    more.hidden = all.length <= TIME_FIRST;
+    more.textContent = showAllTimes ? '최근 14일만 보기' : `전체 보기 (${all.length}일)`;
+    more.setAttribute('aria-expanded', String(showAllTimes));
     el('timeList').innerHTML = days.length
       ? days
           .map((d) => {
@@ -457,6 +464,11 @@ export function mountSettings(root, store, theme = null) {
     }
   });
 
+  el('timeMore').addEventListener('click', () => {
+    showAllTimes = !showAllTimes;
+    renderTimes(store.state, { force: true });
+  });
+
   // 빠뜨린 날의 운동 시간을 직접 넣음(이미 시간이 있는 날은 그 위에 더해짐). 오늘까지만
   el('addDate').max = todayStr();
   el('addDate').value = todayStr();
@@ -470,6 +482,9 @@ export function mountSettings(root, store, theme = null) {
     }
     actions.addWorkSec(d, min * 60);
     el('addMin').value = '';
+    // 오래된 날에 넣었으면 목록에서 바로 보이게 펼침
+    const recent = Object.keys(store.state.days).filter((x) => store.state.days[x]?.workSec > 0).sort().reverse().slice(0, TIME_FIRST);
+    if (!recent.includes(d)) showAllTimes = true;
     renderTimes(store.state, { force: true });
   });
 

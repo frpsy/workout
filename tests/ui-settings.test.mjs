@@ -194,7 +194,7 @@ test('설정: 운동 시간 기록을 날짜별로 보여 주고, 지우기는 �
   store.actions.flushAll();
 });
 
-test('설정: 운동 시간을 분 단위로 고치고(구간은 지움), 빠뜨린 날은 직접 넣을 수 있음', async () => {
+test('설정: 운동 시간을 분 단위로 고치고(구간은 남김), 빠뜨린 날은 직접 넣을 수 있음', async () => {
   const ad = adapter();
   document.body.innerHTML = '<div id="settings"></div>';
   const store = createStore(ad);
@@ -211,7 +211,7 @@ test('설정: 운동 시간을 분 단위로 고치고(구간은 지움), 빠뜨
   input.value = '45';
   list().querySelector('[data-act="save"]').click();
   assert.equal(day().workSec, 2700, '45분으로 고침');
-  assert.equal(day().sessions, undefined, '합계와 맞지 않는 시작·종료 구간은 지움');
+  assert.equal(day().sessions.length, 1, '실제로 잰 시작·종료 구간은 그대로 남음');
   assert.match(list().textContent, /45분/);
 
   list().querySelector('[data-act="edit"]').click();
@@ -235,5 +235,33 @@ test('설정: 운동 시간을 분 단위로 고치고(구간은 지움), 빠뜨
   root.querySelector('#addMin').value = '5';
   root.querySelector('#timeAdd').dispatchEvent(new window.Event('submit', { cancelable: true }));
   assert.equal(store.state.days[addDays(today, 1)], undefined, '내일 이후는 넣지 않음');
+  store.actions.flushAll();
+});
+
+test('설정: 운동 시간 목록은 최근 14일만 보이고 전체 보기로 펼침, 오래된 날에 넣으면 자동으로 펼침', async () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  const today = todayStr();
+  const items = () => root.querySelectorAll('#timeList .timeitem').length;
+  const more = () => root.querySelector('#timeMore');
+  for (let i = 0; i < 10; i++) store.actions.addWorkSec(addDays(today, -i), 600);
+  assert.equal(items(), 10);
+  assert.equal(more().hidden, true, '14일 이하면 전체 보기 버튼 없음');
+  for (let i = 10; i < 16; i++) store.actions.addWorkSec(addDays(today, -i), 600);
+  assert.equal(items(), 14, '처음엔 최근 14일만');
+  assert.equal(more().hidden, false);
+  more().click();
+  assert.equal(items(), 16, '전체 보기로 모두 보임');
+  more().click();
+  assert.equal(items(), 14, '다시 접힘');
+  const old = addDays(today, -40);
+  root.querySelector('#addDate').value = old;
+  root.querySelector('#addMin').value = '20';
+  root.querySelector('#timeAdd').dispatchEvent(new window.Event('submit', { cancelable: true }));
+  assert.equal(items(), 17, '오래된 날에 넣으면 목록이 펼쳐져 바로 보임');
+  assert.ok(root.querySelector(`#timeList [data-date="${old}"]`));
   store.actions.flushAll();
 });
