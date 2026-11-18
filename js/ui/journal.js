@@ -27,7 +27,7 @@ export function mountJournal(root, store) {
           <button type="button" class="btn ghost" id="jDone">접기</button>
         </div>
       </div>
-      <button type="button" class="jopen jview" id="jView" hidden>${CHECK}<span></span><span class="jedit" aria-hidden="true">${PEN}</span></button>
+      <button type="button" class="jopen jview" id="jView" hidden>${CHECK}<span></span></button>
       <button type="button" class="jopen" id="jOpen" hidden>${PEN}<span>오늘의 마무리 쓰기</span></button>
     </section>`;
 
