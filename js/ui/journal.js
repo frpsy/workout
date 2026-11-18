@@ -1,11 +1,12 @@
 // 운동을 모두 마친 날: 운동 소감과 감사한 일 한 가지를 남기는 칸.
 // 처음에는 한 줄짜리 '오늘의 마무리 쓰기' 버튼으로 접어 두고, 누르면 펼쳐 입력하는 대로 저장합니다.
-// 다 쓰면 짧게 접어 보여 주고, 접힌 내용이나 연필 버튼을 누르면 다시 고침. 쓰다가 '나중에'를 누르면 다시 한 줄로 접음.
+// 쓰는 중에는 '접기' 하나로 닫고(쓰는 대로 저장), 다 쓴 뒤에도 오늘 화면에는 내용 대신 '썼어요' 한 줄만 둡니다.
+// 그 줄을 누르면 다시 고치고, 써 둔 내용은 기록 탭의 그날 카드에서 봅니다.
 
 import { labelMD } from '../dates.js';
 import { NOTE_MAX } from '../model.js';
 import { isDone } from '../stats.js';
-import { $, esc } from './dom.js';
+import { $ } from './dom.js';
 
 const PEN = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
 const CHECK = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>';
@@ -15,7 +16,6 @@ export function mountJournal(root, store) {
     <section class="journal" id="jBox" aria-labelledby="jTitle" hidden>
       <div class="jhead">
         <h2 class="sec" id="jTitle">오늘의 마무리</h2>
-        <button type="button" class="jpen" id="jEdit" aria-label="마무리 고치기" hidden>${PEN}</button>
       </div>
       <div id="jForm">
         <label class="jlabel" for="jFeel"><span>운동 소감</span><span class="jcount" id="jFeelN"></span></label>
@@ -24,13 +24,10 @@ export function mountJournal(root, store) {
         <input id="jThanks" maxlength="${NOTE_MAX}" placeholder="오늘 감사했던 일 하나" autocomplete="off" enterkeyhint="done">
         <div class="jfoot">
           <span class="jsaved" id="jSaved" aria-live="polite"></span>
-          <button type="button" class="btn ghost jlater" id="jLater">나중에</button>
-          <button type="button" class="btn" id="jDone">완료</button>
+          <button type="button" class="btn ghost" id="jDone">접기</button>
         </div>
       </div>
-      <div class="jview" id="jView" role="button" tabindex="0" aria-label="마무리 고치기" hidden>
-        <dl id="jList"></dl>
-      </div>
+      <button type="button" class="jopen jview" id="jView" hidden>${CHECK}<span></span><span class="jedit" aria-hidden="true">${PEN}</span></button>
       <button type="button" class="jopen" id="jOpen" hidden>${PEN}<span>오늘의 마무리 쓰기</span></button>
     </section>`;
 
@@ -102,7 +99,7 @@ export function mountJournal(root, store) {
       liftToTop();
     });
   }
-  // 둘 다 한 줄: 소감에서 Enter는 감사한 일로, 감사한 일에서 Enter는 완료
+  // 둘 다 한 줄: 소감에서 Enter는 감사한 일로, 감사한 일에서 Enter는 접기
   feel.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.isComposing) {
       e.preventDefault();
@@ -124,19 +121,8 @@ export function mountJournal(root, store) {
     store.actions.flushAll();
     render(store.state);
   });
-  $('#jLater', root).addEventListener('click', () => {
-    editing = false;
-    render(store.state);
-  });
-  $('#jEdit', root).addEventListener('click', edit);
   $('#jOpen', root).addEventListener('click', edit);
   $('#jView', root).addEventListener('click', edit);
-  $('#jView', root).addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      edit();
-    }
-  });
 
   function render(state) {
     const exs = store.activeExercises();
@@ -162,15 +148,14 @@ export function mountJournal(root, store) {
 
     $('#jTitle', root).textContent = date === state.today ? '오늘의 마무리' : `${labelMD(date)}의 마무리`;
     $('#jOpen span', root).textContent = date === state.today ? '오늘의 마무리 쓰기' : '그날의 마무리 쓰기';
+    $('#jView span', root).textContent = date === state.today ? '오늘의 마무리를 썼어요' : '그날의 마무리를 썼어요';
+    $('#jView', root).setAttribute('aria-label', `${date === state.today ? '오늘' : '그날'}의 마무리 고치기`);
     const has = filled(note);
     const mode = editing ? 'form' : has ? 'view' : 'closed'; // 아직 안 썼으면 접힌 한 줄로 시작
     box.dataset.mode = mode;
     $('#jForm', root).hidden = mode !== 'form';
     $('#jView', root).hidden = mode !== 'view';
-    $('#jEdit', root).hidden = mode !== 'view';
     $('#jOpen', root).hidden = mode !== 'closed';
-    $('#jDone', root).hidden = !has; // 아무것도 안 썼으면 '나중에'만
-    $('#jLater', root).hidden = has;
 
     // 마지막 종목을 막 체크했으면 마무리 칸(접힌 한 줄)이 탭 막대 아래에 가려지지 않게 살며시 끌어올림 (포커스는 뺏지 않음)
     if (justFinished && mode !== 'view' && !root.hidden && !root.closest('[inert]')) { // 다른 탭을 보는 중(오늘 화면이 inert)에는 이동하지 않음
@@ -178,12 +163,7 @@ export function mountJournal(root, store) {
       box.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
     }
 
-    if (mode === 'view') {
-      const rows = [];
-      if (text(note.feel)) rows.push(`<div><dt>소감</dt><dd>${esc(text(note.feel))}</dd></div>`);
-      if (text(note.thanks)) rows.push(`<div><dt>감사</dt><dd>${esc(text(note.thanks))}</dd></div>`);
-      $('#jList', root).innerHTML = rows.join('');
-    } else if (mode === 'form' && !root.contains(document.activeElement)) {
+    if (mode === 'form' && !root.contains(document.activeElement)) {
       // 쓰는 중이 아닐 때만 저장된 값으로 맞춤 (다른 기기에서 바뀐 경우 등)
       feel.value = (note && note.feel) || '';
       thanks.value = (note && note.thanks) || '';

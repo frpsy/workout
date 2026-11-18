@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { addDays, todayStr } from '../js/dates.js';
 import { adapter, createStore, fullDays, mountJournal, pickDate, setup, history } from './helpers/ui-env.mjs';
 
-test('마무리: 모두 마친 날에만 소감·감사한 일 칸이 보이고, 쓰는 대로 저장되며 완료하면 접혀 보임', () => {
+test('마무리: 모두 마친 날에만 소감·감사한 일 칸이 보이고, 쓰는 대로 저장되며 접으면 ‘썼어요’ 한 줄만 보임', () => {
   const ad = adapter();
   document.body.innerHTML = '<div id="journal"></div>';
   const store = createStore(ad);
@@ -32,10 +32,10 @@ test('마무리: 모두 마친 날에만 소감·감사한 일 칸이 보이고,
   root.querySelector('#jDone').click();
   assert.equal(root.querySelector('#jForm').hidden, true);
   assert.equal(root.querySelector('#jView').hidden, false);
-  assert.match(root.querySelector('#jList').textContent, /소감오늘은 가볍게 끝냈다/);
-  assert.match(root.querySelector('#jList').textContent, /감사맑은 날씨/);
+  assert.equal(root.querySelector('#jView').textContent, '오늘의 마무리를 썼어요', '내용은 오늘 화면에 펼치지 않음');
+  assert.doesNotMatch(root.textContent.replace(root.querySelector('#jForm').textContent, ''), /가볍게 끝냈다/);
 
-  root.querySelector('#jEdit').click();
+  root.querySelector('#jView').click();
   assert.equal(root.querySelector('#jForm').hidden, false, '고치기를 누르면 다시 씀');
   assert.equal(feel.value, '오늘은 가볍게 끝냈다');
 
@@ -62,7 +62,7 @@ test('마무리: 글자는 그대로 보여 주고(HTML로 해석하지 않음) 
   assert.match(card.textContent, /감사 물 한 잔/);
 });
 
-test('마무리: 아무것도 안 썼으면 나중에로 한 줄로 접고, 접힌 내용을 누르거나 연필로 다시 씀, 지난 날은 그날 제목', () => {
+test('마무리: 버튼은 접기 하나, 접힌 줄을 누르면 다시 씀, 지난 날은 그날 제목', () => {
   const ad = adapter({ days: fullDays(2) });
   document.body.innerHTML = '<div id="journal"></div>';
   const store = createStore(ad);
@@ -77,25 +77,21 @@ test('마무리: 아무것도 안 썼으면 나중에로 한 줄로 접고, 접�
   assert.match(q('#jOpen').textContent, /오늘의 마무리 쓰기/);
   q('#jOpen').click();
   assert.equal(box.dataset.mode, 'form', '누르면 펼침');
-  assert.equal(q('#jDone').hidden, true, '빈 채로는 완료 대신');
-  assert.equal(q('#jLater').hidden, false, '나중에만');
-  q('#jLater').click();
-  assert.equal(box.dataset.mode, 'closed', '나중에를 누르면 다시 한 줄로');
+  assert.equal(q('#jDone').textContent, '접기', '빈 채로도 접기 하나');
+  assert.equal(q('#jLater'), null);
+  q('#jDone').click();
+  assert.equal(box.dataset.mode, 'closed', '아무것도 안 썼으면 쓰기 한 줄로');
   q('#jOpen').click();
 
   q('#jThanks').value = '따뜻한 차';
   q('#jThanks').dispatchEvent(new Event('input', { bubbles: true }));
-  assert.equal(q('#jDone').hidden, false);
-  assert.equal(q('#jLater').hidden, true);
+  assert.equal(q('#jDone').hidden, false, '써도 접기 그대로');
   assert.match(q('#jSaved').textContent, /자동 저장/);
   q('#jDone').click();
   assert.equal(box.dataset.mode, 'view');
-  assert.equal(q('#jEdit').hidden, false, '연필 버튼');
+  assert.equal(q('#jView').tagName, 'BUTTON', '키보드로도 누를 수 있는 버튼');
   q('#jView').click();
-  assert.equal(box.dataset.mode, 'form', '접힌 내용을 누르면 고침');
-  q('#jDone').click();
-  q('#jView').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-  assert.equal(box.dataset.mode, 'form', '키보드로도');
+  assert.equal(box.dataset.mode, 'form', '접힌 줄을 누르면 고침');
 
   assert.equal(q('#jFeel').tagName, 'INPUT', '소감도 한 줄 입력');
   q('#jFeel').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
