@@ -63,7 +63,7 @@ export function mountJournal(root, store) {
   thanks.addEventListener('input', save);
   /* 쓰는 칸을 화면 맨 위로: 휴대폰 키보드가 화면 아래 절반을 덮어도 칸이 가리지 않게.
      화면 전체가 고정(.pager)이라 iOS가 스스로 칸을 끌어올리지 못하고 키보드 뒤에 두므로, 포커스 순간 직접 맨 위로 올립니다.
-     쓰는 동안(html.typing)은 아래 여백을 늘려 맨 아래 칸도 맨 위까지 올라갈 수 있게 하고, 키보드 위로 떠오를 수 있는 탭 막대·타이머는 숨깁니다. */
+     쓰는 동안(html.typing)은 아래 여백을 늘려 맨 아래 칸도 맨 위까지 올라갈 수 있게 하고, 화면 키보드가 올라와 있으면(html.kb) 키보드 위로 떠오를 수 있는 탭 막대·타이머는 숨깁니다. */
   let leaveTimer = 0;
   function liftToTop() {
     clearTimeout(leaveTimer);
@@ -81,7 +81,7 @@ export function mountJournal(root, store) {
     // 소감 → 감사한 일로 옮길 때는 잠깐 포커스가 비므로 조금 기다렸다가 판단
     leaveTimer = setTimeout(() => {
       if (root.contains(document.activeElement) && document.activeElement.matches('input')) return;
-      document.documentElement.classList.remove('typing');
+      document.documentElement.classList.remove('typing', 'kb');
     }, 200);
   }
   for (const el of [feel, thanks]) {
@@ -94,7 +94,10 @@ export function mountJournal(root, store) {
   // 키보드가 다 올라온 뒤(화면 보이는 영역이 바뀜) iOS가 화면을 밀어 올렸으면 되돌리고 다시 맞춤
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => {
-      if (!document.documentElement.classList.contains('typing')) return;
+      const html = document.documentElement;
+      // 화면 키보드가 실제로 올라왔을 때만(보이는 높이가 크게 줄어듦) 탭 막대·타이머를 숨김. 하드웨어 키보드에서는 그대로 둠
+      html.classList.toggle('kb', html.classList.contains('typing') && window.innerHeight - window.visualViewport.height > 120);
+      if (!html.classList.contains('typing')) return;
       if (window.scrollY) window.scrollTo(0, 0);
       liftToTop();
     });
