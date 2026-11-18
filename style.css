@@ -498,16 +498,14 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 /* 완료 후 다음 운동 회차: 작은 화면에서도 두 버튼이 경쟁하지 않도록 별도 줄 */
 .round-action {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; min-width: 0; padding: 6px 6px 6px 12px;
-  border-radius: var(--r-ctrl);
-  background: var(--accent-soft);
+  gap: var(--gap); min-width: 0; padding: 0;
 }
 .round-action[hidden] { display: none; }
 .round-summary { min-width: 0; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .round-repeat {
   position: relative;
   flex: none; height: 36px; padding: 0 12px; border: 0;
-  border-radius: var(--r-ctrl); background: var(--accent-fill); color: var(--on-accent);
+  border-radius: var(--r-ctrl); background: var(--accent-soft); color: var(--accent);
   font-size: var(--fs-sm); font-weight: 700; cursor: pointer;
 }
 .round-repeat::after { content: ''; position: absolute; inset: -4px 0; } /* 누르는 영역 44px */
@@ -735,7 +733,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 }
 .check .cap { font-size: var(--fs-2xs); line-height: 14px; font-weight: 700; white-space: nowrap; letter-spacing: 0; }
 .check.multi svg, .check:not(.multi) .frac { display: none; }
-.row.done .check { background: var(--accent-soft); color: var(--accent); box-shadow: none; cursor: default; }
+.row.done .check { background: transparent; color: var(--accent); box-shadow: none; cursor: default; }
 .row.done .check .cap { display: none; } /* 마친 뒤에는 체크 표시만 */
 /* 진하게 칠한 완료 버튼은 지금 할 종목 하나만: 다음 종목들은 옅게(누를 수는 있음) */
 .row:not(.current):not(.done) .check { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
@@ -842,7 +840,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   border-radius: var(--r-card);
   background: var(--surface);
 }
-.journal[data-mode="closed"], .journal[data-mode="view"] { padding: 0; }
+.journal[data-mode="closed"], .journal[data-mode="view"] { padding: 0; border: 0; background: transparent; box-shadow: none; } /* 접힌 한 줄은 카드 없이 글자만 */
 .journal[data-mode="closed"] .jhead, .journal[data-mode="view"] .jhead { display: none; }
 .jhead { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); min-height: 32px; margin-bottom: 6px; }
 .jhead .sec { margin: 0; }
@@ -868,10 +866,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   font-size: var(--fs-md);
   cursor: pointer;
 }
-/* 다 쓴 뒤: 내용 대신 '썼어요' 한 줄(누르면 고침). 할 일이 아니라 끝난 일이라 흐린 글자 */
-.jview { color: var(--muted); font-weight: 500; }
+/* 다 쓴 뒤: 내용 대신 '썼어요' 한 줄(누르면 고침). 할 일이 아니라 끝난 일이라 작고 흐린 글자 */
+.jview { color: var(--muted); font-weight: 500; font-size: var(--fs-sm); }
 .jview > svg:first-child { color: var(--accent); }
-.jedit { display: inline-flex; color: var(--accent); }
 .jopen:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--r-card); }
 
 /* 휴식 타이머는 늘 탭 막대 바로 위에: 종목이 많거나 화면이 작아 내용이 넘쳐도 스크롤 없이 누를 수 있음 */
