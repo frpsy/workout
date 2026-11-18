@@ -1,4 +1,4 @@
-// 머리말의 운동 스톱워치: ▶ 운동 시작 / ■ 종료, 중지·재개, 취소, 초기화 버튼.
+// 머리말의 운동 스톱워치: ▶ 운동 시작 / ■ 종료, 중지·재개, 초기화(지금 재는 시간만) 버튼.
 // 시작하면 시간이 흐르고, 종료하면 잰 시간을 그날 총 운동시간에 기록합니다. 재는 동안 화면이 꺼지지 않게 요청합니다.
 // 화면 조각(버튼들)은 today.js의 머리말에 있고, 여기서는 그 버튼들의 동작과 표시만 맡습니다.
 
@@ -45,7 +45,6 @@ export function mountWorkbar(root, store) {
     const btn = $('#wBtn', root);
     const pauseBtn = $('#wPause', root);
     const cancelBtn = $('#wCancel', root);
-    const resetBtn = $('#wReset', root);
     const total = (state.days[state.selected] && state.days[state.selected].workSec) || 0;
     const round = (state.days[state.today]?.rounds?.length || 0) + 1;
     const brandState = $('#brandState', root);
@@ -76,14 +75,12 @@ export function mountWorkbar(root, store) {
     const finished = running && state.selected === state.today && store.allDone();
     btn.classList.toggle('ready', finished);
     btn.setAttribute('aria-label', finished ? '운동을 모두 마쳤습니다. 눌러서 운동을 종료하고 총 운동시간 기록' : running ? '운동 종료하고 총 운동시간 기록' : '운동 시작 (시간이 흐릅니다)');
-    // 재는 동안에만 중지·취소가 보임. 재는 중에는 날짜 대신 시간을 크게 보여 줌
+    // 재는 동안에만 중지·초기화가 보임. 재는 중에는 날짜 대신 시간을 크게 보여 줌
     pauseBtn.hidden = !running;
     cancelBtn.hidden = !running;
     pauseBtn.textContent = paused ? '재개' : '중지';
     pauseBtn.classList.toggle('resume', paused); // 멈춰 있으면 '재개'를 눈에 띄게
     pauseBtn.setAttribute('aria-label', paused ? '운동 시간 이어서 재기' : '운동 시간 잠시 멈추기');
-    // 재지 않는 동안, 오늘 기록된 운동시간이 있으면 초기화 버튼이 보임 (지난 날에는 두지 않음)
-    resetBtn.hidden = running || !total || state.selected !== state.today;
     root.querySelector('.headline').classList.toggle('working', running);
     setScreenAwake(wakeOwner, running && !paused);
   }
@@ -152,36 +149,11 @@ export function mountWorkbar(root, store) {
     }
     renderWork();
   });
-  // 취소: 기록하지 않고 바로 버림
+  // 초기화: 지금 재는 시간만 기록하지 않고 버림. 이미 기록된 운동시간(앞 회차 등)은 건드리지 않음
   $('#wCancel', root).addEventListener('click', () => {
     haptic();
     ticking(false);
     session.cancel();
-    renderWork();
-  });
-  // 초기화: 선택한 날의 기록된 운동시간을 바로 지움
-  // 시간 초기화는 되돌릴 수 없어, 팝업 없이 같은 버튼을 한 번 더 눌러야 지움(3초 안에 다시 누르지 않으면 원래대로)
-  let armTimer = 0;
-  function disarm() {
-    clearTimeout(armTimer);
-    armTimer = 0;
-    const b = $('#wReset', root);
-    b.classList.remove('armed');
-    b.textContent = '시간 초기화';
-    b.setAttribute('aria-label', '기록된 운동시간 지우기');
-  }
-  $('#wReset', root).addEventListener('click', () => {
-    haptic();
-    const b = $('#wReset', root);
-    if (!armTimer) {
-      b.classList.add('armed');
-      b.textContent = '한 번 더 누르면 지움';
-      b.setAttribute('aria-label', '한 번 더 누르면 기록된 운동시간을 지웁니다');
-      armTimer = setTimeout(disarm, 3000);
-      return;
-    }
-    disarm();
-    actions.clearWorkSec(store.state.selected);
     renderWork();
   });
   // 화면을 다시 켰을 때 흐른 시간을 바로 보여 줌
