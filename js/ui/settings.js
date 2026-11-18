@@ -470,8 +470,16 @@ export function mountSettings(root, store, theme = null) {
   });
 
   // 빠뜨린 날의 운동 시간을 직접 넣음(이미 시간이 있는 날은 그 위에 더해짐). 오늘까지만
-  el('addDate').max = todayStr();
-  el('addDate').value = todayStr();
+  // 앱을 켜 둔 채 자정이 지나면 고를 수 있는 마지막 날과(오늘을 골라 두었으면) 고른 날도 새 오늘로 옮김
+  let addToday = null;
+  function syncAddDate(today) {
+    if (today === addToday) return;
+    const input = el('addDate');
+    if (!input.value || input.value === addToday || input.value > today) input.value = today;
+    input.max = today;
+    addToday = today;
+  }
+  syncAddDate(store.state.today || todayStr());
   el('timeAdd').addEventListener('submit', (e) => {
     e.preventDefault();
     const d = el('addDate').value;
@@ -489,6 +497,7 @@ export function mountSettings(root, store, theme = null) {
   });
 
   return function render(state) {
+    syncAddDate(state.today);
     renderTimes(state);
     const account = state.adapter.account;
     const kind = state.adapter.kind;
