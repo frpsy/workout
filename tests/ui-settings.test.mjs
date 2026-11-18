@@ -265,3 +265,26 @@ test('설정: 운동 시간 목록은 최근 14일만 보이고 전체 보기로
   assert.ok(root.querySelector(`#timeList [data-date="${old}"]`));
   store.actions.flushAll();
 });
+
+test('설정: 앱을 켜 둔 채 자정이 지나면 운동 시간 넣기 날짜도 새 오늘로 바뀜', async () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  const today = store.state.today;
+  const date = () => root.querySelector('#addDate');
+  assert.equal(date().value, today);
+  assert.equal(date().max, today);
+  const next = addDays(today, 1);
+  store.state.today = next;
+  store.actions.select(next);
+  assert.equal(date().max, next, '고를 수 있는 마지막 날이 새 오늘');
+  assert.equal(date().value, next, '오늘을 골라 두었으면 새 오늘로 옮김');
+  // 일부러 고른 지난 날은 그대로 둠
+  date().value = addDays(next, -5);
+  store.state.today = addDays(next, 1);
+  store.actions.select(store.state.today);
+  assert.equal(date().value, addDays(next, -5));
+  store.actions.flushAll();
+});
