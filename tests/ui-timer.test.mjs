@@ -354,3 +354,32 @@ test('오늘+타이머: 한 종목을 다 마치면 다음 종목이 펼쳐지�
   store.actions.flushAll();
   localStorage.removeItem('workout-check:timer');
 });
+
+test('타이머: 휴식 끝 표시는 지난 시간 글자만 바꾸고(안쪽 요소 유지), 닫은 직후 이어진 탭은 휴식 시간을 바꾸지 않음', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  localStorage.removeItem('workout-check:timer');
+  document.body.innerHTML = '<div id="timer"></div>';
+  const root = document.getElementById('timer');
+  mountTimer(root);
+  const time = root.querySelector('#tTime');
+  root.querySelector('#tGo').click();
+  mock.timers.tick(60_500);
+  const bell = time.querySelector('.tend');
+  assert.ok(bell, '휴식 끝 표시');
+  mock.timers.tick(3_000);
+  assert.equal(time.querySelector('.tend'), bell, '지난 시간이 흘러도 같은 요소(깜박임 없음)');
+  assert.equal(time.textContent, '휴식 끝+0:03');
+
+  time.click(); // 닫기
+  const bar = root.querySelector('#timerBar');
+  assert.equal(bar.classList.contains('done'), false);
+  assert.equal(bar.classList.contains('settle'), true, '평소 줄로 부드럽게 돌아옴');
+  time.click(); // 두 번 누름
+  assert.equal(time.textContent, '1:00', '닫은 직후 탭은 프리셋을 바꾸지 않음');
+  mock.timers.tick(600);
+  assert.equal(bar.classList.contains('settle'), false);
+  time.click();
+  assert.equal(time.textContent, '1:30', '조금 뒤에는 평소처럼 프리셋');
+  localStorage.removeItem('workout-check:timer');
+});

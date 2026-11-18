@@ -105,8 +105,12 @@ export function mountTimer(root) {
     const time = $('#tTime', root);
     const done = doneAt !== null && !running;
     const over = done ? fmt(Math.max(0, Math.floor((Date.now() - doneAt) / 1000))) : '';
-    if (done) time.innerHTML = `<span class="tend">휴식 끝</span><span class="tover">+${over}</span>`;
-    else time.textContent = fmt(left);
+    // 글자만 바꿈: 0.25초마다 안쪽 요소를 새로 만들면 종 아이콘이 깜박이고, 누르는 도중 손가락 아래 요소가 바뀌어 탭이 씹힘
+    if (done) {
+      if (!time.querySelector('.tover')) time.innerHTML = '<span class="tend">휴식 끝</span><span class="tover"></span>';
+      const ov = time.querySelector('.tover');
+      if (ov.textContent !== `+${over}`) ov.textContent = `+${over}`;
+    } else if (time.textContent !== fmt(left) || time.firstElementChild) time.textContent = fmt(left);
     time.disabled = running; // 실행 중에는 프리셋을 바꾸지 않음
     time.setAttribute('aria-label', running ? `남은 시간 ${fmt(left)}` : done ? `휴식 끝, ${over} 지남 (누르면 닫기)` : `휴식 ${fmt(timer.duration)} (누르면 30·60·90초로 바뀜)`);
     const bar = $('#timerBar', root);
@@ -165,7 +169,26 @@ export function mountTimer(root) {
   on(EV.progressCleared, quietStop);
   on(EV.allDone, quietStop);
   on(EV.ended, quietStop); // ■ 운동 종료 버튼을 누르면 휴식도 중지
-  $('#tTime', root).addEventListener('click', () => (doneAt !== null ? clearDone() : timer.nextPreset())); // '휴식 끝'이면 닫고, 아니면 30 → 60 → 90초
+  // '휴식 끝'이면 닫고, 아니면 30 → 60 → 90초.
+  // 닫은 직후 잠깐은 이어진 탭(두 번 누름·늦게 온 클릭)이 휴식 시간을 바꾸지 않게 하고, 평소 줄로 부드럽게 돌아옴
+  let calmUntil = 0;
+  let settleTimer = 0;
+  const bar = $('#timerBar', root);
+  function settle() {
+    clearTimeout(settleTimer);
+    bar.classList.add('settle');
+    settleTimer = setTimeout(() => bar.classList.remove('settle'), 400);
+  }
+  $('#tTime', root).addEventListener('click', () => {
+    if (doneAt !== null) {
+      clearDone();
+      calmUntil = Date.now() + 500;
+      settle();
+      return;
+    }
+    if (Date.now() < calmUntil) return;
+    timer.nextPreset();
+  });
   $('#tMinus', root).addEventListener('click', () => timer.adjust(-STEP_SEC));
   $('#tPlus', root).addEventListener('click', () => timer.adjust(STEP_SEC));
 
