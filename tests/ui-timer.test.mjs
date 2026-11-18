@@ -315,3 +315,42 @@ test('자동 휴식 설정: 기본 켜짐, 끄면 이 브라우저에 기억', a
   assert.equal(loadDuration(), 75, '자동 설정을 바꿔도 시간 설정은 유지');
   localStorage.removeItem('workout-check:timer');
 });
+
+test('오늘+타이머: 한 종목을 다 마치면 다음 종목이 펼쳐지고, 세트 사이 시간과 따로 1분 쉼', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  localStorage.setItem('workout-check:timer', JSON.stringify({ duration: 30 }));
+  const { store, root } = setup(today);
+  const timerRoot = document.createElement('div');
+  document.body.appendChild(timerRoot);
+  mountTimer(timerRoot);
+  const go = () => timerRoot.querySelector('#tGo');
+  const time = () => timerRoot.querySelector('#tTime').textContent;
+  const rows = [...root.querySelectorAll('.row')];
+  const scrolled = [];
+  for (const r of rows) r.scrollIntoView = () => scrolled.push(r);
+  const check = rows[0].querySelector('[data-f="check"]');
+
+  check.click(); // 첫 세트
+  assert.equal(time(), '0:30', '세트 사이는 정해 둔 시간');
+  go().click();
+  for (let i = 0; i < 20 && !rows[0].classList.contains('done'); i++) {
+    check.click();
+    if (go().textContent === '휴식 중지' && !rows[0].classList.contains('done')) go().click();
+  }
+  assert.equal(rows[0].classList.contains('done'), true);
+  assert.equal(go().textContent, '휴식 중지', '종목을 마치면 휴식 시작');
+  assert.equal(time(), '1:00', '종목 사이는 1분');
+  assert.equal(timerRoot.querySelector('#timerBar').classList.contains('between'), true);
+  assert.equal(rows[1].classList.contains('current'), true, '다음 종목이 지금 할 종목으로 펼쳐짐');
+  assert.deepEqual(scrolled, [rows[1]], '다음 종목이 보이게 넘김');
+  assert.match(root.querySelector('#nextNote').textContent, /^다음 종목: /);
+  timerRoot.querySelector('#tPlus').click();
+  assert.equal(time(), '1:15', '이번 휴식만 늘림');
+  mock.timers.tick(76_000);
+  assert.equal(timerRoot.querySelector('#timerBar').classList.contains('done'), true);
+  mock.timers.tick(61_000);
+  assert.equal(time(), '0:30', '끝나면 세트 사이 시간으로 돌아감');
+  store.actions.flushAll();
+  localStorage.removeItem('workout-check:timer');
+});

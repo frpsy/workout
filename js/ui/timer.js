@@ -1,7 +1,7 @@
 // 한 줄 휴식 타이머: 휴식 [−15] 1:00 [+15] [시작]
 // 쉬는 동안 줄 바탕이 남은 시간만큼 줄어들고, 끝나면 줄 전체가 초록으로 커지며 '휴식 끝 +0:07'처럼 지난 시간을 잠시 보여 줍니다(화면 가장자리도 잠깐 번쩍임).
 
-import { createTimer, fmt, STEP_SEC } from '../timer.js';
+import { createTimer, EXERCISE_REST_SEC, fmt, STEP_SEC } from '../timer.js';
 import { playSound, unlockSound } from '../sound.js';
 import { setScreenAwake } from '../screen-awake.js';
 import { $, haptic } from './dom.js';
@@ -87,7 +87,7 @@ export function mountTimer(root) {
     const frac = timer.fraction();
     fill.style.transform = `scaleX(${frac.toFixed(4)})`; // 애니메이션을 못 쓰거나 줄이기 설정이면 이 값이 250ms마다 갱신됨
     if (typeof fill.animate !== 'function' || calm()) return;
-    const end = Date.now() + frac * timer.duration * 1000;
+    const end = Date.now() + frac * timer.total * 1000;
     if (fillAnim && Math.abs(end - fillEnd) < 500) return;
     stopFill();
     fillEnd = end;
@@ -113,6 +113,7 @@ export function mountTimer(root) {
     bar.classList.toggle('running', running);
     bar.classList.toggle('ending', running && left <= 3);
     bar.classList.toggle('done', done);
+    bar.classList.toggle('between', running && timer.between); // 종목 사이 휴식
     bar.style.setProperty('--p', `${(running ? timer.fraction() * 100 : 0).toFixed(2)}%`); // 남은 시간만큼 바탕이 채워짐
     syncFill(running);
     const auto = $('#tAuto', root);
@@ -124,11 +125,11 @@ export function mountTimer(root) {
     go.classList.toggle('stop', running);
   }
 
-  function startRest({ quiet = false } = {}) {
+  function startRest({ quiet = false, sec } = {}) {
     unlockSound(); // 소리는 사용자가 누른 순간에만 준비할 수 있음
     doneAt = null;
     $('#tDone', root).textContent = '';
-    timer.start();
+    timer.start(sec);
     if (!quiet) playSound('restStart'); // 세트 체크로 자동 시작할 때는 세트 소리와 겹치지 않게 조용히
     startTicking();
     setScreenAwake(wakeOwner, true);
@@ -144,10 +145,12 @@ export function mountTimer(root) {
     startRest();
   });
   $('#tAuto', root).addEventListener('click', () => timer.setAuto(!timer.auto));
-  // 오늘 화면에서 세트를 체크하면 알려 줌: 자동이 켜져 있고 쉬는 중이 아니면 휴식 시작
-  const onSetChecked = () => {
+  // 오늘 화면에서 세트를 체크하면 알려 줌: 자동이 켜져 있고 쉬는 중이 아니면 휴식 시작.
+  // 한 종목을 다 마쳐 다음 종목으로 넘어갈 때는 세트 사이 시간과 따로 1분 쉼
+  const onSetChecked = (ev) => {
     if (!root.isConnected) return offSetChecked(); // 화면에서 사라진 타이머는 정리
-    if (timer.auto && !timer.running) startRest({ quiet: true });
+    if (!timer.auto || timer.running) return;
+    startRest({ quiet: true, sec: ev?.detail?.exerciseDone ? EXERCISE_REST_SEC : undefined });
   };
   const offSetChecked = on(EV.setChecked, onSetChecked);
   // 오늘 체크를 모두 되돌리거나 모든 운동을 마치면 쉬는 중이던 휴식도 조용히 멈춤(더 쉴 세트가 없음)
