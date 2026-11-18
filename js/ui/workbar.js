@@ -15,7 +15,8 @@ export function mountWorkbar(root, store) {
 
   const session = createSession();
   let workTick = 0;
-
+  // 회차 도중(체크한 것이 있을 때) 초기화했는지. 그 회차에서는 다음 세트를 체크해도 다시 켜지 않음
+  let cancelledMidRound = false;
 
   const wakeOwner = Symbol('workout-session');
 
@@ -68,7 +69,7 @@ export function mountWorkbar(root, store) {
     action.hidden = !canRepeat;
     again.disabled = !state.ready;
     if (canRepeat) {
-      $('#roundSummary', root).textContent = `${roundsDone + 1}회차 ${store.allDone() ? '완료' : '종료'} · 누적 ${fmtKo(total || 0)}`;
+      $('#roundSummary', root).textContent = `${roundsDone + 1}회차를 ${store.allDone() ? '마쳤어요' : '종료했어요'}`;
       btn.hidden = true;
     }
     // 오늘 운동을 모두 마쳤는데 시간을 재는 중이면 종료 버튼을 강조해 기록하도록 안내
@@ -132,7 +133,8 @@ export function mountWorkbar(root, store) {
     const day = state.days[state.today];
     const recorded = !!(day && (day.workSec || (day.sessions && day.sessions.length)));
     // 회차 도중(이미 체크한 것이 있음)에 시간을 기록·취소한 뒤라면 일부러 멈춘 것이므로 다시 켜지 않음
-    if (recorded && !fresh) return;
+    if (fresh && state.selected === state.today) cancelledMidRound = false;
+    else if (recorded || cancelledMidRound) return;
     if (after.setsDone <= before.setsDone || session.running || store.isSessionClosed() || state.selected !== state.today || !state.ready) return;
     startWork();
     renderWork();
@@ -153,6 +155,8 @@ export function mountWorkbar(root, store) {
   $('#wCancel', root).addEventListener('click', () => {
     haptic();
     ticking(false);
+    const st = store.state;
+    cancelledMidRound = st.selected === st.today && store.hasProgress(st.today, { current: true });
     session.cancel();
     renderWork();
   });

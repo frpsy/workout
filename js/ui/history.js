@@ -113,6 +113,8 @@ export function mountHistory(root, store) {
     const { days, today, config } = state;
     const { exs, ids, rest } = ctx;
     const selected = picked || today;
+    // 목표 주차가 월요일에 시작하면 달력 줄과 같으니 주차 시작 표시를 하지 않음
+    const offGrid = parse(config.startDate).getDay() !== 1;
     let h = HEAD;
     for (const ws of weeks) {
       h += `<div class="cal-row"><span class="wk">${shortMD(ws)}</span>`;
@@ -125,7 +127,7 @@ export function mountHistory(root, store) {
         const day = days[d];
         const n = doneCount(day, ids);
         const full = isComplete(day, exs, d);
-        const cls = ['cell', full && 'full', d === today && 'today', d === selected && 'sel', d < config.startDate && 'pre', rest.has(parse(d).getDay()) && 'rest', d >= config.startDate && diffDays(d, config.startDate) % 7 === 0 && 'wkstart'].filter(Boolean).join(' ');
+        const cls = ['cell', full && 'full', d === today && 'today', d === selected && 'sel', d < config.startDate && 'pre', rest.has(parse(d).getDay()) && 'rest', offGrid && d >= config.startDate && diffDays(d, config.startDate) % 7 === 0 && 'wkstart'].filter(Boolean).join(' ');
         const pips =
           ids.length <= MAX_PIPS
             ? '<span class="pips">' + ids.map((id) => `<i class="${isDone(day, id) ? 'on' : ''}"></i>`).join('') + '</span>'
