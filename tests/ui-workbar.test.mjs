@@ -109,14 +109,14 @@ test('오늘: 세트를 되돌리거나 지난 날을 고칠 때는 자동으로
   store.actions.flushAll();
 });
 
-test('오늘: 운동 취소는 바로 기록 없이 버려지고, 기록된 운동시간은 바로 초기화할 수 있음', (t) => {
+test('오늘: 운동 시간 초기화는 지금 재는 시간만 기록 없이 버리고, 이미 기록된 운동시간은 지우지 않음', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
   const { store, root } = setup(today);
   const $$ = (id) => root.querySelector(id);
   $$('#wBtn').click();
   mock.timers.tick(20_000);
-  $$('#wCancel').click(); // 확인 없이 바로 취소
+  $$('#wCancel').click(); // 확인 없이 바로 초기화(지금 재는 시간만)
   assert.equal($$('#wBtn').textContent, '▶ 운동 시작');
   assert.equal($$('#wTime').textContent, '', '취소하면 기록 없음');
   assert.equal(store.state.days[todayStr()], undefined, '아무것도 기록되지 않음');
@@ -124,34 +124,25 @@ test('오늘: 운동 취소는 바로 기록 없이 버려지고, 기록된 운�
   mock.timers.tick(10_000);
   assert.equal($$('#wTime').textContent, '', '취소 뒤에는 시간이 더 흐르지 않음');
   assert.equal($$('#wCancel').hidden, true);
-  assert.equal($$('#wReset').hidden, true, '기록이 없으면 초기화 버튼도 없음');
+  assert.equal($$('#wReset'), null, '기록된 운동시간을 지우는 버튼은 없음');
+  assert.equal($$('#wCancel').textContent, '초기화', '재는 중의 버튼 이름은 초기화');
 
   $$('#wBtn').click();
   mock.timers.tick(90_000);
-  $$('#wBtn').click(); // 종료 → 1분 30초 기록
+  $$('#wBtn').click(); // 종료: 1분 30초 기록
   assert.equal(store.state.days[todayStr()].workSec, 90);
-  assert.equal($$('#wReset').hidden, false);
-  store.actions.select(addDays(todayStr(), -1));
-  store.actions.addWorkSec(addDays(todayStr(), -1), 60);
-  assert.equal($$('#wReset').hidden, true, '지난 날에는 초기화 버튼이 없음');
-  store.actions.goToday();
-  assert.equal($$('#wReset').hidden, false);
-  $$('#wReset').click(); // 한 번 누르면 확인 문구만
-  assert.equal(store.state.days[todayStr()].workSec, 90, '한 번 눌러서는 지우지 않음');
-  assert.equal($$('#wReset').textContent, '한 번 더 누르면 지움');
-  mock.timers.tick(3_100);
-  assert.equal($$('#wReset').textContent, '시간 초기화', '3초 안에 다시 누르지 않으면 원래대로');
-  $$('#wReset').click();
-  $$('#wReset').click(); // 두 번 누르면 지움
-  assert.equal(store.state.days[todayStr()].workSec, undefined, '운동시간이 지워짐');
-  assert.equal($$('#wTime').textContent, '');
-  assert.equal($$('#wReset').hidden, true);
+  assert.equal($$('#wCancel').hidden, true, '재지 않을 때는 초기화 버튼이 없음');
+  $$('#wAgain').click(); // 한 번 더 하기: 새로 잼
+  mock.timers.tick(20_000);
+  $$('#wCancel').click(); // 지금 재는 시간만 초기화
+  assert.equal(store.state.days[todayStr()].workSec, 90, '앞서 기록된 시간은 그대로');
+  assert.equal($$('#wTime').textContent, '총 1분', '기록된 시간 표시는 그대로');
 
   $$('#wBtn').click(); // 다시 시작 가능
   mock.timers.tick(3_000);
   assert.equal($$('#wTime').textContent, '0:03');
   $$('#wBtn').click();
-  assert.equal(store.state.days[todayStr()].workSec, 3);
+  assert.equal(store.state.days[todayStr()].workSec, 93, '다시 잰 시간은 앞 기록에 더해짐');
   store.actions.flushAll();
 });
 
