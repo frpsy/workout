@@ -230,7 +230,7 @@ export function mountToday(root, store) {
     const streak = all && selected === today ? currentStreak(state.days, today, exs, new Set(config.restDays || [])) : 0;
     const round = state.days[selected]?.rounds?.length ? state.days[selected].rounds.length + 1 : 1;
     const prefix = selected === today && round > 1 ? `${round}회차 · ` : '';
-    pt.textContent = prefix + (all ? (streak > 1 ? `연속 ${streak}일` : '모두 완료') : `${done}/${total} 완료`);
+    pt.textContent = prefix + (all ? (streak > 1 ? `연속 ${streak}일` : '모두 완료') : `${done}/${total} 종목`);
     pt.title = all && streak > 1 ? `모두 완료 · 연속 ${streak}일` : '';
     pt.classList.toggle('all', all);
 
@@ -251,6 +251,9 @@ export function mountToday(root, store) {
 
     renderLoginNote(state);
     workbar.render();
+    // 오늘 회차를 마치면 더 쉴 세트가 없으니 휴식 타이머를 숨김(쉬던 휴식은 이미 멈춤). 한 번 더 하기를 누르면 다시 보임
+    const timerBox = document.getElementById('timer');
+    if (timerBox) timerBox.hidden = !!(state.ready && selected === today && store.isSessionClosed());
 
     // 저장 문구(오류 포함)가 있으면 주차 안내 자리에 보여 줌
     const st = $('#status', root);

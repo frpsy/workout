@@ -160,8 +160,27 @@ export function mountWorkbar(root, store) {
     renderWork();
   });
   // 초기화: 선택한 날의 기록된 운동시간을 바로 지움
+  // 시간 초기화는 되돌릴 수 없어, 팝업 없이 같은 버튼을 한 번 더 눌러야 지움(3초 안에 다시 누르지 않으면 원래대로)
+  let armTimer = 0;
+  function disarm() {
+    clearTimeout(armTimer);
+    armTimer = 0;
+    const b = $('#wReset', root);
+    b.classList.remove('armed');
+    b.textContent = '시간 초기화';
+    b.setAttribute('aria-label', '기록된 운동시간 지우기');
+  }
   $('#wReset', root).addEventListener('click', () => {
     haptic();
+    const b = $('#wReset', root);
+    if (!armTimer) {
+      b.classList.add('armed');
+      b.textContent = '한 번 더 누르면 지움';
+      b.setAttribute('aria-label', '한 번 더 누르면 기록된 운동시간을 지웁니다');
+      armTimer = setTimeout(disarm, 3000);
+      return;
+    }
+    disarm();
     actions.clearWorkSec(store.state.selected);
     renderWork();
   });

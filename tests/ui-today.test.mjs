@@ -6,9 +6,9 @@ import { fullDays, setup, setupFull, today, complete, setTo } from './helpers/ui
 
 test('오늘: 체크 버튼을 누르면 완료 표시와 진행 문구가 바뀜', () => {
   const { store, root } = setup(today);
-  assert.equal(root.querySelector('#progText').textContent, '0/3 완료');
+  assert.equal(root.querySelector('#progText').textContent, '0/3 종목');
   complete(root.querySelector('.row'));
-  assert.equal(root.querySelector('#progText').textContent, '1/3 완료');
+  assert.equal(root.querySelector('#progText').textContent, '1/3 종목');
   assert.ok(root.querySelector('.row').classList.contains('done'));
   store.actions.flushAll();
 });
@@ -386,7 +386,7 @@ test('오늘: 아침·저녁 버튼은 없고, 모든 운동을 마치면 모두
   const checks = [...root.querySelectorAll('.row [data-f="check"]')];
   complete(checks[0]);
   complete(checks[1]);
-  assert.equal(root.querySelector('#progText').textContent, '2/3 완료');
+  assert.equal(root.querySelector('#progText').textContent, '2/3 종목');
   assert.equal(store.allDone(), false);
   complete(checks[2]);
   assert.equal(store.allDone(), true);
@@ -465,5 +465,20 @@ test('오늘: 지금 할 종목(마치지 않은 첫 종목)만 current로 표�
   assert.ok(rows[2].classList.contains('open'), '영상 링크를 눌러서는 접히지 않음');
   info.querySelector('.name').click();
   assert.ok(!rows[2].classList.contains('open'));
+  store.actions.flushAll();
+});
+
+test('오늘: 회차를 마치면 휴식 타이머를 숨기고, 한 번 더 하기를 누르면 다시 보임', () => {
+  const { store, root } = setup(today);
+  const box = document.createElement('div');
+  box.id = 'timer';
+  document.body.appendChild(box);
+  store.actions.select(store.state.today); // 다시 그리기
+  assert.equal(box.hidden, false, '운동 중에는 보임');
+  for (const r of root.querySelectorAll('.row')) complete(r);
+  assert.equal(store.allDone(), true);
+  assert.equal(box.hidden, true, '모두 마치면 숨김');
+  root.querySelector('#wAgain').click();
+  assert.equal(box.hidden, false, '한 번 더 하기를 누르면 다시 보임');
   store.actions.flushAll();
 });
