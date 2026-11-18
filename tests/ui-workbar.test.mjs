@@ -391,7 +391,7 @@ test('세션 UX: 완료하면 작은 화면에서도 별도 재운동 줄을 보
   assert.equal(action.hidden, true);
   for (const row of root.querySelectorAll('.row')) complete(row);
   assert.equal(action.hidden, false);
-  assert.match(root.querySelector('#roundSummary').textContent, /1회차 완료/);
+  assert.match(root.querySelector('#roundSummary').textContent, /^1회차를 마쳤어요$/, '누적 시간은 위 머리말에만');
   assert.equal(start.hidden, true);
   root.querySelector('#wAgain').click();
   assert.equal(action.hidden, true);
@@ -479,5 +479,23 @@ test('오늘: 앞서 운동 시간을 기록한 날에도 새 회차의 첫 세�
   $$('#wCancel').click();
   setTo(rows[0], 2);
   assert.equal($$('#wBtn').textContent, '▶ 운동 시작', '회차 도중 취소했으면 다시 켜지 않음');
+  store.actions.flushAll();
+});
+
+test('오늘: 첫 회차 도중 초기화하면 다음 세트를 체크해도 운동 시간을 다시 켜지 않음', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const $$ = (id) => root.querySelector(id);
+  const row = root.querySelector('.row');
+  setTo(row, 1); // 첫 세트: 자동 시작
+  assert.equal($$('#wBtn').textContent, '■ 종료');
+  $$('#wCancel').click(); // 기록된 시간이 없는 채로 초기화
+  setTo(row, 2);
+  assert.equal($$('#wBtn').textContent, '▶ 운동 시작', '회차 도중 초기화했으면 다시 켜지 않음');
+  setTo(row, 0); // 체크를 모두 되돌리면 새로 시작하는 회차
+  setTo(row, 1);
+  assert.equal($$('#wBtn').textContent, '■ 종료', '다시 첫 세트부터면 자동 시작');
+  $$('#wCancel').click();
   store.actions.flushAll();
 });
