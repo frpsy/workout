@@ -1,4 +1,4 @@
-// 운동 스톱워치와 휴식 타이머가 하나의 Screen Wake Lock을 공유합니다.
+// 앱 열림(main.js)·운동 스톱워치·휴식 타이머가 하나의 Screen Wake Lock을 공유합니다.
 // 브라우저가 화면 잠금을 거부하거나 앱을 숨기면 강제할 수 없습니다.
 const owners = new Set();
 let lock = null;
@@ -58,7 +58,7 @@ function register() {
   }, { passive: true });
 }
 
-/** owner별 사용 여부. 스톱워치와 휴식 타이머 중 하나라도 실행 중이면 유지. */
+/** owner별 사용 여부. 하나라도 켜져 있으면 유지(앱이 화면에 보일 때만). */
 export function setScreenAwake(owner, active) {
   const wasActive = owners.has(owner);
   if (active) owners.add(owner);

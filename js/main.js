@@ -1,6 +1,7 @@
 // 시작점: 저장소를 고르고, 상태를 만들고, 화면 조각을 붙입니다.
 
 import { createProgress } from './boot-progress.js';
+import { setScreenAwake } from './screen-awake.js';
 import { restoreSound } from './sound.js';
 import { mountTheme } from './theme.js';
 import { createStorage } from './storage/index.js';
@@ -23,6 +24,10 @@ async function requestPersistentStorage() {
 
 const splash = document.getElementById('splash');
 const progress = splash ? createProgress(splash) : null;
+
+// 운동 중에는 기기를 만지지 않는 시간이 길어, 앱이 화면에 떠 있는 동안 늘 화면 꺼짐을 막습니다.
+// 다른 앱으로 가거나 화면을 직접 끄면 풀리고, 돌아오면 다시 요청합니다.
+setScreenAwake(Symbol('app-open'), true);
 
 const theme = mountTheme(); // 화면 색: 앱을 오가며 순간적으로 어둡게 읽히는 값에 흔들리지 않게
 

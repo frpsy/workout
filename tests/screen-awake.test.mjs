@@ -106,3 +106,47 @@ test('화면 켜짐: 비동기 허가가 늦게 돌아오더라도 종료 후 �
     else delete globalThis.navigator;
   }
 });
+
+test('화면 켜짐: 앱이 열려 있으면 타이머가 멈춰도 유지, 거절되면 다음 터치에 재시도', async () => {
+  const doc = new EventTarget();
+  doc.hidden = false;
+  const prevDoc = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  const prevNav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: doc });
+  let requests = 0;
+  let releases = 0;
+  let deny = true;
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { wakeLock: { request: async () => {
+      requests++;
+      if (deny) throw new Error('NotAllowedError');
+      return { released: false, release: async () => { releases++; } };
+    } } },
+  });
+  const { setScreenAwake } = await import('../js/screen-awake.js?app-open') /* 새 문서에 이벤트를 다시 걸도록 새 모듈 */;
+  const app = Symbol('app-open');
+  const rest = Symbol('rest');
+  const flush = () => new Promise((r) => setImmediate(r));
+  try {
+    setScreenAwake(app, true);
+    await flush();
+    assert.equal(requests, 1, '앱을 열면 바로 요청');
+    deny = false;
+    doc.dispatchEvent(new Event('pointerdown'));
+    await flush();
+    assert.equal(requests, 2, '처음 거절되면 첫 터치에서 다시 요청');
+    setScreenAwake(rest, true);
+    setScreenAwake(rest, false);
+    await flush();
+    assert.equal(releases, 0, '휴식이 끝나도 앱이 열려 있으면 유지');
+    assert.equal(requests, 2, '이미 잠금이 있으면 다시 요청하지 않음');
+  } finally {
+    setScreenAwake(app, false);
+    setScreenAwake(rest, false);
+    if (prevDoc) Object.defineProperty(globalThis, 'document', prevDoc);
+    else delete globalThis.document;
+    if (prevNav) Object.defineProperty(globalThis, 'navigator', prevNav);
+    else delete globalThis.navigator;
+  }
+});
