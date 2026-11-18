@@ -1258,6 +1258,15 @@ tr.cur td { background: var(--accent-soft); }
 .sgroup > .sub, .sgroup > .status { margin: 0; }
 .shint { font-size: var(--fs-xs); color: var(--muted); }
 .slist { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 0 16px; }
+/* 설정의 ‘운동 시간 기록’: 날짜 · 시간 · 지우기 한 줄씩 */
+.timelist { list-style: none; margin: 0; padding: 0 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+.timeitem { display: flex; align-items: center; gap: var(--gap); min-height: 52px; }
+.timeitem + .timeitem, .timelist > .empty { border-top: 1px solid var(--line); }
+.timeitem .tdate { flex: 1; min-width: 0; }
+.timeitem .tval { color: var(--muted); font-variant-numeric: tabular-nums; }
+.timeitem .icon.danger { margin-left: 0; }
+.timeitem .icon.danger.armed { background: var(--err); color: var(--on-accent); } /* 한 번 누른 뒤: 한 번 더 누르면 지움 */
+.timelist > .empty { padding: 14px 0; margin: 0; }
 .srow {
   display: flex;
   align-items: center;

@@ -1,7 +1,8 @@
 // 운동·목표 설정과 계정(로그인)
 
 import { DEFAULT_SETS, LIMITS, PRESETS, UNITS } from '../config.js';
-import { DOW, todayStr } from '../dates.js';
+import { DOW, dowName, labelMD, todayStr } from '../dates.js';
+import { fmtKo } from '../session.js';
 import { newExerciseId, validateConfig } from '../model.js';
 import { canPlayInSilentMode, isSilentModeOn, playSound, setSilentMode } from '../sound.js';
 import { THEMES, THEME_LABEL } from '../theme.js';
@@ -109,6 +110,12 @@ export function mountSettings(root, store, theme = null) {
       <span class="dirty-note" id="dirtyNote" hidden>저장하지 않은 변경이 있습니다</span>
     </div>
     <p class="status" id="configStatus" role="status" aria-live="polite"></p>
+
+    <section class="sgroup" id="timeBox">
+      <h2 class="sgh">운동 시간 기록</h2>
+      <p class="sub">잘못 기록된 날의 운동 시간을 지웁니다. 세트 체크는 그대로이고, 지운 시간은 되돌릴 수 없습니다.</p>
+      <ul class="timelist" id="timeList"></ul>
+    </section>
 
     <p class="app-version" id="appVersion">${esc(versionLabel(VERSION))}</p>`;
 
@@ -358,7 +365,46 @@ export function mountSettings(root, store, theme = null) {
     el('acctBtn').disabled = false;
   });
 
+  /* ---------- 운동 시간 기록 지우기: 날짜별로, 팝업 없이 같은 버튼을 3초 안에 한 번 더 눌러야 지움 ---------- */
+  let confirmTime = null; // 지우기 확인 중인 날짜
+  let confirmTimeTimer;
+  function renderTimes(state) {
+    const days = Object.keys(state.days)
+      .filter((d) => state.days[d] && state.days[d].workSec > 0)
+      .sort()
+      .reverse()
+      .slice(0, 14); // 최근 14일
+    el('timeList').innerHTML = days.length
+      ? days
+          .map((d) => {
+            const day = state.days[d];
+            const n = day.sessions ? day.sessions.length : 0;
+            const sure = confirmTime === d;
+            return `<li class="timeitem"><span class="tdate">${labelMD(d)} (${dowName(d)})</span><span class="tval">${fmtKo(day.workSec)}${n > 1 ? ` · ${n}회` : ''}</span><button type="button" class="icon danger${sure ? ' armed' : ''}" data-date="${d}" aria-label="${labelMD(d)} 운동 시간 지우기${sure ? ' (한 번 더 누르면 지움)' : ''}">${sure ? '한 번 더' : '지우기'}</button></li>`;
+          })
+          .join('')
+      : '<li class="empty">기록된 운동 시간이 없습니다.</li>';
+  }
+  el('timeList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-date]');
+    if (!b) return;
+    const d = b.dataset.date;
+    clearTimeout(confirmTimeTimer);
+    if (confirmTime !== d) {
+      confirmTime = d;
+      confirmTimeTimer = setTimeout(() => {
+        confirmTime = null;
+        renderTimes(store.state);
+      }, 3000);
+    } else {
+      confirmTime = null;
+      actions.clearWorkSec(d);
+    }
+    renderTimes(store.state);
+  });
+
   return function render(state) {
+    renderTimes(state);
     const account = state.adapter.account;
     const kind = state.adapter.kind;
     // 한 줄로: 어디에 저장되는지 + 로그인/로그아웃

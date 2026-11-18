@@ -160,3 +160,36 @@ test('설정: 되돌리기는 고치던 운동 이름·숫자를 저장된 값�
   assert.equal(root.querySelector('#saveBar').classList.contains('dirty'), false);
   store.actions.flushAll();
 });
+
+test('설정: 운동 시간 기록을 날짜별로 보여 주고, 지우기는 같은 버튼을 한 번 더 눌러야 지움(세트 체크는 그대로)', async (t) => {
+  const { mock } = await import('node:test');
+  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const ad = adapter();
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  assert.match(root.querySelector('#timeList').textContent, /기록된 운동 시간이 없습니다/);
+
+  store.actions.toggle('push');
+  store.actions.addWorkSec(todayStr(), 90, { s: 1, e: 91_000 });
+  store.actions.addWorkSec(todayStr(), 30, { s: 100_000, e: 130_000 });
+  const item = () => root.querySelector('.timeitem');
+  assert.match(item().textContent, /2분 · 2회/, '합계와 회차 수를 보여 줌');
+
+  const btn = () => root.querySelector('.timeitem button');
+  btn().click();
+  assert.equal(btn().textContent, '한 번 더');
+  assert.equal(store.state.days[todayStr()].workSec, 120, '한 번 눌러서는 지우지 않음');
+  mock.timers.tick(3_100);
+  assert.equal(btn().textContent, '지우기', '3초 안에 다시 누르지 않으면 원래대로');
+
+  btn().click();
+  btn().click();
+  assert.equal(store.state.days[todayStr()].workSec, undefined, '두 번 누르면 그날 운동 시간이 지워짐');
+  assert.equal(store.state.days[todayStr()].sessions, undefined);
+  assert.ok(store.state.days[todayStr()].entries.push, '세트 체크 기록은 남음');
+  assert.match(root.querySelector('#timeList').textContent, /기록된 운동 시간이 없습니다/);
+  store.actions.flushAll();
+});
