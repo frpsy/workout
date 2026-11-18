@@ -113,8 +113,15 @@ export function mountSettings(root, store, theme = null) {
 
     <section class="sgroup" id="timeBox">
       <h2 class="sgh">운동 시간 기록</h2>
-      <p class="sub">잘못 기록된 날의 운동 시간을 지웁니다. 세트 체크는 그대로이고, 지운 시간은 되돌릴 수 없습니다.</p>
+      <p class="sub">잘못 기록된 날의 운동 시간을 분 단위로 고치거나 지우고, 빠뜨린 날은 아래에서 직접 넣습니다(이미 시간이 있는 날은 더해집니다). 세트 체크는 그대로입니다.</p>
       <ul class="timelist" id="timeList"></ul>
+      <form class="timeadd" id="timeAdd">
+        <label class="sr" for="addDate">날짜</label>
+        <input id="addDate" type="date" required>
+        <label class="sr" for="addMin">운동 시간(분)</label>
+        <input id="addMin" type="number" aria-label="운동 시간(분)" inputmode="numeric" min="1" max="1440" step="1" placeholder="분" required>
+        <button type="submit" class="btn ghost" id="addTime" aria-label="운동 시간 넣기">넣기</button>
+      </form>
     </section>
 
     <p class="app-version" id="appVersion">${esc(versionLabel(VERSION))}</p>`;
@@ -368,7 +375,11 @@ export function mountSettings(root, store, theme = null) {
   /* ---------- 운동 시간 기록 지우기: 날짜별로, 팝업 없이 같은 버튼을 3초 안에 한 번 더 눌러야 지움 ---------- */
   let confirmTime = null; // 지우기 확인 중인 날짜
   let confirmTimeTimer;
-  function renderTimes(state) {
+  let editTime = null; // 분을 직접 고치는 중인 날짜
+  const minutesOf = (sec) => Math.max(1, Math.round(sec / 60));
+  function renderTimes(state, { force = false } = {}) {
+    // 고치는 중에 저장소가 바뀌어도(다른 기기 동기화 등) 입력 중인 칸을 다시 그려 지우지 않음
+    if (!force && editTime && el('timeList').contains(document.activeElement)) return;
     const days = Object.keys(state.days)
       .filter((d) => state.days[d] && state.days[d].workSec > 0)
       .sort()
@@ -380,27 +391,86 @@ export function mountSettings(root, store, theme = null) {
             const day = state.days[d];
             const n = day.sessions ? day.sessions.length : 0;
             const sure = confirmTime === d;
-            return `<li class="timeitem"><span class="tdate">${labelMD(d)} (${dowName(d)})</span><span class="tval">${fmtKo(day.workSec)}${n > 1 ? ` · ${n}회` : ''}</span><button type="button" class="icon danger${sure ? ' armed' : ''}" data-date="${d}" aria-label="${labelMD(d)} 운동 시간 지우기${sure ? ' (한 번 더 누르면 지움)' : ''}">${sure ? '한 번 더' : '지우기'}</button></li>`;
+            const label = `${labelMD(d)} (${dowName(d)})`;
+            if (editTime === d) {
+              return `<li class="timeitem editing"><span class="tdate">${label}</span><input class="tmin" type="number" inputmode="numeric" min="1" max="1440" step="1" value="${minutesOf(day.workSec)}" aria-label="${label} 운동 시간(분)"><span class="tunit">분</span><button type="button" class="icon" data-act="save" data-date="${d}" aria-label="${label} 시간 저장">저장</button><button type="button" class="icon" data-act="cancel" data-date="${d}" aria-label="고치기 취소">취소</button></li>`;
+            }
+            return `<li class="timeitem"><span class="tdate">${label}</span><span class="tval">${fmtKo(day.workSec)}${n > 1 ? ` · ${n}회` : ''}</span><button type="button" class="icon" data-act="edit" data-date="${d}" aria-label="${label} 운동 시간 고치기">고치기</button><button type="button" class="icon danger${sure ? ' armed' : ''}" data-act="del" data-date="${d}" aria-label="${label} 운동 시간 지우기${sure ? ' (한 번 더 누르면 지움)' : ''}">${sure ? '한 번 더' : '지우기'}</button></li>`;
           })
           .join('')
       : '<li class="empty">기록된 운동 시간이 없습니다.</li>';
+  }
+  function saveEdit(d) {
+    const input = el('timeList').querySelector('.tmin');
+    const min = Math.round(Number(input && input.value));
+    if (!Number.isFinite(min) || min < 1 || min > 1440) {
+      if (input) input.focus();
+      return;
+    }
+    editTime = null;
+    actions.setWorkSec(d, min * 60);
+    renderTimes(store.state, { force: true });
   }
   el('timeList').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-date]');
     if (!b) return;
     const d = b.dataset.date;
+    const act = b.dataset.act;
     clearTimeout(confirmTimeTimer);
-    if (confirmTime !== d) {
+    if (act === 'edit') {
+      confirmTime = null;
+      editTime = d;
+      renderTimes(store.state, { force: true });
+      const input = el('timeList').querySelector('.tmin');
+      if (input) {
+        input.focus();
+        input.select();
+      }
+      return;
+    }
+    if (act === 'cancel') {
+      editTime = null;
+    } else if (act === 'save') {
+      return saveEdit(d);
+    } else if (confirmTime !== d) {
       confirmTime = d;
+      editTime = null;
       confirmTimeTimer = setTimeout(() => {
         confirmTime = null;
-        renderTimes(store.state);
+        renderTimes(store.state, { force: true });
       }, 3000);
     } else {
       confirmTime = null;
       actions.clearWorkSec(d);
     }
-    renderTimes(store.state);
+    renderTimes(store.state, { force: true });
+  });
+  el('timeList').addEventListener('keydown', (e) => {
+    const input = e.target.closest('.tmin');
+    if (!input) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(editTime);
+    } else if (e.key === 'Escape') {
+      editTime = null;
+      renderTimes(store.state, { force: true });
+    }
+  });
+
+  // 빠뜨린 날의 운동 시간을 직접 넣음(이미 시간이 있는 날은 그 위에 더해짐). 오늘까지만
+  el('addDate').max = todayStr();
+  el('addDate').value = todayStr();
+  el('timeAdd').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const d = el('addDate').value;
+    const min = Math.round(Number(el('addMin').value));
+    if (!d || d > store.state.today || !Number.isFinite(min) || min < 1 || min > 1440) {
+      el('addMin').focus();
+      return;
+    }
+    actions.addWorkSec(d, min * 60);
+    el('addMin').value = '';
+    renderTimes(store.state, { force: true });
   });
 
   return function render(state) {

@@ -1,7 +1,7 @@
 // 설정 탭 테스트 (가짜 DOM 환경은 helpers/ui-env.mjs)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { todayStr } from '../js/dates.js';
+import { addDays, todayStr } from '../js/dates.js';
 import { adapter, createStore, mountSettings, tick } from './helpers/ui-env.mjs';
 
 test('추천 운동을 연속 추가해도 표시한 운동과 실제 추가한 운동이 같음', async () => {
@@ -178,7 +178,7 @@ test('설정: 운동 시간 기록을 날짜별로 보여 주고, 지우기는 �
   const item = () => root.querySelector('.timeitem');
   assert.match(item().textContent, /2분 · 2회/, '합계와 회차 수를 보여 줌');
 
-  const btn = () => root.querySelector('.timeitem button');
+  const btn = () => root.querySelector('.timeitem [data-act="del"]');
   btn().click();
   assert.equal(btn().textContent, '한 번 더');
   assert.equal(store.state.days[todayStr()].workSec, 120, '한 번 눌러서는 지우지 않음');
@@ -191,5 +191,49 @@ test('설정: 운동 시간 기록을 날짜별로 보여 주고, 지우기는 �
   assert.equal(store.state.days[todayStr()].sessions, undefined);
   assert.ok(store.state.days[todayStr()].entries.push, '세트 체크 기록은 남음');
   assert.match(root.querySelector('#timeList').textContent, /기록된 운동 시간이 없습니다/);
+  store.actions.flushAll();
+});
+
+test('설정: 운동 시간을 분 단위로 고치고(구간은 지움), 빠뜨린 날은 직접 넣을 수 있음', async () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  const today = todayStr();
+  store.actions.addWorkSec(today, 90, { s: 1, e: 91_000 });
+  const day = () => store.state.days[today];
+  const list = () => root.querySelector('#timeList');
+
+  list().querySelector('[data-act="edit"]').click();
+  const input = list().querySelector('.tmin');
+  assert.equal(input.value, '2', '분 단위로 보여 줌(90초 → 2분)');
+  input.value = '45';
+  list().querySelector('[data-act="save"]').click();
+  assert.equal(day().workSec, 2700, '45분으로 고침');
+  assert.equal(day().sessions, undefined, '합계와 맞지 않는 시작·종료 구간은 지움');
+  assert.match(list().textContent, /45분/);
+
+  list().querySelector('[data-act="edit"]').click();
+  list().querySelector('.tmin').value = '0';
+  list().querySelector('[data-act="save"]').click();
+  assert.equal(day().workSec, 2700, '0분은 받지 않고 그대로');
+  list().querySelector('[data-act="cancel"]').click();
+  assert.equal(list().querySelector('.tmin'), null, '취소하면 고치는 칸이 닫힘');
+
+  // 빠뜨린 날 직접 넣기: 어제 30분, 같은 날 10분 더
+  const y = addDays(today, -1);
+  root.querySelector('#addDate').value = y;
+  root.querySelector('#addMin').value = '30';
+  root.querySelector('#timeAdd').dispatchEvent(new window.Event('submit', { cancelable: true }));
+  assert.equal(store.state.days[y].workSec, 1800, '어제 30분 넣음');
+  assert.equal(root.querySelector('#addMin').value, '', '넣은 뒤 분 칸은 비움');
+  root.querySelector('#addMin').value = '10';
+  root.querySelector('#timeAdd').dispatchEvent(new window.Event('submit', { cancelable: true }));
+  assert.equal(store.state.days[y].workSec, 2400, '이미 있는 날은 더해짐');
+  root.querySelector('#addDate').value = addDays(today, 1);
+  root.querySelector('#addMin').value = '5';
+  root.querySelector('#timeAdd').dispatchEvent(new window.Event('submit', { cancelable: true }));
+  assert.equal(store.state.days[addDays(today, 1)], undefined, '내일 이후는 넣지 않음');
   store.actions.flushAll();
 });

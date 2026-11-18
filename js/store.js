@@ -338,6 +338,16 @@ export function createStore(adapter) {
       commitDay(date);
     },
 
+    /** 그날 총 운동시간을 직접 정함(초). 시작·종료 구간은 새 합계와 맞지 않아 함께 지움. 0 이하면 지움 */
+    setWorkSec(date, sec) {
+      if (!state.ready || !isDateStr(date) || date > state.today || !Number.isFinite(sec)) return;
+      if (sec <= 0) return this.clearWorkSec(date);
+      const day = ensureDay(date);
+      day.workSec = Math.min(86400, Math.round(sec));
+      delete day.sessions;
+      commitDay(date);
+    },
+
     /** 그날 기록된 총 운동시간을 지움 */
     clearWorkSec(date) {
       const day = state.days[date];

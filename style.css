@@ -1265,6 +1265,17 @@ tr.cur td { background: var(--accent-soft); }
 .timeitem .tdate { flex: 1; min-width: 0; }
 .timeitem .tval { color: var(--muted); font-variant-numeric: tabular-nums; }
 .timeitem .icon.danger { margin-left: 0; }
+.timeitem.editing { flex-wrap: wrap; padding: 8px 0; row-gap: 6px; }
+.timeitem.editing .tdate { flex: 1 0 100%; }
+.timeitem.editing .tmin { margin-left: auto; }
+.timeitem .icon { white-space: nowrap; }
+.timeitem .tmin { width: 84px; flex: none; text-align: right; }
+.timeitem .tunit { color: var(--muted); }
+/* 빠뜨린 날 직접 넣기: 날짜 · 분 · 버튼 한 줄 */
+.timeadd { display: flex; align-items: center; gap: var(--gap); }
+.timeadd input[type="date"] { flex: 1 1 0; min-width: 0; }
+.timeadd input[type="number"] { width: 76px; flex: none; text-align: right; }
+.timeadd .btn { flex: none; }
 .timeitem .icon.danger.armed { background: var(--err); color: var(--on-accent); } /* 한 번 누른 뒤: 한 번 더 누르면 지움 */
 .timelist > .empty { padding: 14px 0; margin: 0; }
 .srow {
