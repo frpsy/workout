@@ -461,3 +461,26 @@ test('부분 수행 종료 뒤 추가 체크로 타이머가 다시 시작되지
   assert.equal(store.state.days[todayStr()].workSec, 5);
   store.actions.flushAll();
 });
+
+test('오늘: 앞서 운동 시간을 기록한 날에도 새 회차의 첫 세트를 마치면 자동으로 시작', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  const { store, root } = setup(today);
+  const $$ = (id) => root.querySelector(id);
+  const rows = [...root.querySelectorAll('.row')];
+  setTo(rows[0], 1); // 자동 시작
+  mock.timers.tick(10_000);
+  $$('#wBtn').click(); // 종료: 1회차 기록·종료
+  assert.ok(store.state.days[todayStr()].workSec > 0);
+  $$('#wAgain').click(); // 한 번 더 하기: 시작됨
+  assert.equal($$('#wBtn').textContent, '■ 종료');
+  $$('#wCancel').click(); // 시간은 재지 않고 버림
+  assert.equal($$('#wBtn').textContent, '▶ 운동 시작');
+  setTo(rows[0], 1);
+  assert.equal($$('#wBtn').textContent, '■ 종료', '새 회차의 첫 세트에서 자동 시작');
+  mock.timers.tick(5_000);
+  $$('#wCancel').click();
+  setTo(rows[0], 2);
+  assert.equal($$('#wBtn').textContent, '▶ 운동 시작', '회차 도중 취소했으면 다시 켜지 않음');
+  store.actions.flushAll();
+});
