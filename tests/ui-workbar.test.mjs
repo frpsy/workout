@@ -136,7 +136,13 @@ test('오늘: 운동 취소는 바로 기록 없이 버려지고, 기록된 운�
   assert.equal($$('#wReset').hidden, true, '지난 날에는 초기화 버튼이 없음');
   store.actions.goToday();
   assert.equal($$('#wReset').hidden, false);
-  $$('#wReset').click(); // 확인 없이 바로 지움
+  $$('#wReset').click(); // 한 번 누르면 확인 문구만
+  assert.equal(store.state.days[todayStr()].workSec, 90, '한 번 눌러서는 지우지 않음');
+  assert.equal($$('#wReset').textContent, '한 번 더 누르면 지움');
+  mock.timers.tick(3_100);
+  assert.equal($$('#wReset').textContent, '시간 초기화', '3초 안에 다시 누르지 않으면 원래대로');
+  $$('#wReset').click();
+  $$('#wReset').click(); // 두 번 누르면 지움
   assert.equal(store.state.days[todayStr()].workSec, undefined, '운동시간이 지워짐');
   assert.equal($$('#wTime').textContent, '');
   assert.equal($$('#wReset').hidden, true);

@@ -574,7 +574,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .wbtn::after, .wsec::after { content: ''; position: absolute; inset: -4px 0; } /* 누르는 영역 44px */
 .wcancel { color: var(--muted); }
 .wsec.resume { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-.wreset { min-width: 0; padding: 0 10px; font-size: var(--fs-xs); } /* ‘시간 초기화’도 다른 머리말 버튼처럼 옅은 바탕을 가진 버튼으로(글자만 있으면 버튼으로 안 보임) */
+.wreset { min-width: 0; padding: 0 10px; font-size: var(--fs-xs); }
+.wreset.armed { color: var(--warn); } /* 한 번 누른 뒤: 한 번 더 누르면 지운다는 것을 경고색으로 */ /* ‘시간 초기화’도 다른 머리말 버튼처럼 옅은 바탕을 가진 버튼으로(글자만 있으면 버튼으로 안 보임) */
 .headline.working .eyebrow { display: none; } /* 운동 중에는 주차 안내 대신 흐르는 시간을 크게 */
 
 /* 안내 줄(지난 날 고치는 중·로그인 권유) */

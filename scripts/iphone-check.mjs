@@ -258,9 +258,8 @@ async function run(browser, devices, origin, { device, scheme }) {
     }
   }
   await page.clock.runFor(1000);
-  const fin = await page.evaluate(() => ({ running: document.getElementById('timerBar').classList.contains('running'), mode: document.getElementById('jBox').dataset.mode, hidden: document.getElementById('jBox').hidden }));
-  m = await metrics(page);
-  check('모두 마치면 휴식이 멈추고 타이머는 탭 막대 위', !fin.running && m.timerBottom <= m.tabTop, JSON.stringify({ fin, m }));
+  const fin = await page.evaluate(() => ({ running: document.getElementById('timerBar').classList.contains('running'), timerHidden: document.getElementById('timer').hidden, mode: document.getElementById('jBox').dataset.mode, hidden: document.getElementById('jBox').hidden }));
+  check('모두 마치면 휴식이 멈추고 타이머는 숨김(마무리에 집중)', !fin.running && fin.timerHidden, JSON.stringify(fin));
   check('오늘의 마무리는 접힌 한 줄로 시작', !fin.hidden && fin.mode === 'closed', JSON.stringify(fin));
   await shot(page, '5-alldone');
   // 오늘의 마무리를 펼치면 입력 칸과 버튼이 휴식 타이머·탭 막대 뒤에 가려지지 않아야 함
@@ -268,9 +267,9 @@ async function run(browser, devices, origin, { device, scheme }) {
   await page.locator('#jOpen').tap();
   await page.clock.runFor(300);
   const jr = await page.evaluate(() => {
-    const top = document.getElementById('timerBar').getBoundingClientRect().top;
+    const timer = document.getElementById('timer');
     const tabTop = document.getElementById('tabbar').getBoundingClientRect().top;
-    const limit = Math.min(top, tabTop);
+    const limit = timer.hidden ? tabTop : Math.min(document.getElementById('timerBar').getBoundingClientRect().top, tabTop); // 숨긴 타이머는 가리지 않음
     const bottom = (id) => document.getElementById(id).getBoundingClientRect().bottom;
     return { limit, thanks: bottom('jThanks'), later: bottom('jLater') };
   });
