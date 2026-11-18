@@ -61,7 +61,47 @@ export function mountJournal(root, store) {
   }
   feel.addEventListener('input', save);
   thanks.addEventListener('input', save);
-  for (const el of [feel, thanks]) el.addEventListener('focus', () => (editing = true));
+  /* 쓰는 칸을 화면 맨 위로: 휴대폰 키보드가 화면 아래 절반을 덮어도 칸이 가리지 않게.
+     화면 전체가 고정(.pager)이라 iOS가 스스로 칸을 끌어올리지 못하고 키보드 뒤에 두므로, 포커스 순간 직접 맨 위로 올립니다.
+     쓰는 동안(html.typing)은 아래 여백을 늘려 맨 아래 칸도 맨 위까지 올라갈 수 있게 하고, 화면 키보드가 올라와 있으면(html.kb) 키보드 위로 떠오를 수 있는 탭 막대·타이머는 숨깁니다. */
+  let leaveTimer = 0;
+  function liftToTop() {
+    clearTimeout(leaveTimer);
+    document.documentElement.classList.add('typing');
+    const page = root.closest('.page');
+    const box = $('#jBox', root);
+    if (!page || box.hidden) return;
+    const wrap = page.querySelector('.wrap');
+    const top = wrap ? parseFloat(window.getComputedStyle(wrap).paddingTop) || 0 : 0;
+    const delta = box.getBoundingClientRect().top - page.getBoundingClientRect().top - Math.max(0, top - 6);
+    if (Math.abs(delta) > 1) page.scrollTop += delta;
+  }
+  function maybeLeave() {
+    clearTimeout(leaveTimer);
+    // 소감 → 감사한 일로 옮길 때는 잠깐 포커스가 비므로 조금 기다렸다가 판단
+    leaveTimer = setTimeout(() => {
+      if (root.contains(document.activeElement) && document.activeElement.matches('input')) return;
+      document.documentElement.classList.remove('typing', 'kb');
+    }, 200);
+  }
+  for (const el of [feel, thanks]) {
+    el.addEventListener('focus', () => {
+      editing = true;
+      liftToTop();
+    });
+    el.addEventListener('blur', maybeLeave);
+  }
+  // 키보드가 다 올라온 뒤(화면 보이는 영역이 바뀜) iOS가 화면을 밀어 올렸으면 되돌리고 다시 맞춤
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      const html = document.documentElement;
+      // 화면 키보드가 실제로 올라왔을 때만(보이는 높이가 크게 줄어듦) 탭 막대·타이머를 숨김. 하드웨어 키보드에서는 그대로 둠
+      html.classList.toggle('kb', html.classList.contains('typing') && window.innerHeight - window.visualViewport.height > 120);
+      if (!html.classList.contains('typing')) return;
+      if (window.scrollY) window.scrollTo(0, 0);
+      liftToTop();
+    });
+  }
   // 둘 다 한 줄: 소감에서 Enter는 감사한 일로, 감사한 일에서 Enter는 완료
   feel.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.isComposing) {
@@ -76,10 +116,8 @@ export function mountJournal(root, store) {
   function edit() {
     editing = true;
     render(store.state);
-    feel.focus({ preventScroll: true });
-    // 펼친 입력 칸이 휴식 타이머·탭 막대 뒤에 가려지지 않게 끌어올림(포커스가 알아서 올려 주지 않는 경우 대비)
-    const calm = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (typeof root.querySelector('#jBox').scrollIntoView === 'function') root.querySelector('#jBox').scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
+    feel.focus({ preventScroll: true }); // 포커스 때 칸을 화면 맨 위로 올림(liftToTop)
+    liftToTop();
   }
   $('#jDone', root).addEventListener('click', () => {
     editing = false;

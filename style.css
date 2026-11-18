@@ -833,6 +833,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .snd::after { content: ''; position: absolute; inset: -6px 0; }
 
 /* 오늘의 마무리: 운동 소감·감사한 일 */
+/* 마무리를 쓰는 동안(키보드가 올라옴): 쓰는 칸을 화면 맨 위로 올릴 수 있게 아래 여백을 늘리고, 화면 키보드가 올라와 있으면(.kb) 키보드 위로 떠오를 수 있는 탭 막대·휴식 타이머는 숨김 */
+.typing .page[data-tab="today"] .wrap { padding-bottom: 100vh; }
+.typing.kb .tabbar, .typing.kb #timer { visibility: hidden; }
 .journal {
   scroll-margin-bottom: calc(var(--tabbar-h) + 84px); /* 탭 막대 + 그 위에 떠 있는 휴식 타이머(최대 64px) + 여백 */
   padding: 12px;
