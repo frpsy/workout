@@ -31,6 +31,7 @@ const SCHEMES = ['light', 'dark'];
 const SCENES = [
   { name: 'today', hash: '', view: 'normal' },
   { name: 'today-done', hash: '', view: 'normal', allDone: true }, // 마무리 칸
+  { name: 'today-noted', hash: '', view: 'normal', allDone: true, noted: true }, // 마무리를 다 쓴 뒤(한 줄)
   { name: 'record', hash: '#record', view: 'normal' },
   { name: 'settings', hash: '#settings', view: 'normal' },
   { name: 'today-running', hash: '', view: 'normal', clicks: ['#wBtn', '#tGo'] }, // 운동 중·휴식 타이머 실행
@@ -79,7 +80,7 @@ function serve(dir) {
 const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /** 5주치 기록: 대부분 마친 날, 가끔 일부만 한 날과 쉰 날, 마무리 몇 개 */
-function seedData(allDone) {
+function seedData(allDone, noted = false) {
   const today = new Date(NOW);
   const start = new Date(today);
   start.setDate(start.getDate() - 30);
@@ -90,7 +91,7 @@ function seedData(allDone) {
     const key = ymd(d);
     if (i === 0) {
       days[key] = allDone
-        ? { v: 2, date: key, entries: { push: { done: true, sets: 3 }, pull: { done: true, sets: 3 }, squat: { done: true, sets: 3 } }, workSec: 1260 }
+        ? { v: 2, date: key, entries: { push: { done: true, sets: 3 }, pull: { done: true, sets: 3 }, squat: { done: true, sets: 3 } }, workSec: 1260, ...(noted ? { note: { feel: '가볍게 잘 마쳤습니다', thanks: '맑은 날씨' } } : {}) }
         : { v: 2, date: key, entries: { push: { done: true, sets: 3 }, pull: { done: false, setsDone: 1 } } };
       continue;
     }
@@ -123,7 +124,7 @@ async function capture(launch, origin, outDir, only = null) {
         const page = await context.newPage();
         await page.clock.setFixedTime(new Date(NOW));
         await page.route('**/*', (route) => (route.request().url().startsWith(origin) ? route.continue() : route.abort()));
-        const data = seedData(scene.allDone);
+        const data = seedData(scene.allDone, scene.noted);
         await page.addInitScript(({ data, view }) => {
           let s = 1; // 팁이 늘 같게
           Math.random = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;

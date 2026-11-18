@@ -842,26 +842,10 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   border-radius: var(--r-card);
   background: var(--surface);
 }
-.journal[data-mode="closed"] { padding: 0; }
-.journal[data-mode="closed"] .jhead { display: none; }
+.journal[data-mode="closed"], .journal[data-mode="view"] { padding: 0; }
+.journal[data-mode="closed"] .jhead, .journal[data-mode="view"] .jhead { display: none; }
 .jhead { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); min-height: 32px; margin-bottom: 6px; }
 .jhead .sec { margin: 0; }
-.jpen {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  margin: -8px -8px -8px 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--accent);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.jpen:active { background: var(--accent-soft); }
 .journal #jForm { display: flex; flex-direction: column; gap: var(--gap-sm); }
 .jlabel { display: flex; justify-content: space-between; font-size: var(--fs-sm); color: var(--muted); }
 .jcount { font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
@@ -870,12 +854,6 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .jsaved { flex: 1; display: inline-flex; align-items: center; gap: var(--gap-xs); font-size: var(--fs-xs); color: var(--muted); }
 .jsaved svg { color: var(--accent); }
 .journal .btn { height: 40px; padding: 0 18px; }
-.jview { cursor: pointer; border-radius: var(--r-ctrl); -webkit-tap-highlight-color: transparent; }
-.jview:active { background: var(--accent-soft); }
-.jview:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.jview dl { margin: 0; display: flex; flex-direction: column; gap: var(--gap); }
-.jview dl div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--gap-md); align-items: baseline; }
-.jview dd { margin: 0; font-size: var(--fs-base); line-height: 1.5; overflow-wrap: anywhere; }
 .jopen {
   width: 100%;
   min-height: 44px;
@@ -890,6 +868,11 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   font-size: var(--fs-md);
   cursor: pointer;
 }
+/* 다 쓴 뒤: 내용 대신 '썼어요' 한 줄(누르면 고침). 할 일이 아니라 끝난 일이라 흐린 글자 */
+.jview { color: var(--muted); font-weight: 500; }
+.jview > svg:first-child { color: var(--accent); }
+.jedit { display: inline-flex; color: var(--accent); }
+.jopen:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--r-card); }
 
 /* 휴식 타이머는 늘 탭 막대 바로 위에: 종목이 많거나 화면이 작아 내용이 넘쳐도 스크롤 없이 누를 수 있음 */
 #timer {
