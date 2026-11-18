@@ -611,6 +611,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   background: var(--surface);
   box-shadow: var(--shadow-card);
 }
+.row { scroll-margin-top: var(--gap); scroll-margin-bottom: calc(var(--tabbar-h) + 84px); } /* 종목을 마치고 다음 종목으로 넘길 때 휴식 타이머·탭 막대에 가리지 않게 */
 /* 종목 줄 세 상태: 지금 할 종목(.current) 하나만 크게 펼치고, 마친 종목과 남은 종목은 한 줄로 접음 */
 .row:not(.current) { min-height: 52px; padding-top: 6px; padding-bottom: 6px; }
 .row:not(.current) .info { display: flex; align-items: center; gap: var(--gap); }

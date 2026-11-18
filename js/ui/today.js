@@ -62,7 +62,8 @@ export function mountToday(root, store) {
         <button type="button" class="link" id="backBtn">오늘로 돌아가기</button>
       </div>
     </header>
-    <section aria-label="운동 체크" class="rows" id="rows"></section>`;
+    <section aria-label="운동 체크" class="rows" id="rows"></section>
+    <span class="sr" id="nextNote" role="status"></span>`;
 
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
 
@@ -155,13 +156,30 @@ export function mountToday(root, store) {
     workbar.autoStart(before, after);
     notifyRestStart(before, after);
     notifyAllDone(wasDone);
+    if (!before.done && after.done && !store.allDone()) showNext();
+  }
+
+  /** 한 종목을 다 마치면 다음 종목(마치지 않은 첫 종목)이 화면에 보이게 넘기고, 화면 읽기에 알림.
+      앱에서는 다시 그리기가 다음 프레임에 일어나므로, 펼쳐진 뒤에 넘깁니다. */
+  function showNext() {
+    const { selected } = store.state;
+    const res = store.resolver();
+    const next = [...rows.values()].find((r) => !store.view(selected, r.ex, res).done);
+    if (!next) return;
+    $('#nextNote', root).textContent = `다음 종목: ${next.ex.name}`;
+    const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const go = () => {
+      try { next.el.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' }); } catch { /* 지원하지 않는 환경 */ }
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(go);
+    else go();
   }
 
   /** 새로운 세트를 마치고 운동이 남았을 때만 자동 휴식을 요청합니다. */
   function notifyRestStart(before, after) {
     if (after.setsDone > before.setsDone && !store.allDone() &&
         !store.isSessionClosed() && store.state.selected === store.state.today) {
-      emit(EV.setChecked);
+      emit(EV.setChecked, { exerciseDone: !before.done && after.done });
     }
   }
 

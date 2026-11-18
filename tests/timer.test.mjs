@@ -119,3 +119,26 @@ test('종료 시각을 넘겨 주고, 저장된 종료 시각으로 이어서 �
   assert.equal(b.running, false);
   assert.equal(b.fraction(), 1);
 });
+
+test('종목 사이 휴식: 이번 휴식만 따로 정한 길이로 쉬고, ±15는 이번 휴식만 바꾸며 세트 사이 시간은 그대로', async () => {
+  const { createTimer, EXERCISE_REST_SEC } = await import('../js/timer.js');
+  let t = 0;
+  const timer = createTimer({ now: () => t, duration: 30, endAt: null, runDur: null });
+  assert.equal(EXERCISE_REST_SEC, 60);
+  timer.start(EXERCISE_REST_SEC);
+  assert.equal(timer.remaining(), 60);
+  assert.equal(timer.total, 60);
+  assert.equal(timer.between, true);
+  t = 30_000;
+  assert.equal(timer.fraction(), 0.5);
+  timer.adjust(15);
+  assert.equal(timer.remaining(), 45);
+  assert.equal(timer.duration, 30, '세트 사이 시간은 바뀌지 않음');
+  timer.stop();
+  assert.equal(timer.between, false);
+  assert.equal(timer.remaining(), 30, '끝나면 세트 사이 시간으로 돌아감');
+  timer.start();
+  assert.equal(timer.remaining(), 30, '세트 사이 휴식은 설정 시간');
+  assert.equal(timer.between, false);
+  timer.stop();
+});

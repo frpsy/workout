@@ -7,6 +7,7 @@ export const MIN_SEC = 15;
 export const MAX_SEC = 600;
 export const STEP_SEC = 15;
 export const DEFAULT_SEC = 60;
+export const EXERCISE_REST_SEC = 60; // 한 종목을 다 마치고 다음 종목으로 넘어갈 때 쉬는 시간(세트 사이 시간과 따로)
 export const PRESETS = [30, 60, 90]; // 시간 숫자를 누르면 차례로 바뀌는 3단계
 
 const KEY = 'workout-check:timer';
@@ -46,18 +47,28 @@ export function loadEndAt(now = Date.now) {
  * 실행 중에는 tick()을 주기적으로 불러 주세요 (끝났는지 확인하고 알립니다).
  * 만들 때 저장된 종료 시각이 있으면 쉬는 중인 상태로 시작합니다(이미 지났으면 첫 tick()에서 끝남).
  */
-export function createTimer({ now = Date.now, duration = loadDuration(), auto = loadAuto(), endAt: savedEndAt = loadEndAt(now), onChange = () => {}, onDone = () => {} } = {}) {
+/** 이번 휴식 길이를 따로 정해 시작했을 때(종목 사이) 남긴 값 */
+function loadRunDur() {
+  const { runDur } = readSaved();
+  return Number.isFinite(runDur) ? clampDuration(runDur) : null;
+}
+
+export function createTimer({ now = Date.now, duration = loadDuration(), auto = loadAuto(), endAt: savedEndAt = loadEndAt(now), runDur: savedRunDur = savedEndAt === null ? null : loadRunDur(), onChange = () => {}, onDone = () => {} } = {}) {
   let endAt = savedEndAt;
   let dur = duration;
+  let runDur = savedRunDur; // 이번 휴식만의 길이. null이면 세트 사이 시간(dur)
   let autoStart = auto;
-  const setEnd = (v) => {
+  const setEnd = (v, run = null) => {
     endAt = v;
-    save({ endAt });
+    runDur = v === null ? null : run;
+    save({ endAt, runDur });
   };
+  const current = () => runDur ?? dur; // 지금 휴식의 전체 길이
 
   const remaining = () => (endAt === null ? dur : Math.max(0, Math.ceil((endAt - now()) / 1000)));
 
   return {
+    /** 세트 사이 쉬는 시간(설정값) */
     get duration() {
       return dur;
     },
@@ -66,7 +77,15 @@ export function createTimer({ now = Date.now, duration = loadDuration(), auto = 
     },
     remaining,
     /** 남은 비율(1 → 0). 쉬는 중이 아니면 1 */
-    fraction: () => (endAt === null ? 1 : Math.max(0, Math.min(1, (endAt - now()) / (dur * 1000)))),
+    fraction: () => (endAt === null ? 1 : Math.max(0, Math.min(1, (endAt - now()) / (current() * 1000)))),
+    /** 지금 휴식의 전체 길이(쉬는 중이 아니면 세트 사이 시간) */
+    get total() {
+      return current();
+    },
+    /** 이번 휴식이 세트 사이 시간과 다른 길이로 시작됐는지(종목 사이 휴식) */
+    get between() {
+      return endAt !== null && runDur !== null;
+    },
 
     get auto() {
       return autoStart;
@@ -77,8 +96,10 @@ export function createTimer({ now = Date.now, duration = loadDuration(), auto = 
       onChange();
     },
 
-    start() {
-      setEnd(now() + dur * 1000);
+    /** sec를 주면 이번 휴식만 그 길이로(세트 사이 시간 설정은 그대로) */
+    start(sec) {
+      const run = Number.isFinite(sec) ? clampDuration(sec) : null;
+      setEnd(now() + (run ?? dur) * 1000, run);
       onChange();
     },
 
@@ -98,12 +119,20 @@ export function createTimer({ now = Date.now, duration = loadDuration(), auto = 
 
     /** 쉬는 시간을 ±STEP씩 조절. 실행 중이면 남은 시간도 같이 바뀜 */
     adjust(delta) {
+      if (runDur !== null && endAt !== null) {
+        // 종목 사이 휴식: 이번 휴식만 늘리고 줄임(세트 사이 시간 설정은 그대로)
+        const run = clampDuration(runDur + delta);
+        if (run === runDur) return;
+        setEnd(endAt + (run - runDur) * 1000, run);
+        onChange();
+        return;
+      }
       const next = clampDuration(dur + delta);
       if (next === dur) return;
       const shifted = endAt === null ? null : endAt + (next - dur) * 1000;
       dur = next;
       endAt = shifted;
-      save({ duration: dur, endAt });
+      save({ duration: dur, endAt, runDur });
       onChange();
     },
 
