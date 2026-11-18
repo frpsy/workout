@@ -931,6 +931,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer.done .tstep, .timer.done button.tlabel { display: none; } /* '휴식 끝 +0:07'만 크게 */
 .timer.done .time { display: flex; align-items: center; gap: var(--gap-md); text-align: left; color: var(--on-accent); font-size: var(--fs-5xl); }
 .timer.done .time:active { background: transparent; }
+.timer.settle .time:active { background: transparent; } /* 휴식 끝을 닫은 직후: 손가락이 아직 닿아 있어도 회색 눌림이 번쩍이지 않게 */
 .timer.done .tgo { background: var(--surface); color: var(--accent); }
 .timer .tend { display: inline-flex; align-items: center; gap: var(--gap-sm); font-family: var(--font-body); font-size: var(--fs-xl); font-weight: 700; letter-spacing: var(--track-tight); }
 .timer .tend::before { /* 종 모양 */
@@ -1524,6 +1525,7 @@ tr.cur td { background: var(--accent-soft); }
 @keyframes timer-tick { from { transform: scale(1.06); } to { transform: none; } }
 @keyframes rest-flash { 0%, 100% { opacity: 0; } 50% { opacity: 0.9; } }
 @keyframes ready-pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
+@keyframes timer-settle { from { opacity: 0; } }
 @keyframes pip-pop { from { transform: scale(1.8); } to { transform: none; } }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -1539,6 +1541,8 @@ tr.cur td { background: var(--accent-soft); }
   .check:active:not(:disabled), .wbtn:active:not(:disabled), .tgo:active:not(:disabled), .wsec:active:not(:disabled), .undo:active:not(:disabled) { transform: scale(0.94); }
   .row.done .check:active { transform: none; }
   .setpips i { transition: background-color 0.18s, box-shadow 0.18s; }
+  .timer.settle { transition: background-color 0.2s ease-out, border-color 0.2s ease-out; } /* 초록에서 평소 바탕으로 한순간에 바뀌지 않게 */
+  .timer.settle > :not(.tfill):not(.sr) { animation: timer-settle 0.2s ease-out; } /* 휴식 끝을 닫으면 평소 줄의 버튼·숫자가 한 번에 튀어나오지 않고 살짝 나타남 */
   .timer.done ~ .restflash { animation: rest-flash 0.7s ease-in-out 2; }
   .timer.ending .time { animation: timer-tick 1s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; } /* 마지막 3초: 1초마다 숫자가 살짝 튐(크기 변화 없이 transform만) */
   .wbtn.ready { animation: ready-pulse 1.4s ease-in-out infinite; }
