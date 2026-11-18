@@ -150,10 +150,11 @@ export function mountToday(root, store) {
   function changeProgress(view, change) {
     const before = view();
     const wasDone = store.allDone();
+    const fresh = !store.hasProgress(store.state.selected, { current: true }); // 지금 회차의 첫 체크인지
     change();
     const after = view();
     soundFor(store, before, after);
-    workbar.autoStart(before, after);
+    workbar.autoStart(before, after, { fresh });
     notifyRestStart(before, after);
     notifyAllDone(wasDone);
     if (!before.done && after.done && !store.allDone()) showNext();

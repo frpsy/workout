@@ -128,13 +128,15 @@ export function mountWorkbar(root, store) {
     session.start(store.state.today);
     ticking(true);
   }
-  // 오늘 첫 세트를 마치면 '운동 시작'을 대신 눌러 줌 (이미 재는 중이거나, 오늘 이미 시간을 기록했거나, 지난 날을 고치는 중이면 그대로)
-  function autoStart(before, after) {
+  // 지금 회차의 첫 세트를 마치면 '운동 시작'을 대신 눌러 줌 (이미 재는 중이거나, 종료한 회차이거나, 지난 날을 고치는 중이면 그대로)
+  // fresh: 이 체크 전 지금 회차에 체크한 것이 하나도 없었는지. 오늘 앞서 운동 시간을 기록했어도 새로 시작하는 회차면 자동으로 시작합니다.
+  function autoStart(before, after, { fresh = false } = {}) {
     const state = store.state;
-    // 오늘 이미 운동 시간을 기록했으면 자동 시작하지 않음(두 번째 운동은 ▶ 운동 시작을 직접 누름)
     const day = state.days[state.today];
     const recorded = !!(day && (day.workSec || (day.sessions && day.sessions.length)));
-    if (after.setsDone <= before.setsDone || session.running || recorded || store.isSessionClosed() || state.selected !== state.today || !state.ready) return;
+    // 회차 도중(이미 체크한 것이 있음)에 시간을 기록·취소한 뒤라면 일부러 멈춘 것이므로 다시 켜지 않음
+    if (recorded && !fresh) return;
+    if (after.setsDone <= before.setsDone || session.running || store.isSessionClosed() || state.selected !== state.today || !state.ready) return;
     startWork();
     renderWork();
   }
