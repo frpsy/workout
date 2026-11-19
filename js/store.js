@@ -393,17 +393,6 @@ export function createStore(adapter) {
       emit();
     },
 
-    /** 오늘 화면에서 사용 중인 종목의 순서를 한 칸 옮김(dir: -1 위로, 1 아래로). 운동 기록은 종목 id로 묶여 있어 그대로 */
-    moveExercise(id, dir) {
-      const act = activeExercises();
-      const i = act.findIndex((e) => e.id === id);
-      const other = i < 0 ? null : act[i + dir];
-      if (!other) return false;
-      const ids = act.map((e) => e.id);
-      [ids[i], ids[i + dir]] = [ids[i + dir], ids[i]];
-      return actions.setExerciseOrder(ids);
-    },
-
     /** 사용 중인 종목을 ids 순서로 다시 놓음(끌어서 옮기기). 쓰지 않는 종목은 제자리. 바뀐 게 없거나 목록이 맞지 않으면 false */
     setExerciseOrder(ids) {
       const act = activeExercises();
