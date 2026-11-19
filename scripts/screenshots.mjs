@@ -37,6 +37,7 @@ const SCENES = [
   { name: 'settings', hash: '#settings', view: 'normal' },
   { name: 'today-running', hash: '', view: 'normal', clicks: ['#wBtn', '#tGo'] }, // 운동 중·휴식 타이머 실행
   { name: 'today-paused', hash: '', view: 'normal', clicks: ['#wBtn', '#wPause'] },
+  { name: 'today-open', hash: '', view: 'normal', clicks: ['.row [data-f="more"]'] }, // 종목을 펼침(조절 줄·순서 버튼)
 ];
 
 const args = process.argv.slice(2);

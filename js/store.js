@@ -393,6 +393,20 @@ export function createStore(adapter) {
       emit();
     },
 
+    /** 오늘 화면에서 사용 중인 종목의 순서를 한 칸 옮김(dir: -1 위로, 1 아래로). 운동 기록은 종목 id로 묶여 있어 그대로 */
+    moveExercise(id, dir) {
+      const act = activeExercises();
+      const i = act.findIndex((e) => e.id === id);
+      const other = i < 0 ? null : act[i + dir];
+      if (!other) return false;
+      const exs = state.config.exercises.slice();
+      const a = exs.findIndex((e) => e.id === id);
+      const b = exs.findIndex((e) => e.id === other.id);
+      [exs[a], exs[b]] = [exs[b], exs[a]];
+      actions.saveConfig({ ...state.config, exercises: exs }).catch(() => {}); // 실패는 saveConfig가 상태 문구로 알림
+      return true;
+    },
+
     async saveConfig(cfg) {
       const revision = ++configRevision;
       state.config = normalizeConfig(cfg, state.config.startDate);

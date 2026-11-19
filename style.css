@@ -762,6 +762,27 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .stepper.setstep button { width: 34px; }
 .stepper.setstep input[type="number"] { width: 28px; }
 .times { flex: none; color: var(--muted); font-size: var(--fs-xs); }
+/* 순서 옮기기: 펼친 종목에서만, 조절 줄 아래 오른쪽에 작게 */
+.ctrl { flex-wrap: wrap; }
+.order { flex-basis: 100%; display: flex; align-items: center; justify-content: flex-end; gap: var(--gap-xs); }
+.row:not(.open) .order { display: none; }
+.order-label { margin-right: var(--gap-xs); color: var(--muted); font-size: var(--fs-xs); }
+.order button {
+  position: relative;
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-ctrl);
+  background: var(--fill);
+  color: var(--fg);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.order button::after { content: ''; position: absolute; inset: -6px 0; } /* 누르는 영역 44px */
+.order button:active:not(:disabled) { background: var(--fill-press); }
+.order button:disabled { opacity: 0.35; cursor: default; }
 
 /* 초 단위 운동의 시간 재기 버튼 */
 .watch {

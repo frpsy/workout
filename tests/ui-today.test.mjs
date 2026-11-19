@@ -484,3 +484,44 @@ test('오늘: 회차를 마치면 휴식 타이머를 숨기고, 한 번 더 하
   assert.equal(box.hidden, false, '한 번 더 하기를 누르면 다시 보임');
   store.actions.flushAll();
 });
+
+test('오늘: 운동 중에도 펼친 종목의 ↑↓로 순서를 바꾸고, 줄은 새로 만들지 않아 펼침·체크가 그대로', () => {
+  const { store, root } = setup(today);
+  const names = () => [...root.querySelectorAll('.row .name')].map((n) => n.firstChild.textContent);
+  const rowOf = (name) => [...root.querySelectorAll('.row')].find((r) => r.querySelector('.name').firstChild.textContent === name);
+  assert.deepEqual(names(), ['푸시업', '풀업', '스쿼트']);
+  const first = rowOf('푸시업');
+  setTo(first, 1); // 운동 시작(첫 세트 체크로 운동 시간이 흐름)
+  first.querySelector('[data-f="more"]').click();
+  assert.ok(first.classList.contains('open'));
+  assert.equal(first.querySelector('[data-f="up"]').disabled, true, '맨 위는 위로 막음');
+
+  first.querySelector('[data-f="down"]').click();
+  assert.deepEqual(names(), ['풀업', '푸시업', '스쿼트']);
+  assert.equal(rowOf('푸시업'), first, '같은 줄을 옮김(새로 만들지 않음)');
+  assert.ok(first.classList.contains('open'), '펼친 상태 유지');
+  assert.equal(first.querySelector('[data-f="check"]').dataset.done, '1', '체크한 세트 유지');
+  assert.equal(document.activeElement, first.querySelector('[data-f="down"]'), '포커스는 누른 버튼에');
+  assert.deepEqual(store.state.config.exercises.map((e) => e.id).slice(0, 3), ['pull', 'push', 'squat'], '설정 순서도 바뀜');
+
+  first.querySelector('[data-f="down"]').click();
+  assert.deepEqual(names(), ['풀업', '스쿼트', '푸시업']);
+  assert.equal(first.querySelector('[data-f="down"]').disabled, true, '맨 아래는 아래로 막음');
+  assert.equal(document.activeElement, first.querySelector('[data-f="up"]'), '끝에 닿으면 반대 버튼으로');
+  first.querySelector('[data-f="up"]').click();
+  assert.deepEqual(names(), ['풀업', '푸시업', '스쿼트']);
+  assert.equal(root.querySelector('#progText').textContent, '0/3 종목');
+  root.querySelector('#wCancel')?.click();
+  store.actions.flushAll();
+});
+
+test('순서 옮기기: 쓰지 않는 종목은 건너뛰고 사용 중인 이웃과 자리를 바꿈', () => {
+  const { store } = setup(today);
+  const cfg = store.state.config;
+  const extra = { ...cfg.exercises[0], id: 'off1', name: '쉬는 종목', active: false };
+  store.actions.saveConfig({ ...cfg, exercises: [cfg.exercises[0], extra, ...cfg.exercises.slice(1)] }).catch(() => {});
+  assert.equal(store.actions.moveExercise('push', -1), false, '맨 위');
+  assert.equal(store.actions.moveExercise('push', 1), true);
+  assert.deepEqual(store.state.config.exercises.map((e) => e.id), ['pull', 'off1', 'push', 'squat']);
+  store.actions.flushAll();
+});

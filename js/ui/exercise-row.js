@@ -45,7 +45,7 @@ export function holdStep(btn, onTap, onHold) {
   btn.addEventListener('contextmenu', (e) => e.preventDefault()); // 꾹 누를 때 메뉴가 뜨지 않게
 }
 
-const FIELDS = ['target', 'sets', 'pips', 'undo', 'frac', 'cap', 'delta', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus'];
+const FIELDS = ['target', 'sets', 'pips', 'undo', 'frac', 'cap', 'delta', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus', 'up', 'down'];
 
 /**
  * 종목 줄을 만들고 버튼을 handlers에 연결합니다.
@@ -78,6 +78,11 @@ export function createRow(ex, h) {
         <input data-f="setsIn" type="number" inputmode="numeric" min="1" max="10" aria-label="${n} 실제 세트 수">
         <button type="button" data-f="setsPlus" aria-label="${n} 세트 늘리기">+</button>
       </div>
+      <div class="order" role="group" aria-label="${n} 순서">
+        <span class="order-label" aria-hidden="true">순서</span>
+        <button type="button" data-f="up" aria-label="${n} 위로 옮기기">↑</button>
+        <button type="button" data-f="down" aria-label="${n} 아래로 옮기기">↓</button>
+      </div>
     </div>`;
   const q = (f) => el.querySelector(`[data-f="${f}"]`);
   const r = { el, ex, unit };
@@ -104,6 +109,9 @@ export function createRow(ex, h) {
   r.setsMinus.addEventListener('click', () => h.setsBy(-1));
   r.setsPlus.addEventListener('click', () => h.setsBy(1));
   r.setsIn.addEventListener('change', () => h.setsTo(parseInt(r.setsIn.value, 10)));
+  // 순서 옮기기(펼친 종목에서만 보임): 운동 중에도 설정에 가지 않고 바로 바꿈
+  r.up.addEventListener('click', () => h.move(-1));
+  r.down.addEventListener('click', () => h.move(1));
   for (const input of [r.cnt, r.setsIn]) input.addEventListener('focus', () => input.select());
   // 이름·목표를 누르면 이 종목의 개수·세트 조절 줄을 펴고 접음(영상 링크·되돌리기 버튼은 제외)
   const more = q('more');
