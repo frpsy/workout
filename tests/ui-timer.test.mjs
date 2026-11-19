@@ -196,7 +196,7 @@ test('오늘+타이머: 세트를 체크하면 휴식이 자동으로 시작되�
   localStorage.removeItem('workout-check:timer');
 });
 
-test('오늘+타이머: 큰 완료 버튼으로 종목을 마치면 휴식이 시작되고, 실행 중 중복 시작 없이 마지막 완료 시 멈춤', (t) => {
+test('오늘+타이머: 큰 완료 버튼으로 종목을 마치면 휴식이 시작되고, 종목을 마칠 때마다 1분으로 새로 시작하고 마지막 완료 시 멈춤', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   t.after(() => mock.timers.reset());
   const { store, root } = setup(today);
@@ -213,7 +213,7 @@ test('오늘+타이머: 큰 완료 버튼으로 종목을 마치면 휴식이 �
   mock.timers.tick(10_000);
   assert.equal(time(), '0:50');
   complete(checks[1]);
-  assert.equal(time(), '0:50', '다른 종목 완료로 이미 진행 중인 휴식 시간을 초기화하지 않음');
+  assert.equal(time(), '1:00', '다른 종목을 마치면 쉬는 중이어도 1분으로 새로 시작');
 
   complete(checks[2]);
   assert.equal(store.allDone(), true);
@@ -314,6 +314,27 @@ test('자동 휴식 설정: 기본 켜짐, 끄면 이 브라우저에 기억', a
   assert.equal(loadAuto(), false);
   assert.equal(loadDuration(), 75, '자동 설정을 바꿔도 시간 설정은 유지');
   localStorage.removeItem('workout-check:timer');
+});
+
+test('오늘+타이머: 세트 사이 휴식이 아직 돌고 있어도, 종목을 마치는 순간 1분 휴식을 새로 시작', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  localStorage.setItem('workout-check:timer', JSON.stringify({ duration: 30 }));
+  const { store, root } = setup(today);
+  const timerRoot = document.createElement('div');
+  document.body.appendChild(timerRoot);
+  mountTimer(timerRoot);
+  const time = () => timerRoot.querySelector('#tTime').textContent;
+  const rows = [...root.querySelectorAll('.row')];
+  const check = rows[0].querySelector('[data-f="check"]');
+  for (let i = 0; i < 20 && !rows[0].classList.contains('done'); i++) {
+    mock.timers.tick(5_000); // 쉬는 중이어도 멈추지 않고 계속 체크
+    check.click();
+  }
+  assert.equal(rows[0].classList.contains('done'), true);
+  assert.equal(time(), '1:00', '쉬는 중이던 세트 휴식을 1분으로 새로 시작');
+  assert.equal(timerRoot.querySelector('#timerBar').classList.contains('between'), true);
+  store.actions.flushAll();
 });
 
 test('오늘+타이머: 한 종목을 다 마치면 다음 종목이 펼쳐지고, 세트 사이 시간과 따로 1분 쉼', (t) => {
