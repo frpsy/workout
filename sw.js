@@ -45,6 +45,7 @@ const ASSETS = [
   './js/ui/journal.js',
   './js/ui/login-note.js',
   './js/ui/plan.js',
+  './js/ui/row-drag.js',
   './js/ui/settings.js',
   './js/ui/sound-ui.js',
   './js/ui/tabs.js',

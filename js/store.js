@@ -399,10 +399,19 @@ export function createStore(adapter) {
       const i = act.findIndex((e) => e.id === id);
       const other = i < 0 ? null : act[i + dir];
       if (!other) return false;
-      const exs = state.config.exercises.slice();
-      const a = exs.findIndex((e) => e.id === id);
-      const b = exs.findIndex((e) => e.id === other.id);
-      [exs[a], exs[b]] = [exs[b], exs[a]];
+      const ids = act.map((e) => e.id);
+      [ids[i], ids[i + dir]] = [ids[i + dir], ids[i]];
+      return actions.setExerciseOrder(ids);
+    },
+
+    /** 사용 중인 종목을 ids 순서로 다시 놓음(끌어서 옮기기). 쓰지 않는 종목은 제자리. 바뀐 게 없거나 목록이 맞지 않으면 false */
+    setExerciseOrder(ids) {
+      const act = activeExercises();
+      const byId = new Map(act.map((e) => [e.id, e]));
+      if (ids.length !== act.length || new Set(ids).size !== ids.length || !ids.every((id) => byId.has(id))) return false;
+      if (ids.every((id, i) => act[i].id === id)) return false;
+      let k = 0;
+      const exs = state.config.exercises.map((e) => (e.active ? byId.get(ids[k++]) : e));
       actions.saveConfig({ ...state.config, exercises: exs }).catch(() => {}); // 실패는 saveConfig가 상태 문구로 알림
       return true;
     },
