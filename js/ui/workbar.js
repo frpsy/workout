@@ -69,6 +69,7 @@ export function mountWorkbar(root, store) {
     action.hidden = !canRepeat;
     again.disabled = !state.ready;
     if (canRepeat) {
+      brandState.hidden = true; // 아래 '○회차를 마쳤어요' 줄이 같은 말을 하므로 머리말 알약은 숨김
       $('#roundSummary', root).textContent = `${roundsDone + 1}회차를 ${store.allDone() ? '마쳤어요' : '종료했어요'}`;
       btn.hidden = true;
     }
