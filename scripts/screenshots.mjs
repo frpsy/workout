@@ -32,6 +32,7 @@ const SCENES = [
   { name: 'today', hash: '', view: 'normal' },
   { name: 'today-done', hash: '', view: 'normal', allDone: true }, // 마무리 칸
   { name: 'today-noted', hash: '', view: 'normal', allDone: true, noted: true }, // 마무리를 다 쓴 뒤(한 줄)
+  { name: 'today-writing', hash: '', view: 'normal', allDone: true, noted: true, clicks: ['#jView'] }, // 마무리를 쓰는 중(펼친 칸)
   { name: 'record', hash: '#record', view: 'normal' },
   { name: 'settings', hash: '#settings', view: 'normal' },
   { name: 'today-running', hash: '', view: 'normal', clicks: ['#wBtn', '#tGo'] }, // 운동 중·휴식 타이머 실행

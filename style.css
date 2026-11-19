@@ -847,6 +847,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .journal #jForm { display: flex; flex-direction: column; gap: var(--gap-sm); }
 .jlabel { display: flex; justify-content: space-between; font-size: var(--fs-sm); color: var(--muted); }
 .jcount { font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+#jForm input + .jlabel { margin-top: var(--gap-xs); } /* 소감과 감사한 일 사이를 조금 더 띄워 묶음이 보이게 */
 .journal input { width: 100%; font-family: var(--font-body); }
 .jfoot { display: flex; align-items: center; gap: var(--gap); margin-top: 4px; }
 .jsaved { flex: 1; display: inline-flex; align-items: center; gap: var(--gap-xs); font-size: var(--fs-xs); color: var(--muted); }

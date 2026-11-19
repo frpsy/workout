@@ -175,6 +175,9 @@ export function mountJournal(root, store) {
 
     $('#jTitle', root).textContent = date === state.today ? '오늘의 마무리' : `${labelMD(date)}의 마무리`;
     $('#jOpen span', root).textContent = date === state.today ? '오늘의 마무리 쓰기' : '그날의 마무리 쓰기';
+    const day = date === state.today ? '오늘' : '그날';
+    feel.placeholder = `${day} 운동은 어땠나요?`;
+    thanks.placeholder = `${day} 감사했던 일 하나`;
     $('#jView span', root).textContent = date === state.today ? '오늘의 마무리를 썼어요' : '그날의 마무리를 썼어요';
     $('#jView', root).setAttribute('aria-label', `${date === state.today ? '오늘' : '그날'}의 마무리 고치기`);
     const has = filled(note);
