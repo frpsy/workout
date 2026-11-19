@@ -332,6 +332,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   border-radius: var(--r-ctrl);
   background: var(--fill);
 }
+.row.done .stepper { background: var(--surface); } /* 마친 종목의 바탕(--fill)과 같아 묻히지 않게 */
 .stepper button {
   position: relative;
   width: 38px;
