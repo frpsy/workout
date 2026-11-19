@@ -96,6 +96,12 @@ test('마무리: 버튼은 접기 하나, 접힌 줄을 누르면 다시 씀, �
   assert.equal(q('#jFeel').tagName, 'INPUT', '소감도 한 줄 입력');
   q('#jFeel').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   assert.equal(document.activeElement, q('#jThanks'), '소감에서 Enter는 감사한 일로');
+  q('#jThanks').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true }));
+  assert.equal(box.dataset.mode, 'form', '한글 조합 중 Esc는 무시');
+  q('#jThanks').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(box.dataset.mode, 'view', 'Esc로 접힘');
+  assert.equal(document.activeElement, q('#jView'));
+  q('#jView').click();
 
   store.actions.select(addDays(todayStr(), -1));
   assert.match(q('#jTitle').textContent, /^\d+월 \d+일의 마무리$/);
