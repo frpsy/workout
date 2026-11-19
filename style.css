@@ -82,6 +82,7 @@
   /* 그림자 (두 테마 같은 값) */
   --shadow-seg: 0 1px 4px rgba(0, 0, 0, 0.16); /* 난이도·보기에서 고른 칸 */
   --shadow-knob: 0 1px 3px rgba(0, 0, 0, 0.25); /* 스위치 손잡이 */
+  --shadow-drag: 0 8px 24px rgba(0, 0, 0, 0.18); /* 끌어서 옮기는 종목 줄 */
     --shadow-card: none; /* 카드: 그림자 없이 얇은 테두리만(미니멀) */
   --shadow-press: none; /* 주 버튼도 평평하게 */
 }
@@ -596,6 +597,11 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 
 /* 종목 줄: (이름·목표·세트 번호 | 완료) / (개수 − [ ] + × 세트 − [ ] +) 두 줄. 3종목이 한 화면에 들어옴 */
 .rows { display: flex; flex-direction: column; gap: var(--gap); }
+/* 끌어서 순서 바꾸기(ui/row-drag.js): 길게 누를 때 글자 선택·메뉴가 뜨지 않게. 집은 줄은 떠 보이고, 다른 줄은 부드럽게 비켜남 */
+.rows .info { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.rows.sorting .row { transition: transform 0.15s ease; }
+.rows.sorting .row.dragging { position: relative; z-index: 3; transition: none; box-shadow: var(--shadow-drag); opacity: 0.96; cursor: grabbing; }
+@media (prefers-reduced-motion: reduce) { .rows.sorting .row { transition: none; } }
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

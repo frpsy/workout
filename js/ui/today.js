@@ -9,6 +9,7 @@ import { mountLoginNote } from './login-note.js';
 import { soundFor } from './sound-ui.js';
 import { mountWorkbar } from './workbar.js';
 import { createRow, paintRow } from './exercise-row.js';
+import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 
 export function mountToday(root, store) {
@@ -111,6 +112,13 @@ export function mountToday(root, store) {
     actions.setCount(id, sec);
   }
 
+  // 종목 줄을 길게 눌러 끌면 순서를 바꿈(운동 중에도). 펼친 종목의 ↑↓는 키보드·화면 읽기용
+  enableRowDrag($('#rows', root), {
+    canDrag: () => store.state.ready,
+    onStart: haptic,
+    onDrop: (ids) => actions.setExerciseOrder(ids),
+  });
+
   function buildRows(exs) {
     const box = $('#rows', root);
     if (watch) stopWatch(); // 목록이 바뀌기 전에 재던 시간은 기록하고 끝냄
@@ -146,6 +154,7 @@ export function mountToday(root, store) {
           if (!actions.moveExercise(ex.id, dir)) refocus = null;
         },
       });
+      r.el.dataset.id = ex.id;
       box.appendChild(r.el);
       rows.set(ex.id, r);
     }

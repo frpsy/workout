@@ -525,3 +525,50 @@ test('순서 옮기기: 쓰지 않는 종목은 건너뛰고 사용 중인 이�
   assert.deepEqual(store.state.config.exercises.map((e) => e.id), ['pull', 'off1', 'push', 'squat']);
   store.actions.flushAll();
 });
+
+test('오늘: 종목 줄을 길게 눌러 끌면 순서가 바뀌고(운동 중에도), 놓은 뒤 클릭으로 줄이 펴지지 않음', async () => {
+  const { store, root } = setup(today);
+  const names = () => [...root.querySelectorAll('.row .name')].map((n) => n.firstChild.textContent);
+  const rowEls = [...root.querySelectorAll('.row')];
+  rowEls.forEach((r, i) => (r.getBoundingClientRect = () => ({ top: i * 110, bottom: i * 110 + 100, height: 100, left: 0, right: 300 })));
+  setTo(rowEls[0], 1); // 운동 중
+  const touch = (type, el, y) => {
+    const e = new window.Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(e, 'touches', { value: type === 'touchend' ? [] : [{ clientX: 10, clientY: y }] });
+    el.dispatchEvent(e);
+    return e;
+  };
+  const name = rowEls[0].querySelector('.name');
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // 누르자마자 움직이면 스크롤(집지 않음)
+  touch('touchstart', name, 50);
+  assert.equal(touch('touchmove', name, 80).defaultPrevented, false);
+  await wait(400);
+  assert.equal(rowEls[0].classList.contains('dragging'), false);
+  touch('touchend', name, 80);
+
+  // 길게 누르면 집고, 끌면 따라옴
+  touch('touchstart', name, 50);
+  await wait(400);
+  assert.ok(rowEls[0].classList.contains('dragging'), '0.35초 누르면 집음');
+  assert.equal(touch('touchmove', name, 200).defaultPrevented, true, '집은 뒤에는 스크롤을 막음');
+  assert.equal(rowEls[0].style.transform, 'translateY(150px)');
+  assert.equal(rowEls[1].style.transform, 'translateY(-110px)', '지나친 줄은 비켜남');
+  touch('touchmove', name, 290);
+  touch('touchend', name, 290);
+  assert.deepEqual(names(), ['풀업', '스쿼트', '푸시업']);
+  assert.equal(rowEls[0].style.transform, '');
+  assert.equal(rowEls[0].querySelector('[data-f="check"]').dataset.done, '1', '체크 그대로');
+  assert.deepEqual(store.state.config.exercises.map((e) => e.id).slice(0, 3), ['pull', 'squat', 'push']);
+  rowEls[0].querySelector('.info').click();
+  assert.equal(rowEls[0].classList.contains('open'), false, '놓은 직후 클릭은 무시');
+
+  // 버튼에서 시작하면 집지 않음
+  touch('touchstart', rowEls[1].querySelector('[data-f="more"]'), 50);
+  await wait(400);
+  assert.equal(rowEls[1].classList.contains('dragging'), false);
+  touch('touchend', rowEls[1], 50);
+  root.querySelector('#wCancel')?.click();
+  store.actions.flushAll();
+});
