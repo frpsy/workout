@@ -446,7 +446,7 @@ test('오늘: 세트 수를 줄여 체크한 세트가 전부가 되면 완료 �
   }
 });
 
-test('오늘: 지금 할 종목(마치지 않은 첫 종목)만 current로 표시하고, 이름·목표를 누르면 그 종목의 조절 줄을 펴고 접음', () => {
+test('오늘: 지금 할 종목(마치지 않은 첫 종목)만 current로 표시하고, 남은 종목을 누르면 지금 할 종목이 되고 한 번 더 누르면 조절 줄을 펴고 접음', () => {
   const { store, root } = setup(today);
   const rows = [...root.querySelectorAll('.row')];
   const current = () => rows.map((r) => r.classList.contains('current'));
@@ -454,6 +454,9 @@ test('오늘: 지금 할 종목(마치지 않은 첫 종목)만 current로 표�
   complete(rows[0]);
   assert.deepEqual(current(), [false, true, false], '마치면 다음 종목으로 넘어감');
   const info = rows[2].querySelector('.info');
+  info.querySelector('.name').click();
+  assert.deepEqual(current(), [false, false, true], '누른 종목이 지금 할 종목이 됨');
+  assert.ok(!rows[2].classList.contains('open'), '처음 누르면 펴기만 하고 조절 줄은 그대로');
   info.querySelector('.name').click();
   assert.ok(rows[2].classList.contains('open'));
   const more = rows[2].querySelector('[data-f="more"]');
@@ -467,6 +470,23 @@ test('오늘: 지금 할 종목(마치지 않은 첫 종목)만 current로 표�
   assert.ok(rows[2].classList.contains('open'), '영상 링크를 눌러서는 접히지 않음');
   info.querySelector('.name').click();
   assert.ok(!rows[2].classList.contains('open'));
+  store.actions.flushAll();
+});
+
+test('오늘: 고른 종목을 마치면 다시 마치지 않은 첫 종목으로, 마친 종목을 누르면 조절 줄만 펴고, 남은 종목을 체크하면 그 종목이 지금 할 종목', () => {
+  const { store, root } = setup(today);
+  const rows = [...root.querySelectorAll('.row')];
+  const current = () => rows.map((r) => r.classList.contains('current'));
+  rows[2].querySelector('.name').click();
+  assert.deepEqual(current(), [false, false, true]);
+  complete(rows[2]);
+  assert.deepEqual(current(), [true, false, false], '고른 종목을 마치면 첫 남은 종목으로');
+  rows[2].querySelector('.name').click();
+  assert.deepEqual(current(), [true, false, false], '마친 종목은 지금 할 종목이 되지 않음');
+  assert.ok(rows[2].classList.contains('open'));
+  rows[1].querySelector('[data-f="check"]').click();
+  assert.deepEqual(current(), [false, true, false], '체크한 종목이 지금 할 종목');
+  root.querySelector('#wCancel')?.click();
   store.actions.flushAll();
 });
 

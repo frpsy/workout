@@ -17,6 +17,7 @@ export function mountToday(root, store) {
   let rowsKey = '';
   let rows = new Map();
   let refocus = null; // 순서를 옮긴 뒤 포커스를 되돌릴 종목·방향
+  let picked = null; // 직접 고른 지금 할 종목 { date, id }: 마치면 풀려 다시 마치지 않은 첫 종목으로
 
   root.innerHTML = `
     <header class="head">
@@ -134,6 +135,7 @@ export function mountToday(root, store) {
           const v = view();
           if (v.done) return;
           haptic();
+          picked = { date: store.state.selected, id: ex.id }; // 체크한 종목이 지금 할 종목이 됨
           changeProgress(view, () => actions.setProgress(ex.id, v.setsDone + 1));
         },
         undo() {
@@ -147,6 +149,14 @@ export function mountToday(root, store) {
         // 세트 수를 바꿔 종목이 완료되거나 다시 진행 중이 되면 체크와 똑같이 소리·완료 처리
         setsBy: (d) => changeProgress(view, () => actions.setSets(ex.id, view().sets + d)),
         setsTo: (n) => changeProgress(view, () => actions.setSets(ex.id, n)),
+        // 지금 할 종목이 아닌 남은 종목을 누르면 그 종목을 지금 할 종목으로(크게 펼침)
+        pick() {
+          if (view().done || r.el.classList.contains('current')) return false;
+          picked = { date: store.state.selected, id: ex.id };
+          haptic();
+          render(store.state);
+          return true;
+        },
         move(dir) {
           if (!store.state.ready) return;
           // 옮긴 뒤에도 같은 버튼(끝에 닿았으면 반대 버튼)에 포커스를 둠: 줄을 옮기면 포커스가 풀리므로
@@ -239,12 +249,15 @@ export function mountToday(root, store) {
         : `<span>시작 ${-dayNo + 1}일 전</span>`;
     $('#dateLabel', root).textContent = `${labelMD(selected)} ${dowName(selected)}요일`;
 
+    // 지금 할 종목: 직접 고른 종목이 아직 남아 있으면 그 종목, 아니면 마치지 않은 첫 종목
+    const pr = picked && picked.date === selected ? rows.get(picked.id) : null;
+    if (picked && !(pr && !store.view(selected, pr.ex, res).done)) picked = null;
     let done = 0;
-    let currentSeen = false;
+    let currentSeen = !!picked;
     for (const r of rows.values()) {
       const v = store.view(selected, r.ex, res);
       if (v.done) done++;
-      paintRow(r, v, { current: !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null });
+      paintRow(r, v, { current: picked ? r === pr : !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null });
       if (!v.done) currentSeen = true;
     }
     // 순서 버튼: 맨 위는 위로, 맨 아래는 아래로를 막음. 기록을 불러오기 전에는 둘 다 막음
