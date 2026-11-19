@@ -53,7 +53,8 @@ export function mountJournal(root, store) {
   function save() {
     editing = true;
     store.actions.setNote(date, { feel: feel.value, thanks: thanks.value });
-    $('#jSaved', root).innerHTML = `${CHECK}자동 저장`;
+    const saved = $('#jSaved', root);
+    if (!saved.textContent) saved.innerHTML = `${CHECK}자동 저장`; // 한 번만 넣음: 글자마다 다시 넣으면 화면 읽기 프로그램이 매번 읽음
     counts();
   }
   feel.addEventListener('input', save);
@@ -72,6 +73,11 @@ export function mountJournal(root, store) {
     const top = wrap ? parseFloat(window.getComputedStyle(wrap).paddingTop) || 0 : 0;
     const delta = box.getBoundingClientRect().top - page.getBoundingClientRect().top - Math.max(0, top - 6);
     if (Math.abs(delta) > 1) page.scrollTop += delta;
+  }
+  // 쓰는 중 표시를 바로 거둠: 칸을 접거나 숨길 때는 포커스가 사라져도 blur가 오지 않을 수 있어 직접 정리
+  function leaveTyping() {
+    clearTimeout(leaveTimer);
+    document.documentElement.classList.remove('typing', 'kb');
   }
   function maybeLeave() {
     clearTimeout(leaveTimer);
@@ -117,16 +123,21 @@ export function mountJournal(root, store) {
     liftToTop();
   }
   $('#jDone', root).addEventListener('click', () => {
+    const hadFocus = root.contains(document.activeElement);
+    if (hadFocus) document.activeElement.blur(); // 휴대폰 키보드를 내림
     editing = false;
     store.actions.flushAll();
     render(store.state);
+    leaveTyping();
+    // 키보드로 접었으면 포커스를 접힌 한 줄에 둠 (숨은 칸에 남지 않게)
+    if (hadFocus) for (const id of ['#jView', '#jOpen']) if (!$(id, root).hidden) $(id, root).focus({ preventScroll: true });
   });
   $('#jOpen', root).addEventListener('click', edit);
   $('#jView', root).addEventListener('click', edit);
 
   function render(state) {
     const exs = store.activeExercises();
-    const allDone = state.selected === state.today ? store.isSessionClosed() : exs.length > 0 && exs.every((e) => isDone(state.days[state.selected], e.id)); 
+    const allDone = state.selected === state.today ? store.isSessionClosed() : exs.length > 0 && exs.every((e) => isDone(state.days[state.selected], e.id));
     const note = noteOf(state, state.selected);
     if (state.selected !== date) {
       date = state.selected;
@@ -144,7 +155,14 @@ export function mountJournal(root, store) {
     // 모두 마친 날이거나 이미 써 둔 날에만 보임 (root는 탭이 숨기고 보이므로 안쪽 상자를 숨김)
     const box = $('#jBox', root);
     box.hidden = !(allDone || filled(note));
-    if (box.hidden) return;
+    if (box.hidden) {
+      // 쓰던 중 칸이 사라지면(새 회차 시작 등) 키보드와 쓰는 중 표시를 정리
+      if (root.contains(document.activeElement)) {
+        document.activeElement.blur();
+        leaveTyping();
+      }
+      return;
+    }
 
     $('#jTitle', root).textContent = date === state.today ? '오늘의 마무리' : `${labelMD(date)}의 마무리`;
     $('#jOpen span', root).textContent = date === state.today ? '오늘의 마무리 쓰기' : '그날의 마무리 쓰기';
