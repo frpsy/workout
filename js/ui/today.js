@@ -15,6 +15,7 @@ export function mountToday(root, store) {
   const { actions } = store;
   let rowsKey = '';
   let rows = new Map();
+  let refocus = null; // 순서를 옮긴 뒤 포커스를 되돌릴 종목·방향
 
   root.innerHTML = `
     <header class="head">
@@ -138,11 +139,29 @@ export function mountToday(root, store) {
         // 세트 수를 바꿔 종목이 완료되거나 다시 진행 중이 되면 체크와 똑같이 소리·완료 처리
         setsBy: (d) => changeProgress(view, () => actions.setSets(ex.id, view().sets + d)),
         setsTo: (n) => changeProgress(view, () => actions.setSets(ex.id, n)),
+        move(dir) {
+          if (!store.state.ready) return;
+          // 옮긴 뒤에도 같은 버튼(끝에 닿았으면 반대 버튼)에 포커스를 둠: 줄을 옮기면 포커스가 풀리므로
+          refocus = { id: ex.id, dir }; // 저장하며 바로 다시 그려질 수 있어 먼저 정해 둠
+          if (!actions.moveExercise(ex.id, dir)) refocus = null;
+        },
       });
       box.appendChild(r.el);
       rows.set(ex.id, r);
     }
     if (!exs.length) box.innerHTML = '<p class="empty">사용 중인 운동이 없습니다. 아래 운동 설정에서 추가해 주세요.</p>';
+  }
+
+  function reorderRows(exs) {
+    const box = $('#rows', root);
+    const next = new Map();
+    for (const ex of exs) {
+      const r = rows.get(ex.id);
+      r.ex = ex;
+      box.appendChild(r.el);
+      next.set(ex.id, r);
+    }
+    rows = next;
   }
 
   /** 체크·세트 수 변경 공통: 바뀐 상태에 맞는 소리, 운동시간 자동 시작, 자동 휴식, 모두 완료 알림 */
@@ -192,8 +211,11 @@ export function mountToday(root, store) {
     const exs = store.activeExercises();
     const key = exs.map((e) => `${e.id}:${e.name}:${e.unit}`).join('|');
     if (key !== rowsKey) {
+      const sameSet = (k) => k.split('|').sort().join('|');
+      // 순서만 바뀌었으면 줄을 새로 만들지 않고 옮김: 재던 시간·펼친 상태·입력 중인 값이 그대로 남음
+      if (rows.size && sameSet(key) === sameSet(rowsKey)) reorderRows(exs);
+      else buildRows(exs);
       rowsKey = key;
-      buildRows(exs);
     }
 
     const { config, selected, today } = state;
@@ -215,6 +237,17 @@ export function mountToday(root, store) {
       if (v.done) done++;
       paintRow(r, v, { current: !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null });
       if (!v.done) currentSeen = true;
+    }
+    // 순서 버튼: 맨 위는 위로, 맨 아래는 아래로를 막음. 기록을 불러오기 전에는 둘 다 막음
+    [...rows.values()].forEach((r, i) => {
+      r.up.disabled = !state.ready || i === 0;
+      r.down.disabled = !state.ready || i === rows.size - 1;
+    });
+    if (refocus && rows.has(refocus.id)) {
+      const r = rows.get(refocus.id);
+      const btn = [refocus.dir < 0 ? r.up : r.down, refocus.dir < 0 ? r.down : r.up].find((b) => !b.disabled);
+      if (btn) btn.focus({ preventScroll: true });
+      refocus = null;
     }
 
     const segs = $('#segs', root);
