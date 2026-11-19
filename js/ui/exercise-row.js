@@ -113,7 +113,8 @@ export function createRow(ex, h) {
   r.up.addEventListener('click', () => h.move(-1));
   r.down.addEventListener('click', () => h.move(1));
   for (const input of [r.cnt, r.setsIn]) input.addEventListener('focus', () => input.select());
-  // 이름·목표를 누르면 이 종목의 개수·세트 조절 줄을 펴고 접음(영상 링크·되돌리기 버튼은 제외)
+  // 이름·목표를 누르면: 지금 할 종목이 아니면 이 종목을 지금 할 종목으로 크게 펴고(h.pick),
+  // 이미 지금 할 종목이거나 마친 종목이면 개수·세트 조절 줄을 펴고 접음(영상 링크·되돌리기 버튼은 제외)
   const more = q('more');
   const toggleOpen = () => {
     const open = el.classList.toggle('open');
@@ -122,7 +123,8 @@ export function createRow(ex, h) {
   };
   more.addEventListener('click', toggleOpen); // 키보드·화면 읽기용 버튼(⌄)
   el.querySelector('.info').addEventListener('click', (ev) => {
-    if (!ev.target.closest('a, button')) toggleOpen(); // 이름·목표 어디를 눌러도 같은 동작
+    if (ev.target.closest('a, button')) return;
+    if (!(h.pick && h.pick())) toggleOpen(); // 이름·목표 어디를 눌러도 같은 동작
   });
   return r;
 }
