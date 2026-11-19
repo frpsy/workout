@@ -212,3 +212,38 @@ test('마무리: 쓰는 칸을 누르면 칸을 화면 맨 위로 올리고(키�
   assert.equal(html.classList.contains('typing'), false, '칸을 벗어나면 원래대로');
   store.actions.flushAll();
 });
+
+test('마무리: 쓰다가 접거나(Enter 포함) 칸이 사라지면 쓰는 중 표시를 바로 거두고, 포커스는 접힌 줄로', () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="journal"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('journal');
+  store.subscribe(mountJournal(root, store));
+  for (const id of ['push', 'pull', 'squat']) store.actions.toggle(id);
+  const html = document.documentElement;
+  const q = (id) => root.querySelector(id);
+
+  q('#jOpen').click();
+  q('#jThanks').focus();
+  q('#jThanks').value = '물 한 잔';
+  q('#jThanks').dispatchEvent(new Event('input', { bubbles: true }));
+  const saved = q('#jSaved').firstChild;
+  q('#jThanks').value = '물 한 잔과 햇볕';
+  q('#jThanks').dispatchEvent(new Event('input', { bubbles: true }));
+  assert.equal(q('#jSaved').firstChild, saved, '‘자동 저장’은 한 번만 넣어 매번 다시 읽히지 않음');
+  assert.equal(html.classList.contains('typing'), true);
+  q('#jThanks').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  assert.equal(q('#jBox').dataset.mode, 'view');
+  assert.equal(html.classList.contains('typing'), false, '접으면 아래 여백·탭 막대를 바로 되돌림');
+  assert.equal(document.activeElement, q('#jView'), '포커스는 접힌 줄로');
+
+  // 아무것도 안 쓴 채 쓰는 중에 새 회차를 시작해 칸이 사라져도 정리
+  store.actions.setNote(todayStr(), {});
+  q('#jView').click();
+  assert.equal(html.classList.contains('typing'), true);
+  store.actions.startAnotherSession();
+  assert.equal(q('#jBox').hidden, true);
+  assert.equal(html.classList.contains('typing'), false);
+  assert.notEqual(document.activeElement, q('#jFeel'));
+  store.actions.flushAll();
+});
