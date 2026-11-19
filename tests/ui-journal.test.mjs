@@ -105,6 +105,8 @@ test('마무리: 버튼은 접기 하나, 접힌 줄을 누르면 다시 씀, �
 
   store.actions.select(addDays(todayStr(), -1));
   assert.match(q('#jTitle').textContent, /^\d+월 \d+일의 마무리$/);
+  assert.equal(q('#jFeel').placeholder, '그날 운동은 어땠나요?', '지난 날은 안내 글도 그날');
+  assert.equal(q('#jThanks').placeholder, '그날 감사했던 일 하나');
   q('#jFeel').value = 'x'.repeat(180);
   q('#jFeel').dispatchEvent(new Event('input', { bubbles: true }));
   assert.equal(q('#jFeelN').textContent, '20자 남음', '거의 다 썼을 때 남은 글자 수');
