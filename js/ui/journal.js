@@ -105,7 +105,7 @@ export function mountJournal(root, store) {
       liftToTop();
     });
   }
-  // 둘 다 한 줄: 소감에서 Enter는 감사한 일로, 감사한 일에서 Enter는 접기
+  // 둘 다 한 줄: 소감에서 Enter는 감사한 일로, 감사한 일에서 Enter는 접기, Esc는 어디서든 접기
   feel.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.isComposing) {
       e.preventDefault();
@@ -115,6 +115,15 @@ export function mountJournal(root, store) {
   thanks.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.isComposing) $('#jDone', root).click(); // 한글 조합 중 Enter는 무시
   });
+  // Esc는 어느 칸에서든 접기 (쓴 내용은 이미 저장됨)
+  for (const el of [feel, thanks]) {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !e.isComposing) {
+        e.preventDefault();
+        $('#jDone', root).click();
+      }
+    });
+  }
 
   function edit() {
     editing = true;
