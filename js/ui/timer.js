@@ -153,8 +153,11 @@ export function mountTimer(root) {
   // 한 종목을 다 마쳐 다음 종목으로 넘어갈 때는 세트 사이 시간과 따로 1분 쉼
   const onSetChecked = (ev) => {
     if (!root.isConnected) return offSetChecked(); // 화면에서 사라진 타이머는 정리
-    if (!timer.auto || timer.running) return;
-    startRest({ quiet: true, sec: ev?.detail?.exerciseDone ? EXERCISE_REST_SEC : undefined });
+    if (!timer.auto) return;
+    const between = !!ev?.detail?.exerciseDone;
+    // 종목을 마친 순간에는 쉬는 중이던 세트 휴식도 1분 휴식으로 새로 시작(남은 몇 초만 쉬고 넘어가지 않게)
+    if (timer.running && !between) return;
+    startRest({ quiet: true, sec: between ? EXERCISE_REST_SEC : undefined });
   };
   const offSetChecked = on(EV.setChecked, onSetChecked);
   // 오늘 체크를 모두 되돌리거나 모든 운동을 마치면 쉬는 중이던 휴식도 조용히 멈춤(더 쉴 세트가 없음)
