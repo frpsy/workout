@@ -410,6 +410,8 @@ test('브랜드: 첫 화면에 앱 이름과 현재 운동 회차 상태를 표�
   for (const row of root.querySelectorAll('.row')) complete(row);
   assert.equal(root.querySelector('#brandState').textContent, '1회차 완료');
   assert.ok(pill.classList.contains('done') && !pill.classList.contains('active'), '완료: 체크가 붙는 알약');
+  assert.equal(pill.hidden, true, '아래 ‘1회차를 마쳤어요’ 줄과 겹치므로 머리말 알약은 숨김');
+  assert.equal(root.querySelector('#roundSummary').textContent, '1회차를 마쳤어요');
   assert.equal(root.querySelector('#segs').getAttribute('aria-valuenow'), '3');
   root.querySelector('#wAgain').click();
   assert.equal(root.querySelector('#brandState').textContent, '2회차 진행 중');
