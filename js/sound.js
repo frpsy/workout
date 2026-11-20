@@ -82,6 +82,7 @@ function resumeContext(c) {
 /** Restore only a previously unlocked audio context on foreground. */
 export function restoreSound() {
   stale = true;
+  applySession(); // 앱을 내렸다 올리면 기기가 세션 종류를 되돌렸을 수 있어 다시 정함
   if (ctx && ctx.state !== 'running') void resumeContext(ctx);
 }
 
@@ -110,7 +111,8 @@ export function isSilentModeOn() {
 function applySession() {
   if (!canPlayInSilentMode()) return;
   try {
-    navigator.audioSession.type = isSilentModeOn() ? 'playback' : 'ambient';
+    const want = isSilentModeOn() ? 'playback' : 'ambient';
+    if (navigator.audioSession.type !== want) navigator.audioSession.type = want;
   } catch {
     /* 바꿀 수 없는 환경 */
   }
@@ -147,6 +149,7 @@ function primeContext(c) {
 /** 오디오를 준비. 사용자가 누르는 동작 안에서 불러야 소리가 남 (iOS 등) */
 export function unlockSound() {
   try {
+    applySession(); // 소리를 내기 직전마다 다시 정함: 기기가 'auto'로 되돌리면 유튜브·음악이 멈춤
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!AC) return null;
     // 누르는 동작 안에서는, 멈춘 오디오나 앱을 내렸다 올린 뒤의 오디오를 새로 만듦(새로 만든 것은 바로 소리가 남)
