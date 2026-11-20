@@ -12,6 +12,10 @@ import { createRow, paintRow } from './exercise-row.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 
+// 스트레칭 버튼 앞의 체크 표시(했으면 채워진 동그라미 안의 ✓)
+const STRETCH_ICON =
+  '<svg class="stretch-mark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path class="tick" d="M7.8 12.4l3 3 5.4-6"/></svg>';
+
 export function mountToday(root, store) {
   const { actions } = store;
   let rowsKey = '';
@@ -63,10 +67,22 @@ export function mountToday(root, store) {
         <button type="button" class="link" id="backBtn">오늘로 돌아가기</button>
       </div>
     </header>
+    <button type="button" class="stretch" id="stretchPre" data-kind="pre" aria-pressed="false">${STRETCH_ICON}<span>운동 전 스트레칭</span></button>
     <section aria-label="운동 체크" class="rows" id="rows"></section>
+    <button type="button" class="stretch" id="stretchPost" data-kind="post" aria-pressed="false">${STRETCH_ICON}<span>운동 후 스트레칭</span></button>
     <span class="sr" id="nextNote" role="status"></span>`;
 
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
+
+  // 스트레칭 버튼: 눌러 했다고 표시하고, 다시 누르면 취소(그날 기록에 남음)
+  for (const b of root.querySelectorAll('.stretch')) {
+    b.addEventListener('click', () => {
+      if (!store.state.ready) return;
+      const { selected } = store.state;
+      const on = !(store.state.days[selected]?.stretch || {})[b.dataset.kind];
+      if (actions.setStretch(selected, b.dataset.kind, on) && on) haptic();
+    });
+  }
 
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
@@ -252,6 +268,13 @@ export function mountToday(root, store) {
       if (v.done) done++;
       paintRow(r, v, { current: picked ? r === pr : !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null });
       if (!v.done) currentSeen = true;
+    }
+
+    const stretch = state.days[selected]?.stretch || {};
+    for (const b of root.querySelectorAll('.stretch')) {
+      const on = !!stretch[b.dataset.kind];
+      b.setAttribute('aria-pressed', String(on));
+      b.disabled = !state.ready;
     }
 
     const segs = $('#segs', root);

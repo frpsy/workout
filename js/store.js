@@ -338,6 +338,19 @@ export function createStore(adapter) {
       commitDay(date);
     },
 
+    /** 운동 전(pre)·후(post) 스트레칭을 했는지 켜고 끔. 운동 완료·연속 일수·진행률에는 영향 없음 */
+    setStretch(date, kind, on) {
+      if (!state.ready || !isDateStr(date) || date > state.today || (kind !== 'pre' && kind !== 'post')) return false;
+      const day = ensureDay(date);
+      const stretch = { ...(day.stretch || {}) };
+      if (on) stretch[kind] = true;
+      else delete stretch[kind];
+      if (stretch.pre || stretch.post) day.stretch = stretch;
+      else delete day.stretch;
+      commitDay(date);
+      return true;
+    },
+
     /** 그날 총 운동시간을 직접 정함(초). 실제로 잰 시작·종료 시각(구간)은 그대로 둠(멈춘 시간이 빠지므로 원래도 합계와 꼭 같지 않음). 0 이하면 지움 */
     setWorkSec(date, sec) {
       if (!state.ready || !isDateStr(date) || date > state.today || !Number.isFinite(sec)) return;

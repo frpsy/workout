@@ -6,7 +6,7 @@ import { isDateStr } from './dates.js';
 import { MAX_LOG } from './setlog.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'rounds', 'activeEntries', 'sessionClosed', 'log']);
+const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'stretch', 'rounds', 'activeEntries', 'sessionClosed', 'log']);
 const MAX_WORK_SEC = 86400; // 하루 총 운동시간 상한(24시간)
 export const NOTE_MAX = 200; // 운동 소감·감사한 일 글자 수 상한
 export const MAX_SESSIONS = 20; // 하루에 남기는 운동 구간(시작·종료) 수 상한
@@ -99,6 +99,15 @@ export function normalizeNote(raw) {
   return feel || thanks ? note : null;
 }
 
+/** 스트레칭을 했는지: { pre: 운동 전, post: 운동 후 } (한 것만 true로 둠). 둘 다 안 했으면 null */
+export function normalizeStretch(raw) {
+  if (!isObj(raw)) return null;
+  const s = {};
+  if (raw.pre === true) s.pre = true;
+  if (raw.post === true) s.post = true;
+  return s.pre || s.post ? s : null;
+}
+
 /** 운동 구간 [{ s: 시작 시각(ms), e: 종료 시각(ms), sec: 중지한 시간을 뺀 운동 초 }] (하루에 여러 번 가능) — 잘못된 값은 버리고 시작 순으로 */
 export function normalizeSessions(raw) {
   if (!Array.isArray(raw)) return [];
@@ -156,6 +165,7 @@ export function normalizeDay(raw) {
   const entries = normalizeEntries(src);
   if (isObj(raw.pm)) mergePm(entries, normalizeEntries(raw.pm));
   const note = normalizeNote(raw.note);
+  const stretch = normalizeStretch(raw.stretch);
   const sessions = normalizeSessions(raw.sessions);
   // 완료한 각 운동 회차의 체크 기록. 기존 day.entries는 하루 통계용 누적 기록으로 유지합니다.
   const rounds = Array.isArray(raw.rounds) ? raw.rounds.slice(0, MAX_SESSIONS).filter(isObj).map((v) => ({
@@ -163,16 +173,17 @@ export function normalizeDay(raw) {
   })) : [];
   const activeEntries = isObj(raw.activeEntries) && rounds.length ? normalizeEntries(raw.activeEntries) : null;
   const log = normalizeLog(raw.log);
-  return { entries, ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: activeEntries || {} } : {}), ...(raw.sessionClosed === true ? { sessionClosed: true } : {}), ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}) };
+  return { entries, ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: activeEntries || {} } : {}), ...(raw.sessionClosed === true ? { sessionClosed: true } : {}), ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}), ...(stretch ? { stretch } : {}) };
 }
 
 export function serializeDay(date, day) {
   // workSec: 그날 총 운동시간(초), sessions: 운동 구간(시작·종료 시각), note: 운동 소감·감사한 일. 없으면 필드도 두지 않음
   const note = normalizeNote(day.note);
+  const stretch = normalizeStretch(day.stretch);
   const sessions = normalizeSessions(day.sessions);
   const rounds = Array.isArray(day.rounds) ? day.rounds.slice(0, MAX_SESSIONS).map((v) => ({ entries: normalizeEntries(v.entries || {}) })) : [];
   const log = normalizeLog(day.log);
-  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: normalizeEntries(day.activeEntries || {}) } : {}), ...(day.sessionClosed === true ? { sessionClosed: true } : {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}) };
+  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: normalizeEntries(day.activeEntries || {}) } : {}), ...(day.sessionClosed === true ? { sessionClosed: true } : {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}), ...(stretch ? { stretch } : {}) };
 }
 
 export function serializeConfig(config) {

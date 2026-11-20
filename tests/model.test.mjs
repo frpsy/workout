@@ -154,3 +154,15 @@ test('부분 완료 회차 종료 상태는 저장·복원되고 기존 기록�
   assert.equal(copy.workSec, 60);
   assert.equal(normalizeDay({ entries: {} }).sessionClosed, undefined);
 });
+
+test('스트레칭: 한 것(true)만 저장하고, 둘 다 안 했거나 잘못된 값이면 필드도 없음', async () => {
+  const { normalizeStretch, serializeDay } = await import('../js/model.js');
+  assert.deepEqual(normalizeStretch({ pre: true, post: false }), { pre: true });
+  assert.deepEqual(normalizeStretch({ pre: true, post: true, x: 1 }), { pre: true, post: true });
+  assert.equal(normalizeStretch({ pre: 'yes', post: 1 }), null);
+  assert.equal(normalizeStretch(null), null);
+  assert.deepEqual(normalizeDay({ entries: {}, stretch: { post: true } }).stretch, { post: true });
+  assert.equal('stretch' in normalizeDay({ entries: {}, stretch: {} }), false);
+  assert.deepEqual(serializeDay('2026-10-28', { entries: {}, stretch: { pre: true } }).stretch, { pre: true });
+  assert.equal('stretch' in serializeDay('2026-10-28', { entries: {} }), false);
+});
