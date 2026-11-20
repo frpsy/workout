@@ -105,7 +105,7 @@ test('효과음: 앱을 내렸다 올려 오디오가 interrupted로 멈춰 있�
 });
 
 test('효과음: 무음 모드에서도 소리 내기를 켜면 오디오 세션을 playback으로, 끄면 auto로 (설정 화면에서 바로 적용)', async () => {
-  const { canPlayInSilentMode, isSilentModeOn, playSound, setSilentMode } = await import('../js/sound.js');
+  const { canPlayInSilentMode, isSilentModeOn, playSound, restoreSound, setSilentMode } = await import('../js/sound.js');
   const prev = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   localStorage.removeItem('workout-check:sound-silent');
   try {
@@ -141,6 +141,12 @@ test('효과음: 무음 모드에서도 소리 내기를 켜면 오디오 세션
     assert.equal(session.type, 'ambient', '기본은 다른 앱(유튜브·음악) 소리를 멈추지 않는 종류');
     playSound('done');
     assert.equal(session.type, 'ambient', '새 오디오를 만들 때도 설정을 따름');
+    session.type = 'auto'; // 기기가 세션 종류를 되돌린 경우
+    playSound('done');
+    assert.equal(session.type, 'ambient', '이미 만든 오디오로 소리를 낼 때도 다시 정함');
+    session.type = 'auto';
+    restoreSound();
+    assert.equal(session.type, 'ambient', '앱을 다시 열 때도 다시 정함');
   } finally {
     if (prev) Object.defineProperty(globalThis, 'navigator', prev);
     else delete globalThis.navigator;
