@@ -6,7 +6,7 @@ import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { currentStreak } from '../stats.js';
 import { $, haptic } from './dom.js';
 import { mountLoginNote } from './login-note.js';
-import { soundFor } from './sound-ui.js';
+import { mountSoundButton, soundFor } from './sound-ui.js';
 import { mountWorkbar } from './workbar.js';
 import { createRow, paintRow } from './exercise-row.js';
 import { enableRowDrag } from './row-drag.js';
@@ -27,6 +27,7 @@ export function mountToday(root, store) {
       <div class="brandline">
         <img class="brand-symbol" src="icons/icon-192.png" width="32" height="32" alt="">
         <svg class="brand-name" role="img" aria-label="Repday"><use href="#wordmark"/></svg>
+        <button type="button" class="snd quick" id="sndQuick" aria-pressed="true"></button>
         <span class="brand-state" id="brandState" hidden>운동 준비</span>
         <h1 class="brand-date" id="dateLabel" tabindex="-1"></h1>
       </div>
@@ -72,6 +73,7 @@ export function mountToday(root, store) {
     <button type="button" class="stretch" id="stretchPost" data-kind="post" aria-pressed="false">${STRETCH_ICON}<span>운동 후 스트레칭</span></button>
     <span class="sr" id="nextNote" role="status"></span>`;
 
+  mountSoundButton($('#sndQuick', root)); // 효과음 켜기/끄기: 운동 중에 설정 탭에 가지 않고 바로
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
 
   // 스트레칭 버튼: 눌러 했다고 표시하고, 다시 누르면 취소(그날 기록에 남음)

@@ -861,6 +861,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   touch-action: manipulation;
 }
 .snd[aria-pressed="false"] { color: var(--muted); }
+/* 오늘 화면 맨 위 줄의 작은 스피커: 로고·이름 바로 옆, 아이콘만 */
+.snd.quick { width: 32px; height: 32px; margin: -4px 0 -4px -6px; }
+.snd.quick::after { inset: -6px -2px; }
 .snd::after { content: ''; position: absolute; inset: -6px 0; }
 
 /* 오늘의 마무리: 운동 소감·감사한 일 */
@@ -1542,6 +1545,7 @@ tr.cur td { background: var(--accent-soft); }
   .wsec { min-width: 0; padding: 0 6px; }
   .wtime { font-size: var(--fs-xs); }
   .brand-date { font-size: var(--fs-md); }
+  .brandline:has(.brand-state:not([hidden])) .brand-name { display: none; } /* 운동 중 알약이 보이는 좁은 폰: 글자 로고를 접어 날짜가 잘리지 않게 */
 }
 
 /* 키가 작은 폰(높이 700px 이하): 한 화면에 들어오도록 간격을 줄임 */
