@@ -210,3 +210,14 @@ test('기록: 오늘 운동을 재는 중이면 ‘시간 기록 없음’ 대�
   s.cancel();
   assert.equal(label().textContent, '시간 기록 없음');
 });
+
+test('기록: 스트레칭을 한 날은 그날 카드에 운동 전·후로 보임', () => {
+  const { root, store } = setup(history, { days: fullDays(1) });
+  const day = () => root.querySelector('#dayCard').textContent;
+  assert.doesNotMatch(day(), /스트레칭/);
+  store.actions.setStretch(todayStr(), 'post', true);
+  assert.match(day(), /스트레칭 운동 후/);
+  store.actions.setStretch(todayStr(), 'pre', true);
+  assert.match(day(), /스트레칭 운동 전 · 후/);
+  store.actions.flushAll();
+});

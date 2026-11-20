@@ -283,6 +283,8 @@ export function mountHistory(root, store) {
         return `<details class="round-details"><summary>${index + 1}회차 ${index < rounds.length - 1 || day?.sessionClosed ? '종료' : '진행 중'} · ${checked ? '운동 기록' : '체크 없음'}</summary>${checked ? `<ul class="dayex">${checked}</ul>` : '<p class="sub">체크한 운동이 없습니다.</p>'}</details>`;
       }).join('') + '</div>' : '';
     const note = (day && day.note) || {};
+    const st = (day && day.stretch) || {};
+    const stretchText = st.pre && st.post ? '운동 전 · 후' : st.pre ? '운동 전' : st.post ? '운동 후' : '';
     const rest = ctx.rest.has(parse(date).getDay());
     const times = sessions.map((x) => `${clock(x.s)} – ${clock(x.e)}`).join(', '); // 하루에 여러 번 했으면 구간이 모두 나열됨
     return (
@@ -291,6 +293,7 @@ export function mountHistory(root, store) {
       (times ? `<p class="log-time">${times}</p>` : '') +
       (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? '쉬는 날입니다.' : '기록이 없습니다.'}</p>`) +
       roundHtml +
+      (stretchText ? `<p class="note-line"><b>스트레칭</b> ${stretchText}</p>` : '') +
       (note.feel ? `<p class="note-line"><b>소감</b> ${esc(note.feel)}</p>` : '') +
       (note.thanks ? `<p class="note-line"><b>감사</b> ${esc(note.thanks)}</p>` : '') +
       `<button type="button" class="btn ghost sm" data-edit="${date}">${date === state.today ? '오늘 탭에서 체크하기' : '이 날 기록 고치기'}</button>`

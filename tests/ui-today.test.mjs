@@ -551,3 +551,26 @@ test('오늘: 종목 줄을 길게 눌러 끌면 순서가 바뀌고(운동 중�
   root.querySelector('#wCancel')?.click();
   store.actions.flushAll();
 });
+
+test('오늘: 운동 전·후 스트레칭 버튼은 눌러 켜고 다시 눌러 끄며, 그날 기록에 남고 진행률·완료에는 영향 없음', () => {
+  const { store, root } = setup(today);
+  const pre = root.querySelector('#stretchPre');
+  const post = root.querySelector('#stretchPost');
+  const rows = root.querySelector('#rows');
+  assert.equal(pre.nextElementSibling, rows, '운동 목록 위');
+  assert.equal(rows.nextElementSibling, post, '운동 목록 아래');
+  assert.equal(pre.getAttribute('aria-pressed'), 'false');
+  pre.click();
+  assert.equal(pre.getAttribute('aria-pressed'), 'true');
+  assert.equal(post.getAttribute('aria-pressed'), 'false');
+  assert.deepEqual(store.state.days[store.state.today].stretch, { pre: true });
+  post.click();
+  assert.deepEqual(store.state.days[store.state.today].stretch, { pre: true, post: true });
+  assert.equal(root.querySelector('#progText').textContent, '0/3 종목', '진행률에 안 셈');
+  assert.equal(store.allDone(), false);
+  pre.click();
+  post.click();
+  assert.equal(pre.getAttribute('aria-pressed'), 'false');
+  assert.equal('stretch' in store.state.days[store.state.today], false, '둘 다 끄면 필드도 없앰');
+  store.actions.flushAll();
+});
