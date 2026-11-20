@@ -132,7 +132,6 @@ function applySession() {
     /* 바꿀 수 없는 환경 */
   }
 }
-applySession(); // 앱을 여는 순간부터 적용: 첫 효과음 전에도 다른 앱 소리를 건드리지 않게
 
 export function setSilentMode(on) {
   writeText(SILENT_KEY, on ? 'on' : 'off');
@@ -163,6 +162,7 @@ function primeContext(c) {
 
 /** 오디오를 준비. 사용자가 누르는 동작 안에서 불러야 소리가 남 (iOS 등) */
 export function unlockSound() {
+  if (!isSoundOn()) return null; // 꺼져 있으면 기기의 오디오에 손대지 않음(다른 앱 소리를 건드리지 않게)
   try {
     applySession(); // 소리를 내기 직전마다 다시 정함: 기기가 'auto'로 되돌리면 유튜브·음악이 멈춤
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;

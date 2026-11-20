@@ -344,3 +344,32 @@ test('효과음: 앱이 사라질 때 오디오를 닫고, 돌아와도 누르�
     played.length = 0;
   }
 });
+
+test('효과음: 꺼져 있으면 오디오를 만들지도 세션 종류를 바꾸지도 않음(휴식 타이머 시작 때도)', async () => {
+  const { unlockSound, playSound, setSoundOn, releaseSound } = await import('../js/sound.js');
+  const prev = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  const session = { type: 'auto' };
+  Object.defineProperty(globalThis, 'navigator', { value: { audioSession: session }, configurable: true });
+  let created = 0;
+  globalThis.AudioContext = class extends FakeAudio { constructor() { super(); created++; } };
+  try {
+    releaseSound();
+    setSoundOn(false);
+    assert.equal(unlockSound(), null);
+    playSound('done');
+    assert.equal(created, 0, '오디오를 만들지 않음');
+    assert.equal(session.type, 'auto', '세션 종류도 그대로');
+    setSoundOn(true);
+    playSound('done');
+    assert.equal(created, 1, '켜면 소리를 낼 때 만듦');
+    assert.equal(session.type, 'ambient', '만들기 전에 정함');
+  } finally {
+    setSoundOn(true);
+    releaseSound();
+    if (prev) Object.defineProperty(globalThis, 'navigator', prev);
+    else delete globalThis.navigator;
+    delete globalThis.AudioContext;
+    localStorage.removeItem('workout-check:sound');
+    played.length = 0;
+  }
+});
