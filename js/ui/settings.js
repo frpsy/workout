@@ -45,6 +45,7 @@ export function mountSettings(root, store, theme = null) {
           <span>무음 모드에서도 효과음</span>
           <span class="switch"><input type="checkbox" role="switch" id="silentMode"><i aria-hidden="true"></i></span>
         </label>
+        <p class="shint" id="sndNote" hidden>이 기기에서는 효과음이 울릴 때 유튜브·음악이 멈출 수 있어요. 다른 소리를 들으며 운동할 땐 효과음을 꺼 주세요.</p>
         <div class="srow" id="acctRow">
           <span class="sval" id="acctText"></span>
           <button type="button" class="btn ghost sm" id="acctBtn" hidden></button>
@@ -133,6 +134,7 @@ export function mountSettings(root, store, theme = null) {
   mountSoundToggle(root);
   const silentOk = canPlayInSilentMode();
   el('silentRow').hidden = !silentOk; // 지원하지 않는 브라우저에서는 보이지 않음
+  el('sndNote').hidden = silentOk; // 다른 앱 소리 위에 섞는 기능이 없으면, 효과음이 그 소리를 멈출 수 있다고 알림
   el('silentMode').checked = silentOk && isSilentModeOn();
   el('silentMode').addEventListener('change', (e) => {
     setSilentMode(e.target.checked);
