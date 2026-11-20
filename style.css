@@ -1545,7 +1545,7 @@ tr.cur td { background: var(--accent-soft); }
   .wsec { min-width: 0; padding: 0 6px; }
   .wtime { font-size: var(--fs-xs); }
   .brand-date { font-size: var(--fs-md); }
-  .brandline:has(.brand-state:not([hidden])) .brand-name { display: none; } /* 운동 중 알약이 보이는 좁은 폰: 글자 로고를 접어 날짜가 잘리지 않게 */
+  .brand-name { display: none; } /* 아주 좁은 폰: 글자 로고를 접어 운동 중 알약이 보여도 날짜가 잘리지 않게(로고 아이콘은 그대로) */
 }
 
 /* 키가 작은 폰(높이 700px 이하): 한 화면에 들어오도록 간격을 줄임 */
