@@ -1,7 +1,7 @@
 // 효과음 테스트 (가짜 DOM 환경은 helpers/ui-env.mjs)
 import { mock, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { adapter, createStore, mountSettings, mountTimer, setup, today, complete, setTo } from './helpers/ui-env.mjs';
+import { adapter, createStore, mountSettings, mountTimer, mountToday, setup, today, complete, setTo } from './helpers/ui-env.mjs';
 
 // 효과음 테스트용 가짜 오디오: 소리 모듈이 만든 오디오를 계속 쓰므로 한 곳에 기록함
 const played = [];
@@ -371,6 +371,29 @@ test('효과음: 꺼져 있으면 오디오를 만들지도 세션 종류를 바
     if (prev) Object.defineProperty(globalThis, 'navigator', prev);
     else delete globalThis.navigator;
     delete globalThis.AudioContext;
+    localStorage.removeItem('workout-check:sound');
+    played.length = 0;
+  }
+});
+
+test('효과음: 오늘 화면의 스피커 버튼으로 켜고 끄며, 설정 탭의 버튼과 같이 바뀜', () => {
+  localStorage.removeItem('workout-check:sound');
+  document.body.innerHTML = '<div id="today"></div><div id="settings"></div>';
+  const store = createStore(adapter());
+  mountToday(document.getElementById('today'), store);
+  store.subscribe(mountSettings(document.getElementById('settings'), store));
+  const quick = document.querySelector('#sndQuick');
+  const main = document.querySelector('#sndBtn');
+  try {
+    assert.equal(quick.getAttribute('aria-pressed'), 'true', '기본은 켜짐');
+    assert.match(quick.getAttribute('aria-label'), /켜짐/);
+    quick.click();
+    assert.equal(localStorage.getItem('workout-check:sound'), 'off');
+    assert.equal(quick.getAttribute('aria-pressed'), 'false');
+    assert.equal(main.getAttribute('aria-pressed'), 'false', '설정 탭 버튼도 같이 바뀜');
+    main.click();
+    assert.equal(quick.getAttribute('aria-pressed'), 'true', '반대로도 같이 바뀜');
+  } finally {
     localStorage.removeItem('workout-check:sound');
     played.length = 0;
   }
