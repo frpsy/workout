@@ -311,3 +311,36 @@ test('효과음: resume()이 끝났는데도 멈춰 있으면 오디오를 버�
     played.length = 0;
   }
 });
+
+test('효과음: 앱이 사라질 때 오디오를 닫고, 돌아와도 누르기 전에는 되살리지 않음(앱 전환만으로 다른 앱 소리가 멈추지 않게)', async () => {
+  const { playSound, setSilentMode, releaseSound, restoreSound } = await import('../js/sound.js');
+  localStorage.removeItem('workout-check:sound');
+  let created = 0;
+  let resumed = 0;
+  let closed = 0;
+  globalThis.AudioContext = class extends FakeAudio {
+    constructor() { super(); created++; }
+    resume() { resumed++; return Promise.resolve(); }
+    close() { closed++; this.state = 'closed'; }
+  };
+  try {
+    setSilentMode(false);
+    played.length = 0;
+    playSound('done');
+    assert.equal(created, 1);
+    const before = closed;
+    releaseSound();
+    assert.equal(closed, before + 1, '사라질 때 오디오를 닫음');
+    const r = resumed;
+    restoreSound();
+    assert.equal(created, 1, '돌아와도 새로 만들지 않음');
+    assert.equal(resumed, r, '돌아와도 resume()으로 되살리지 않음');
+    playSound('done');
+    assert.equal(created, 2, '다음에 소리를 낼 때 새로 엶');
+    releaseSound();
+    releaseSound(); // 열린 오디오가 없어도 문제없음
+  } finally {
+    delete globalThis.AudioContext;
+    played.length = 0;
+  }
+});
