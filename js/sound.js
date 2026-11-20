@@ -79,11 +79,26 @@ function resumeContext(c) {
   }
 }
 
-/** Restore only a previously unlocked audio context on foreground. */
+/**
+ * 앱이 화면에서 사라질 때: 열어 둔 오디오를 닫아 기기의 오디오 출력을 놓음.
+ * 열린 채로 두면 앱을 바꾸는 것만으로 다른 앱(유튜브·음악)의 재생이 멈출 수 있음. 소리는 다음에 누를 때 새로 열림.
+ */
+export function releaseSound() {
+  const c = ctx;
+  ctx = null;
+  resumePending = null;
+  stale = false;
+  if (!c) return;
+  try { void c.close(); } catch { /* 이미 닫힘 */ }
+}
+
+/**
+ * 앱이 다시 화면에 나타날 때. 사용자가 누르기 전에는 오디오를 건드리지 않음:
+ * 여기서 resume()으로 되살리면, 앱을 바꾸는 것만으로 다른 앱의 소리가 멈춤. 소리는 다음에 누를 때 새로 열림.
+ */
 export function restoreSound() {
   stale = true;
   applySession(); // 앱을 내렸다 올리면 기기가 세션 종류를 되돌렸을 수 있어 다시 정함
-  if (ctx && ctx.state !== 'running') void resumeContext(ctx);
 }
 
 export function isSoundOn() {

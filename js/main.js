@@ -2,7 +2,7 @@
 
 import { createProgress } from './boot-progress.js';
 import { setScreenAwake } from './screen-awake.js';
-import { restoreSound } from './sound.js';
+import { releaseSound, restoreSound } from './sound.js';
 import { mountTheme } from './theme.js';
 import { createStorage } from './storage/index.js';
 import { createStore } from './store.js';
@@ -73,8 +73,10 @@ async function boot() {
 
   // 자정 넘김·오래 열어 둔 화면 대비
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) store.actions.flushAll();
-    else {
+    if (document.hidden) {
+      store.actions.flushAll();
+      releaseSound(); // 앱을 바꿀 때 오디오를 놓아 유튜브·음악이 멈추지 않게
+    } else {
       restoreSound();
       store.actions.refreshToday();
     }
