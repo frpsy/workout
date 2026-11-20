@@ -117,6 +117,7 @@ test('효과음: 무음 모드에서도 소리 내기를 켜면 오디오 세션
     let root = document.getElementById('settings');
     mountSettings(root, createStore(ad));
     assert.equal(root.querySelector('#silentRow').hidden, true);
+    assert.equal(root.querySelector('#sndNote').hidden, false, '지원하지 않으면 유튜브가 멈출 수 있다고 알림');
 
     // 지원하는 브라우저
     const session = { type: 'auto' };
@@ -130,6 +131,7 @@ test('효과음: 무음 모드에서도 소리 내기를 켜면 오디오 세션
     const box = root.querySelector('#silentMode');
     assert.equal(root.querySelector('#silentRow').hidden, false, '지원하면 한 줄 스위치만 보임');
     assert.equal(root.querySelector('#silentHelp'), null, '긴 설명은 없음');
+    assert.equal(root.querySelector('#sndNote').hidden, true, '지원하면 알림 없음');
     assert.equal(box.checked, false, '기본은 꺼짐');
     box.checked = true;
     played.length = 0;
