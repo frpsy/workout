@@ -6,7 +6,7 @@ import { readJson, writeJson } from './local-store.js';
 export const MIN_SEC = 15;
 export const MAX_SEC = 600;
 export const STEP_SEC = 15;
-export const DEFAULT_SEC = 60;
+export const DEFAULT_SEC = 30; // 세트 사이 기본 쉬는 시간(저장된 설정이 없을 때)
 export const EXERCISE_REST_SEC = 60; // 한 종목을 다 마치고 다음 종목으로 넘어갈 때 쉬는 시간(세트 사이 시간과 따로)
 export const PRESETS = [30, 60, 90]; // 시간 숫자를 누르면 차례로 바뀌는 3단계
 
