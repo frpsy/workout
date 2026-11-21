@@ -32,6 +32,24 @@ let createdAt = 0;
 let stale = false; // 앱을 내렸다 올린 뒤: iOS는 'running'이라고 하면서 소리를 내지 않기도 해서, 다음 탭에서 새로 만듦
 
 const RESUME_WAIT_MS = 1500; // resume()이 이 안에 끝나지 않으면 막힌 것으로 보고 버림
+// 소리가 끝나고 이만큼 조용하면 오디오를 잠재움(suspend). 3·2·1 카운트(1초 간격)와 끝 알림은 한 번에 이어지게 1초보다 길게.
+const IDLE_MS = 1200;
+let idleTimer = 0;
+let idle = false; // 일부러 잠재운 상태: 고장 난 것이 아니라 다음 소리에 resume()으로 깨움
+
+/**
+ * 소리를 내지 않는 동안에는 오디오를 잠재워 기기의 오디오 세션을 놓음.
+ * iOS는 오디오가 'running'인 동안 세션을 계속 붙잡아, 소리가 나지 않아도 유튜브·음악을 멈추게 할 수 있음.
+ * 한 번 누르는 동작으로 깨운 오디오는 그 뒤로 누르지 않아도 resume()으로 다시 깨울 수 있어(휴식 끝 알림) 닫지 않고 잠재움.
+ */
+function armIdle(c, afterMs = 0) {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (ctx !== c || c.state !== 'running' || typeof c.suspend !== 'function') return;
+    idle = true;
+    try { void Promise.resolve(c.suspend()).catch(() => {}); } catch { /* 이미 닫힘 */ }
+  }, afterMs + IDLE_MS);
+}
 
 /** 지금 사용자가 누르는 동작 안인지 (이때 만든 오디오만 바로 소리를 냄) */
 function inGesture() {
@@ -45,6 +63,8 @@ function inGesture() {
 function discard(c) {
   if (ctx !== c) return;
   ctx = null;
+  idle = false;
+  clearTimeout(idleTimer);
   resumePending = null;
   try { void c.close(); } catch { /* 이미 닫힘 */ }
 }
@@ -86,6 +106,8 @@ function resumeContext(c) {
 export function releaseSound() {
   const c = ctx;
   ctx = null;
+  idle = false;
+  clearTimeout(idleTimer);
   resumePending = null;
   stale = false;
   if (!c) return;
@@ -145,6 +167,8 @@ export function setSilentMode(on) {
     }
     ctx = null;
     resumePending = null;
+    idle = false;
+    clearTimeout(idleTimer);
   }
 }
 
@@ -168,16 +192,22 @@ export function unlockSound() {
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!AC) return null;
     // 누르는 동작 안에서는, 멈춘 오디오나 앱을 내렸다 올린 뒤의 오디오를 새로 만듦(새로 만든 것은 바로 소리가 남)
-    if (ctx && inGesture() && (stale || ctx.state !== 'running') && Date.now() - createdAt > 1000) discard(ctx);
+    // 일부러 잠재운 오디오는 고장 난 것이 아니라 resume()으로 깨움(새로 만들면 매번 처음 여는 것과 같아짐)
+    if (ctx && inGesture() && (stale || (ctx.state !== 'running' && !idle)) && Date.now() - createdAt > 1000) discard(ctx);
     if (!ctx || ctx.state === 'closed') {
       applySession();
       ctx = new AC();
       createdAt = Date.now();
       resumePending = null;
       stale = false;
+      idle = false;
       primeContext(ctx);
     } else if (inGesture()) stale = false;
-    if (ctx.state !== 'running') void resumeContext(ctx);
+    if (ctx.state !== 'running') {
+      idle = false;
+      void resumeContext(ctx);
+    }
+    armIdle(ctx); // 소리 없이 준비만 해도(휴식 타이머 시작) 오래 붙잡지 않게
     return ctx;
   } catch {
     ctx = null;
@@ -198,6 +228,8 @@ export function playSound(name, n = 1) {
   if (!notes) return;
   const schedule = () => {
     if (ctx !== c || c.state !== 'running' || !isSoundOn()) return;
+    const end = Math.max(...notes.map(([at, , len]) => at + len));
+    armIdle(c, end * 1000 + 100); // 마지막 음이 끝난 뒤에 잠재움
     try {
       for (const [at, freq, len, type] of notes) {
         const t = c.currentTime + at;

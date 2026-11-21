@@ -133,12 +133,14 @@ test('효과음: 무음 모드에서도 소리 내기를 켜면 오디오 세션
     assert.equal(root.querySelector('#silentHelp'), null, '긴 설명은 없음');
     assert.equal(root.querySelector('#sndNote').hidden, true, '지원하면 알림 없음');
     assert.equal(box.checked, false, '기본은 꺼짐');
+    assert.equal(root.querySelector('#silentNote').hidden, true, '꺼져 있으면 안내 없음');
     box.checked = true;
     played.length = 0;
     box.dispatchEvent(new Event('change', { bubbles: true }));
     assert.equal(isSilentModeOn(), true, '이 기기에 기억');
     assert.equal(session.type, 'playback');
     assert.equal(played.length, 1, '바로 들어 보기');
+    assert.equal(root.querySelector('#silentNote').hidden, false, '켜면 유튜브·음악이 멈춘다고 알림');
     setSilentMode(false);
     assert.equal(session.type, 'ambient', '기본은 다른 앱(유튜브·음악) 소리를 멈추지 않는 종류');
     playSound('done');
@@ -395,6 +397,37 @@ test('효과음: 오늘 화면의 스피커 버튼으로 켜고 끄며, 설정 �
     assert.equal(quick.getAttribute('aria-pressed'), 'true', '반대로도 같이 바뀜');
   } finally {
     localStorage.removeItem('workout-check:sound');
+    played.length = 0;
+  }
+});
+
+test('효과음: 소리가 끝나고 조용해지면 오디오를 잠재워 다른 앱 소리를 붙잡지 않고, 다음 소리에 깨움', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const { playSound, releaseSound } = await import('../js/sound.js');
+  localStorage.removeItem('workout-check:sound');
+  const calls = [];
+  class SleepyAudio extends FakeAudio {
+    suspend() { calls.push('suspend'); this.state = 'suspended'; return Promise.resolve(); }
+    resume() { calls.push('resume'); this.state = 'running'; return Promise.resolve(); }
+  }
+  globalThis.AudioContext = SleepyAudio;
+  try {
+    releaseSound();
+    played.length = 0;
+    playSound('done');
+    assert.equal(played.length, 3);
+    t.mock.timers.tick(1000);
+    assert.deepEqual(calls, [], '소리가 나는 동안·직후에는 잠재우지 않음');
+    t.mock.timers.tick(1000);
+    assert.deepEqual(calls, ['suspend'], '조용해지면 잠재움');
+    playSound('set');
+    assert.deepEqual(calls, ['suspend', 'resume'], '다음 소리에 같은 오디오를 깨움(누르지 않아도: 휴식 끝 알림)');
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.equal(played.length, 4, '깨운 뒤 소리가 남');
+  } finally {
+    releaseSound();
+    delete globalThis.AudioContext;
     played.length = 0;
   }
 });
