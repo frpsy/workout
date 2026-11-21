@@ -6,12 +6,12 @@
     <filter id="b6" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
     <filter id="b10" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="10"/></filter>
     <filter id="b14" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="14"/></filter>
-    <mask id="all" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><g transform="translate(256 256) scale(1.18) translate(-256 -256)" fill="none" stroke="#fff" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"><path d="M181 372V140H266a66 66 0 0 1 0 132H181M262 272 328 372"/></g></mask>
+    <mask id="all" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512"><g transform="translate(256 256) scale(1.04) translate(-256 -256)" fill="none" stroke="#fff" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"><path d="M181 372V140H266a66 66 0 0 1 0 132H181M262 272 328 372"/></g></mask>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/><rect width="512" height="512" fill="url(#glow)"/>
-  <g transform="translate(256 256) scale(1.18) translate(-256 -256)">
+  <g transform="translate(256 256) scale(1.04) translate(-256 -256)">
     <g transform="translate(6 16)" opacity="0.38" filter="url(#b14)" fill="none" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" stroke="#025B3F"><path d="M181 372V140H266a66 66 0 0 1 0 132H181M262 272 328 372"/></g>
     <g fill="none" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" stroke="url(#face)"><path d="M181 372V140H266a66 66 0 0 1 0 132H181M262 272 328 372"/></g>
   </g>
-  <g mask="url(#all)"><g transform="translate(256 256) scale(1.18) translate(-256 -256)"><g transform="translate(10 10)" opacity="0.12" filter="url(#b6)" fill="none" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" stroke="#4DB88D"><path d="M181 372V140H266a66 66 0 0 1 0 132H181M262 272 328 372"/></g></g></g>
+  <g mask="url(#all)"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(10 10)" opacity="0.12" filter="url(#b6)" fill="none" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" stroke="#4DB88D"><path d="M181 372V140H266a66 66 0 0 1 0 132H181M262 272 328 372"/></g></g></g>
 </svg>
