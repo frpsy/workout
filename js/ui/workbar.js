@@ -116,6 +116,8 @@ export function mountWorkbar(root, store) {
     finishWork({ sound: false });
     actions.closeSession();
   });
+  // 휴식 타이머가 끝나 시간이 흐를 때 '종료'를 누르면 ■ 종료와 같게 기록(운동 중이 아니면 아무것도 안 함)
+  on(EV.endRequested, () => finishWork());
   $('#wAgain', root).addEventListener('click', () => {
     if (session.running || !actions.startAnotherSession()) return;
     startWork();
