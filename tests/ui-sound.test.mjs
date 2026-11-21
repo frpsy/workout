@@ -182,9 +182,9 @@ test('효과음: 휴식 타이머 시작·중지음, 끝나기 3초 전 카운�
     go.click();
     assert.equal(played.length, 2, '시작음(두 음)');
     played.length = 0;
-    mock.timers.tick(30_000); // 남은 30초
+    mock.timers.tick(15_000); // 남은 15초
     assert.equal(played.length, 0, '중간에는 소리가 없음');
-    mock.timers.tick(27_000); // 남은 3초
+    mock.timers.tick(12_000); // 남은 3초
     assert.equal(played.length, 1, '3초 전 카운트');
     mock.timers.tick(1_000);
     mock.timers.tick(1_000);

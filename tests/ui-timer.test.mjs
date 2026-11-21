@@ -11,17 +11,19 @@ test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림',
   const root = document.getElementById('timer');
   mountTimer(root);
   const time = () => root.querySelector('#tTime').textContent;
-  assert.equal(time(), '1:00', '기본은 60초');
+  assert.equal(time(), '0:30', '기본은 30초');
   root.querySelector('#tPlus').click();
-  assert.equal(time(), '1:15');
-  root.querySelector('#tMinus').click();
-  root.querySelector('#tMinus').click();
   assert.equal(time(), '0:45');
+  root.querySelector('#tMinus').click();
+  root.querySelector('#tMinus').click();
+  assert.equal(time(), '0:15');
   const saved = () => JSON.parse(localStorage.getItem('workout-check:timer')).duration;
-  assert.equal(saved(), 45, '마지막 시간 기억');
+  assert.equal(saved(), 15, '마지막 시간 기억');
 
   const preset = root.querySelector('#tTime');
-  preset.click(); // 프리셋 3단계: 45 → 60 → 90 → 30
+  preset.click(); // 프리셋 3단계: 15 → 30 → 60 → 90 → 30
+  assert.equal(time(), '0:30');
+  preset.click();
   assert.equal(time(), '1:00');
   preset.click();
   assert.equal(time(), '1:30');
@@ -75,7 +77,7 @@ test('타이머: 바탕 채움은 끊어 갱신하지 않고 남은 시간 동�
   assert.equal(fill.style.transform, 'scaleX(0)', '쉬지 않을 때는 비어 있음');
   root.querySelector('#tGo').click();
   assert.equal(anims.length, 1, '시작할 때 한 번');
-  assert.equal(anims[0].opts.duration, 60_000, '남은 시간 동안');
+  assert.equal(anims[0].opts.duration, 30_000, '남은 시간 동안');
   assert.equal(anims[0].opts.easing, 'linear');
   assert.deepEqual(anims[0].keyframes.map((k) => k.transform), ['scaleX(1)', 'scaleX(0)']);
   mock.timers.tick(10_000);
@@ -84,7 +86,7 @@ test('타이머: 바탕 채움은 끊어 갱신하지 않고 남은 시간 동�
   mock.timers.tick(250);
   assert.equal(anims.length, 2, '시간을 바꾸면 새로 시작');
   assert.equal(anims[0].cancelled, true);
-  assert.ok(Math.abs(anims[1].opts.duration - 65_000) < 600, '늘어난 남은 시간 동안');
+  assert.ok(Math.abs(anims[1].opts.duration - 35_000) < 600, '늘어난 남은 시간 동안');
   root.querySelector('#tGo').click(); // 중지
   assert.equal(anims.at(-1).cancelled, true);
   assert.equal(fill.style.transform, 'scaleX(0)');
@@ -100,25 +102,25 @@ test('타이머: 휴식 끝 표시는 시간을 누르면 닫히고(프리셋은
   const time = root.querySelector('#tTime');
   root.querySelector('#tGo').click();
   assert.equal(bar.style.getPropertyValue('--p'), '100.00%', '시작할 때 바탕이 가득 참');
-  mock.timers.tick(30_000);
+  mock.timers.tick(15_000);
   assert.equal(bar.style.getPropertyValue('--p'), '50.00%', '남은 시간만큼 줄어듦');
-  mock.timers.tick(28_000);
+  mock.timers.tick(12_000);
   assert.equal(bar.classList.contains('ending'), true, '마지막 3초 강조');
-  mock.timers.tick(2_500);
+  mock.timers.tick(3_500);
   assert.equal(bar.classList.contains('done'), true);
   assert.equal(bar.classList.contains('ending'), false);
   time.click();
   assert.equal(bar.classList.contains('done'), false, '누르면 닫힘');
-  assert.equal(time.textContent, '1:00', '닫을 때 프리셋은 바뀌지 않음');
+  assert.equal(time.textContent, '0:30', '닫을 때 프리셋은 바뀌지 않음');
 
   root.querySelector('#tGo').click();
-  mock.timers.tick(60_500);
+  mock.timers.tick(30_500);
   assert.equal(bar.classList.contains('done'), true);
   root.querySelector('#tGo').click(); // 끝난 표시가 떠 있을 때 다시 시작
   assert.equal(bar.classList.contains('done'), false);
-  assert.equal(time.textContent, '1:00');
+  assert.equal(time.textContent, '0:30');
   mock.timers.tick(5_000);
-  assert.equal(time.textContent, '0:55', '새 휴식이 정상으로 흐름');
+  assert.equal(time.textContent, '0:25', '새 휴식이 정상으로 흐름');
   root.querySelector('#tGo').click();
 });
 
@@ -133,15 +135,15 @@ test('타이머: 쉬는 중에 새로고침·재실행해도 이어지고, 그�
   };
   let root = remount();
   root.querySelector('#tGo').click();
-  mock.timers.tick(20_000);
+  mock.timers.tick(10_000);
 
   root = remount(); // 새로고침
-  assert.equal(root.querySelector('#tTime').textContent, '0:40', '남은 시간이 이어짐');
+  assert.equal(root.querySelector('#tTime').textContent, '0:20', '남은 시간이 이어짐');
   assert.equal(root.querySelector('#tGo').textContent, '휴식 중지');
   mock.timers.tick(5_000);
-  assert.equal(root.querySelector('#tTime').textContent, '0:35', '다시 흐름');
+  assert.equal(root.querySelector('#tTime').textContent, '0:15', '다시 흐름');
 
-  mock.timers.setTime(Date.now() + 45_000); // 앱이 꺼져 있던 동안 끝남(10초 전)
+  mock.timers.setTime(Date.now() + 25_000); // 앱이 꺼져 있던 동안 끝남(10초 전)
   root = remount();
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), true, '그사이 끝난 휴식을 알림');
   assert.equal(root.querySelector('#tTime').textContent, '휴식 끝+0:10', '실제로 끝난 때부터 셈');
@@ -151,7 +153,7 @@ test('타이머: 쉬는 중에 새로고침·재실행해도 이어지고, 그�
   mock.timers.setTime(Date.now() + 10 * 60_000); // 한참 뒤에 다시 엶
   root = remount();
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), false, '오래전에 끝난 휴식은 알리지 않음');
-  assert.equal(root.querySelector('#tTime').textContent, '1:00');
+  assert.equal(root.querySelector('#tTime').textContent, '0:30');
   assert.equal(root.querySelector('#tGo').textContent, '휴식 시작');
 
   root.querySelector('#tGo').click();
@@ -273,7 +275,7 @@ test('오늘+타이머: 오늘 체크를 모두 되돌리면 쉬는 중이던 �
   assert.equal(go().textContent, '휴식 중지', '일부만 되돌리면 휴식은 계속');
   setTo(row, 0); // 체크가 하나도 없음
   assert.equal(go().textContent, '휴식 시작', '모두 되돌리면 휴식이 멈춤');
-  assert.equal(time(), '1:00', '멈추면 정한 시간으로 돌아감');
+  assert.equal(time(), '0:30', '멈추면 정한 시간으로 돌아감');
   mock.timers.tick(70_000);
   assert.equal(timerRoot.querySelector('#timerBar').classList.contains('done'), false, '멈춘 뒤에는 끝남 알림도 없음');
   store.actions.flushAll();
@@ -385,7 +387,7 @@ test('타이머: 휴식 끝 표시는 지난 시간 글자만 바꾸고(안쪽 �
   mountTimer(root);
   const time = root.querySelector('#tTime');
   root.querySelector('#tGo').click();
-  mock.timers.tick(60_500);
+  mock.timers.tick(30_500);
   const bell = time.querySelector('.tend');
   assert.ok(bell, '휴식 끝 표시');
   mock.timers.tick(3_000);
@@ -397,10 +399,10 @@ test('타이머: 휴식 끝 표시는 지난 시간 글자만 바꾸고(안쪽 �
   assert.equal(bar.classList.contains('done'), false);
   assert.equal(bar.classList.contains('settle'), true, '평소 줄로 부드럽게 돌아옴');
   time.click(); // 두 번 누름
-  assert.equal(time.textContent, '1:00', '닫은 직후 탭은 프리셋을 바꾸지 않음');
+  assert.equal(time.textContent, '0:30', '닫은 직후 탭은 프리셋을 바꾸지 않음');
   mock.timers.tick(600);
   assert.equal(bar.classList.contains('settle'), false);
   time.click();
-  assert.equal(time.textContent, '1:30', '조금 뒤에는 평소처럼 프리셋');
+  assert.equal(time.textContent, '1:00', '조금 뒤에는 평소처럼 프리셋');
   localStorage.removeItem('workout-check:timer');
 });
