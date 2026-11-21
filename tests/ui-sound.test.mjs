@@ -192,6 +192,7 @@ test('효과음: 휴식 타이머 시작·중지음, 끝나기 3초 전 카운�
     mock.timers.tick(1_500); // 끝남
     assert.equal(played.length, 6, '끝남 알림음 세 번');
     played.length = 0;
+    root.querySelector('#tTime').click(); // 끝난 표시를 닫은 뒤
     go.click();
     go.click(); // 시작 후 바로 중지
     assert.equal(played.length, 4, '시작음 + 중지음');
