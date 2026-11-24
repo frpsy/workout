@@ -35,6 +35,7 @@ export function mountJournal(root, store) {
   const feel = $('#jFeel', root);
   const thanks = $('#jThanks', root);
   let date = null; // 지금 보여 주는 날
+  let round = 0; // 지금 보여 주는 회차
   let editing = false; // 쓰는 중이면 접지 않음
   let wasReady = false; // 직전 그림 때 기록을 다 불러온 상태였는지
   let wasAllDone = false; // 직전 그림에서 모두 마친 상태였는지 (방금 마쳤을 때만 칸으로 데려가기 위해)
@@ -149,6 +150,14 @@ export function mountJournal(root, store) {
     const exs = store.activeExercises();
     const allDone = state.selected === state.today ? store.isSessionClosed() : exs.length > 0 && exs.every((e) => isDone(state.days[state.selected], e.id));
     const note = noteOf(state, state.selected);
+    const nextRound = state.days[state.selected]?.rounds?.length || 0;
+    if (state.selected === date && state.selected === state.today && nextRound > round && editing) {
+      if (root.contains(document.activeElement)) document.activeElement.blur();
+      editing = false;
+      leaveTyping();
+      $('#jSaved', root).textContent = '';
+    }
+    round = nextRound;
     if (state.selected !== date) {
       date = state.selected;
       editing = false;
