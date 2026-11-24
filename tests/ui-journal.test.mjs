@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addDays, todayStr } from '../js/dates.js';
-import { adapter, createStore, fullDays, mountJournal, pickDate, setup, history } from './helpers/ui-env.mjs';
+import { adapter, createStore, fullDays, mountJournal, pickDate, setup, history, today, complete } from './helpers/ui-env.mjs';
 
 test('마무리: 모두 마친 날에만 소감·감사한 일 칸이 보이고, 쓰는 대로 저장되며 접으면 ‘썼어요’ 한 줄만 보임', () => {
   const ad = adapter();
@@ -192,6 +192,39 @@ test('부분 수행 후 회차 종료 시 목표 미달성이어도 소감과 �
   assert.equal(store.isSessionClosed(), false);
   assert.equal(root.querySelector('#jBox').hidden, false);
   store.actions.flushAll();
+});
+
+test('마무리: ‘운동 한 번 더 하기’로 폼을 접고 입력한 내용과 이전 회차 기록을 보존한다', () => {
+  const { store, root } = setup(today);
+  const journal = document.createElement('div');
+  root.after(journal);
+  store.subscribe(mountJournal(journal, store));
+  for (const row of root.querySelectorAll('.row')) complete(row);
+  assert.equal(root.querySelector('#wBtn').textContent, '운동 시작');
+  journal.querySelector('#jOpen').click();
+  const feel = journal.querySelector('#jFeel');
+  feel.value = '3세트 완료';
+  feel.dispatchEvent(new Event('input', { bubbles: true }));
+
+  const thanks = journal.querySelector('#jThanks');
+  thanks.focus();
+  thanks.value = '운동할 시간';
+  thanks.dispatchEvent(new Event('input', { bubbles: true }));
+
+  root.querySelector('#wAgain').click();
+
+  assert.equal(journal.querySelector('#jBox').dataset.mode, 'view');
+  assert.equal(journal.querySelector('#jForm').hidden, true);
+  assert.equal(document.documentElement.classList.contains('typing'), false);
+  assert.notEqual(document.activeElement, thanks);
+  const day = store.state.days[todayStr()];
+  assert.deepEqual(day.note, { feel: '3세트 완료', thanks: '운동할 시간' });
+  assert.equal(day.rounds[0].entries.push.done, true);
+  assert.deepEqual(day.activeEntries, {});
+  assert.equal(store.isSessionClosed(), false);
+  journal.querySelector('#jView').click();
+  assert.equal(feel.value, '3세트 완료');
+  journal.querySelector('#jDone').click();
 });
 
 test('마무리: 쓰는 칸을 누르면 칸을 화면 맨 위로 올리고(키보드에 가리지 않게), 칸을 벗어나면 원래대로', async () => {
