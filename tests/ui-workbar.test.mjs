@@ -499,3 +499,27 @@ test('오늘: 첫 회차 도중 초기화하면 다음 세트를 체크해도 �
   $$('#wCancel').click();
   store.actions.flushAll();
 });
+
+test('오늘 운동을 지난 날짜 화면에서 종료해도 오늘 회차를 닫는다', (t) => {
+  mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  t.after(() => mock.timers.reset());
+  localStorage.removeItem('workout-check:session');
+  const { store, root } = setup(today);
+  const current = store.state.today;
+  const previous = addDays(current, -1);
+  const btn = root.querySelector('#wBtn');
+
+  setTo(root.querySelector('.row'), 1);
+  mock.timers.tick(10_000);
+  store.actions.select(previous);
+  assert.equal(btn.hidden, false, '다른 날에도 실행 중인 운동은 종료할 수 있음');
+  btn.click();
+
+  assert.equal(store.state.days[current].workSec, 10);
+  assert.equal(store.state.selected, previous);
+  assert.equal(store.isSessionClosed(previous), false);
+  assert.equal(store.isSessionClosed(current), true);
+  store.actions.goToday();
+  assert.equal(root.querySelector('#roundAction').hidden, false);
+  store.actions.flushAll();
+});
