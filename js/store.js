@@ -244,10 +244,10 @@ export function createStore(adapter) {
 
   const actions = {
     /** 운동시간 종료 또는 전체 종목 완료 시 현 회차 종료. 세트 기록은 변경하지 않습니다. */
-    closeSession() {
-      if (!state.ready || state.selected !== state.today || isSessionClosed()) return false;
-      ensureDay(state.today).sessionClosed = true;
-      commitDay(state.today);
+    closeSession(date = state.selected) {
+      if (!state.ready || date !== state.today || isSessionClosed(date)) return false;
+      ensureDay(date).sessionClosed = true;
+      commitDay(date);
       return true;
     },
 
