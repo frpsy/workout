@@ -9,7 +9,7 @@ const setHidden = (hidden) => Object.defineProperty(document, 'hidden', { value:
 function fakeWin({ dark = false } = {}) {
   setHidden(false);
   document.documentElement.removeAttribute('data-theme');
-  document.head.innerHTML = '<meta name="theme-color" content="#F2F7F3" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0B100E" media="(prefers-color-scheme: dark)">';
+  document.head.innerHTML = '<meta name="theme-color" content="#F8F9FF" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#12131A" media="(prefers-color-scheme: dark)">';
   const listeners = [];
   const mq = { matches: dark, addEventListener: (_, f) => listeners.push(f) };
   const win = { document, matchMedia: () => mq, setTimeout: (...a) => setTimeout(...a), clearTimeout: (...a) => clearTimeout(...a) };
@@ -30,7 +30,7 @@ test('화면 색: 시작할 때 <html data-theme>과 상태 표시줄 색을 정
   const { win } = fakeWin({ dark: false });
   mountTheme(win);
   assert.equal(theme(), 'light');
-  assert.deepEqual([...document.querySelectorAll('meta[name="theme-color"]')].map((m) => m.content), ['#F2F7F3', '#F2F7F3']);
+  assert.deepEqual([...document.querySelectorAll('meta[name="theme-color"]')].map((m) => m.content), ['#F8F9FF', '#F8F9FF']);
 });
 
 test('화면 색: 기기 값이 순간적으로 어둡게 읽혔다 돌아와도 라이트를 유지(앱 전환 중 깜빡임)', (t) => {
@@ -79,5 +79,5 @@ test('화면 색: 라이트·다크를 직접 고르면 기기 값과 상관없�
   assert.equal(theme(), 'dark');
   assert.equal(loadTheme(), 'auto');
   t.setPref('dark');
-  assert.equal(document.querySelector('meta[name="theme-color"]').content, '#0B100E');
+  assert.equal(document.querySelector('meta[name="theme-color"]').content, '#12131A');
 });

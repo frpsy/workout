@@ -2,8 +2,7 @@
 
 import { isSoundOn, playSound, setSoundOn } from '../sound.js';
 import { $ } from './dom.js';
-
-const SPEAKER = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/>';
+import { icon } from './icon.js';
 
 // 스피커 버튼은 설정 탭과 오늘 화면 두 곳에 있어, 한쪽을 누르면 모두 같이 바뀜
 const buttons = new Set();
@@ -14,7 +13,7 @@ function renderAll() {
       buttons.delete(b); // 화면에서 사라진 버튼은 정리
       continue;
     }
-    b.innerHTML = on ? `${SPEAKER}<path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>` : `${SPEAKER}<path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>`;
+    b.innerHTML = icon(on ? 'volume' : 'mute', 20);
     b.setAttribute('aria-pressed', String(on));
     b.setAttribute('aria-label', on ? '효과음 켜짐 (누르면 끄기)' : '효과음 꺼짐 (누르면 켜기)');
   }

@@ -6,7 +6,7 @@ import { readText, writeText } from './local-store.js';
 const KEY = 'workout-check:theme';
 export const THEMES = ['auto', 'light', 'dark'];
 export const THEME_LABEL = { auto: '자동', light: '라이트', dark: '다크' };
-export const THEME_COLOR = { light: '#F2F7F3', dark: '#0B100E' }; // 상태 표시줄(--bg와 같은 값)
+export const THEME_COLOR = { light: '#F8F9FF', dark: '#12131A' }; // 상태 표시줄(--bg와 같은 값)
 export const SETTLE_MS = 400; // 앱을 오가는 동안의 순간적인 값을 건너뛰고 안정된 값만 읽음
 
 export function loadTheme() {

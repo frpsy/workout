@@ -145,7 +145,8 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
   const fromAddress = () => {
     go(tabFromHash(win.location.hash), { push: false, smooth: false });
     const page = pages[TABS.indexOf(current)];
-    if (page) page.scrollTop = 0;
+    const scroller = page?.querySelector('.today-scroll') || page;
+    if (scroller) scroller.scrollTop = 0;
   };
   fromAddress();
   measure();

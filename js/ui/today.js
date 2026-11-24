@@ -5,6 +5,7 @@ import { dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { currentStreak } from '../stats.js';
 import { $, haptic } from './dom.js';
+import { icon } from './icon.js';
 import { mountLoginNote } from './login-note.js';
 import { mountSoundButton, soundFor } from './sound-ui.js';
 import { mountWorkbar } from './workbar.js';
@@ -13,8 +14,7 @@ import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 
 // 스트레칭 버튼 앞의 체크 표시(했으면 채워진 동그라미 안의 ✓)
-const STRETCH_ICON =
-  '<svg class="stretch-mark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path class="tick" d="M7.8 12.4l3 3 5.4-6"/></svg>';
+const STRETCH_ICON = `<span class="stretch-mark material-stack">${icon('circle', 22)}${icon('check', 15, 'tick')}</span>`;
 
 export function mountToday(root, store) {
   const { actions } = store;
@@ -39,14 +39,14 @@ export function mountToday(root, store) {
         </div>
         <div class="work">
           <button type="button" class="wsec" id="wPause" hidden>중지</button>
-          <button type="button" class="wbtn" id="wBtn">▶ 운동 시작</button>
+          <button type="button" class="wbtn" id="wBtn">${icon('play', 18)}운동 시작</button>
 
           <button type="button" class="wsec wcancel" id="wCancel" hidden aria-label="지금 재는 시간만 기록하지 않고 초기화">초기화</button>
         </div>
       </div>
       <div class="round-action" id="roundAction" hidden>
         <span class="round-summary" id="roundSummary"></span>
-        <button type="button" class="round-repeat" id="wAgain">운동 한 번 더 하기 <span aria-hidden="true">↻</span></button>
+        <button type="button" class="round-repeat" id="wAgain">운동 한 번 더 하기 ${icon('repeat', 18)}</button>
       </div>
       <div class="prog">
         <div class="levels" id="levels" role="group" aria-label="오늘 난이도">
@@ -312,10 +312,6 @@ export function mountToday(root, store) {
 
     renderLoginNote(state);
     workbar.render();
-    // 오늘 회차를 마치면 더 쉴 세트가 없으니 휴식 타이머를 숨김(쉬던 휴식은 이미 멈춤). 한 번 더 하기를 누르면 다시 보임
-    const timerBox = document.getElementById('timer');
-    if (timerBox) timerBox.hidden = !!(state.ready && selected === today && store.isSessionClosed());
-
     // 저장 문구(오류 포함)가 있으면 주차 안내 자리에 보여 줌
     const st = $('#status', root);
     st.textContent = state.status.text;

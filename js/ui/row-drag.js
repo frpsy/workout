@@ -41,7 +41,7 @@ export function enableRowDrag(box, { canDrag = () => true, onStart = () => {}, o
     const rects = rows.map((r) => r.getBoundingClientRect());
     const from = rows.indexOf(row);
     const gap = Math.max(0, rects[1].top - rects[0].bottom);
-    const scroller = box.closest('.page');
+    const scroller = box.closest('.today-scroll, .page');
     drag = { row, rows, rects, from, to: from, startY: y, lastY: y, gap, scroller, startScroll: scroller ? scroller.scrollTop : 0, raf: 0 };
     box.classList.add('sorting');
     row.classList.add('dragging');
