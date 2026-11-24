@@ -149,9 +149,9 @@ test('홈 화면 앱: 화면을 끝까지 쓰고(viewport-fit=cover) 위·아래
   assert.equal(value('.standalone .wrap', 'padding-top'), 'calc(env(safe-area-inset-top, 0px) + 14px)');
   // 탭 막대 아래 여백은 홈 표시줄 영역에서 12px 덜 쓰고(최소 8px), 탭 막대에 붙는 것들은 모두 --tabbar-h로 맞춤
   assert.equal(value('.tabbar', 'padding-bottom'), 'max(calc(env(safe-area-inset-bottom, 0px) - 12px), 8px)');
-  assert.equal(value('.tabbar button', 'height'), '50px');
+  assert.equal(value('.tabbar button', 'height'), '58px');
   assert.equal(value('.wrap', 'padding-bottom', { raw: true }), 'calc(var(--tabbar-h) + 8px)');
-  assert.equal(value('#timer', 'bottom', { raw: true }), 'calc(var(--tabbar-h) + 8px)');
+  assert.equal(value('.page[data-tab="today"]', 'padding-bottom', { raw: true }), 'calc(var(--tabbar-h) + 8px)');
   assert.equal(value('.savebar.dirty', 'bottom', { raw: true }), 'calc(var(--tabbar-h) + 1px)');
 });
 

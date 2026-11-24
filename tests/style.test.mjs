@@ -102,8 +102,11 @@ test('키가 작은 폰(높이 700px 이하): 줄 간격을 줄이고, 마무리
   assert.equal(value('.row', 'padding', { media: MH }), '6px 12px 8px');
   assert.equal(value('.rows', 'gap', { media: MH }), '4px');
   assert.equal(value('.timer', 'height', { media: MH }), '44px');
-  assert.equal(value('#timer', 'position'), 'sticky', '화면 크기와 상관없이 휴식 타이머는 탭 막대 위에');
-  assert.equal(value('.journal', 'scroll-margin-bottom', { raw: true }), 'calc(var(--tabbar-h) + 84px)', '탭 막대 + 떠 있는 휴식 타이머 + 여백');
+  assert.equal(value('.page[data-tab="today"]', 'grid-template-rows'), 'minmax(0, 1fr) auto');
+  assert.equal(value('.today-scroll', 'overflow'), 'hidden auto');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /id="journal"><\/div>\s*<\/div>\s*<\/div>\s*<div id="timer"/);
+  assert.equal(value('.journal', 'scroll-margin-bottom', { raw: true }), 'var(--gap)', '스크롤 영역 끝 여백');
 });
 
 test('iOS Safari: 선택칸·날짜칸은 기본 모양 대신 같은 모양, details 삼각형 숨김, 입력칸 테두리는 3:1 이상 색', () => {
@@ -112,8 +115,8 @@ test('iOS Safari: 선택칸·날짜칸은 기본 모양 대신 같은 모양, de
   assert.match(value('select', 'background', { raw: true }), /^var\(--surface\) var\(--chev\)/);
   assert.equal(value('input[type="date"]', 'appearance'), 'none');
   assert.equal(value('details summary::-webkit-details-marker', 'display'), 'none');
-  assert.match(css, /--ctrl-line: #7F8F87;/, '밝은 배경과 3.07:1 이상');
-  assert.match(css, /--ctrl-line: #64776D;/, '어두운 배경과 3.5:1 이상');
+  assert.match(css, /--ctrl-line: #767989;/, '밝은 배경과 3.07:1 이상');
+  assert.match(css, /--ctrl-line: #838699;/, '어두운 배경과 3.5:1 이상');
 });
 
 test('디자인 값: 글자 크기·그림자 색은 :root 변수로만 정함', () => {

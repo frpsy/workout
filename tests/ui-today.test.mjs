@@ -490,7 +490,7 @@ test('오늘: 고른 종목을 마치면 다시 마치지 않은 첫 종목으�
   store.actions.flushAll();
 });
 
-test('오늘: 회차를 마치면 휴식 타이머를 숨기고, 한 번 더 하기를 누르면 다시 보임', () => {
+test('오늘: 회차를 마치고 다시 시작할 때도 휴식 타이머가 계속 보임', () => {
   const { store, root } = setup(today);
   const box = document.createElement('div');
   box.id = 'timer';
@@ -499,9 +499,9 @@ test('오늘: 회차를 마치면 휴식 타이머를 숨기고, 한 번 더 하
   assert.equal(box.hidden, false, '운동 중에는 보임');
   for (const r of root.querySelectorAll('.row')) complete(r);
   assert.equal(store.allDone(), true);
-  assert.equal(box.hidden, true, '모두 마치면 숨김');
+  assert.equal(box.hidden, false, '모두 마쳐도 표시');
   root.querySelector('#wAgain').click();
-  assert.equal(box.hidden, false, '한 번 더 하기를 누르면 다시 보임');
+  assert.equal(box.hidden, false, '한 번 더 하기를 눌러도 표시');
   store.actions.flushAll();
 });
 

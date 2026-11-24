@@ -7,6 +7,7 @@ import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, is
 import { activeSessionDate, fmtKo, SESSION_EVENT } from '../session.js';
 import { setsOf, volume } from '../setlog.js';
 import { $, esc } from './dom.js';
+import { icon } from './icon.js';
 import { EV, emit } from '../events.js';
 
 const MAX_PIPS = 6;
@@ -15,8 +16,6 @@ const clock = (ms) => {
   const d = new Date(ms);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-
-const CHEV = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
 
 const monthOf = (d) => `${d.slice(0, 7)}-01`;
 const addMonths = (m, n) => fmt(new Date(parse(m).getFullYear(), parse(m).getMonth() + n, 1));
@@ -28,10 +27,10 @@ export function mountHistory(root, store) {
     <section class="hmain" aria-label="달력과 그날 기록">
       <div class="cal-bar">
         <h2 class="sec" id="calTitle">이번 주</h2>
-        <button type="button" class="infobtn" id="calInfo" aria-label="달력 보는 법" aria-expanded="false" aria-controls="calSub">i</button>
+        <button type="button" class="infobtn" id="calInfo" aria-label="달력 보는 법" aria-expanded="false" aria-controls="calSub">${icon('info', 16)}</button>
         <span class="cal-nav">
-          <button type="button" class="calbtn" id="calPrev" aria-label="이전 달" hidden>${CHEV('M15 5l-7 7 7 7')}</button>
-          <button type="button" class="calbtn" id="calNext" aria-label="다음 달" hidden>${CHEV('M9 5l7 7-7 7')}</button>
+          <button type="button" class="calbtn" id="calPrev" aria-label="이전 달" hidden>${icon('back', 20)}</button>
+          <button type="button" class="calbtn" id="calNext" aria-label="다음 달" hidden>${icon('next', 20)}</button>
           <button type="button" class="calbtn calfold" id="calToggle" aria-expanded="false" aria-controls="cal">한 달 보기</button>
         </span>
       </div>

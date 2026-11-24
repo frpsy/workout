@@ -5,7 +5,8 @@ import { createTimer, EXERCISE_REST_SEC, fmt, STEP_SEC } from '../timer.js';
 import { playSound, unlockSound } from '../sound.js';
 import { setScreenAwake } from '../screen-awake.js';
 import { $, haptic } from './dom.js';
-import { EV, emit, on } from '../events.js';
+import { icon } from './icon.js';
+import { EV, on } from '../events.js';
 
 const TICK_MS = 250;
 const DONE_SHOW_MS = 60_000; // 끝난 뒤 '휴식 끝'을 보여 주는 시간. 이보다 늦게 알아챈 휴식(앱을 오래 내려 둠)은 알리지 않고 조용히 정리
@@ -14,7 +15,7 @@ export function mountTimer(root) {
   root.innerHTML = `
     <div class="timer" id="timerBar">
       <i class="tfill" id="tFill" aria-hidden="true"></i>
-      <button type="button" class="tlabel" id="tAuto" aria-pressed="true"><span>휴식</span><b id="tAutoText">자동</b></button>
+      <button type="button" class="tlabel" id="tAuto" aria-pressed="true"><span>${icon('timer', 15)}휴식</span><b id="tAutoText">자동</b></button>
       <button type="button" class="tstep" id="tMinus" aria-label="휴식 ${STEP_SEC}초 줄이기">−${STEP_SEC}</button>
       <button type="button" class="time" id="tTime">1:00</button>
       <button type="button" class="tstep" id="tPlus" aria-label="휴식 ${STEP_SEC}초 늘리기">+${STEP_SEC}</button>
@@ -125,11 +126,9 @@ export function mountTimer(root) {
     auto.setAttribute('aria-label', timer.auto ? '세트를 체크하면 휴식이 자동으로 시작됨 (누르면 끄기)' : '세트를 체크해도 휴식이 자동으로 시작되지 않음 (누르면 켜기)');
     $('#tAutoText', root).textContent = timer.auto ? '자동' : '수동';
     const go = $('#tGo', root);
-    // 휴식이 끝나 시간이 흐르는 동안에는 같은 자리의 버튼이 '종료'가 되어 운동을 끝내고 기록함
-    go.textContent = running ? '휴식 중지' : done ? '종료' : '휴식 시작';
+    go.textContent = running ? '휴식 중지' : done ? '다시 시작' : '휴식 시작';
     go.classList.toggle('stop', running);
-    go.classList.toggle('end', done);
-    go.setAttribute('aria-label', done ? '운동 종료하고 총 운동시간 기록' : running ? '휴식 중지' : '휴식 시작');
+    go.setAttribute('aria-label', done ? '휴식 다시 시작' : go.textContent);
   }
 
   function startRest({ quiet = false, sec } = {}) {
@@ -142,10 +141,6 @@ export function mountTimer(root) {
     setScreenAwake(wakeOwner, true);
   }
   $('#tGo', root).addEventListener('click', () => {
-    if (doneAt !== null && !timer.running) {
-      emit(EV.endRequested);
-      return;
-    }
     if (timer.running) {
       stopTicking();
       setScreenAwake(wakeOwner, false);

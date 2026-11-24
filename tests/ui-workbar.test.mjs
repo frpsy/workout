@@ -10,16 +10,16 @@ test('오늘: 시작을 누르면 시간이 흐르고, 종료하면 총 운동�
   const { store, root } = setup(today);
   const btn = root.querySelector('#wBtn');
   const time = root.querySelector('#wTime');
-  assert.equal(btn.textContent, '▶ 운동 시작');
+  assert.equal(btn.textContent, '운동 시작');
   assert.equal(time.textContent, '', '기록이 없으면 비어 있음');
   btn.click();
-  assert.equal(btn.textContent, '■ 종료');
+  assert.equal(btn.textContent, '종료');
   mock.timers.tick(5_000);
   assert.equal(time.textContent, '0:05', '시간이 흐름');
   mock.timers.tick(65_000);
   assert.equal(time.textContent, '1:10');
   btn.click();
-  assert.equal(btn.textContent, '▶ 운동 시작');
+  assert.equal(btn.textContent, '운동 시작');
   assert.equal(store.state.days[todayStr()].workSec, 70, '종료하면 잰 초가 기록됨');
   assert.equal(time.textContent, '총 1분', '종료한 뒤에는 그날 총 운동시간을 보여 줌');
   mock.timers.tick(10_000);
@@ -38,7 +38,7 @@ test('오늘: 앱을 다시 열어도 재던 시간이 이어짐', (t) => {
   t.after(() => mock.timers.reset());
   localStorage.setItem('workout-check:session', JSON.stringify({ startAt: Date.now() - 90_000, date: todayStr() }));
   const { store, root } = setup(today);
-  assert.equal(root.querySelector('#wBtn').textContent, '■ 종료', '재던 중으로 열림');
+  assert.equal(root.querySelector('#wBtn').textContent, '종료', '재던 중으로 열림');
   assert.equal(root.querySelector('#wTime').textContent, '1:30');
   mock.timers.tick(2_000);
   assert.equal(root.querySelector('#wTime').textContent, '1:32', '이어서 흐름');
@@ -86,7 +86,7 @@ test('오늘: 첫 세트를 마치면 운동 시작을 대신 눌러 줌 (이미
   const row = root.querySelector('.row');
   assert.equal($$('#wPause').hidden, true, '처음엔 재지 않음');
   setTo(row, 1);
-  assert.equal($$('#wBtn').textContent, '■ 종료', '한 세트를 마치면 시작됨');
+  assert.equal($$('#wBtn').textContent, '종료', '한 세트를 마치면 시작됨');
   assert.equal($$('#wPause').hidden, false);
   mock.timers.tick(5_000);
   assert.equal($$('#wTime').textContent, '0:05');
@@ -95,7 +95,7 @@ test('오늘: 첫 세트를 마치면 운동 시작을 대신 눌러 줌 (이미
   assert.equal($$('#wTime').textContent, '0:10', '다음 세트를 마쳐도 다시 시작하지 않고 이어서 잼');
   $$('#wBtn').click(); // 종료 → 시간 기록
   setTo(row, 3);
-  assert.equal($$('#wBtn').textContent, '▶ 운동 시작', '오늘 이미 시간을 기록했으면 자동으로 시작하지 않음');
+  assert.equal($$('#wBtn').textContent, '운동 시작', '오늘 이미 시간을 기록했으면 자동으로 시작하지 않음');
   store.actions.flushAll();
 });
 
@@ -117,7 +117,7 @@ test('오늘: 운동 시간 초기화는 지금 재는 시간만 기록 없이 �
   $$('#wBtn').click();
   mock.timers.tick(20_000);
   $$('#wCancel').click(); // 확인 없이 바로 초기화(지금 재는 시간만)
-  assert.equal($$('#wBtn').textContent, '▶ 운동 시작');
+  assert.equal($$('#wBtn').textContent, '운동 시작');
   assert.equal($$('#wTime').textContent, '', '취소하면 기록 없음');
   assert.equal(store.state.days[todayStr()], undefined, '아무것도 기록되지 않음');
   assert.equal(localStorage.getItem('workout-check:session'), null, '저장된 시작 기록도 지움');
@@ -171,13 +171,13 @@ test('오늘: 마지막 종목을 완료하면 운동 타이머가 자동 종료
   const btn = root.querySelector('#wBtn');
   const rows = [...root.querySelectorAll('.row')];
   complete(rows[0]); // 첫 세트 자동 시작
-  assert.equal(btn.textContent, '■ 종료');
+  assert.equal(btn.textContent, '종료');
   mock.timers.tick(20_000);
   for (const row of rows.slice(1, -1)) complete(row);
-  assert.equal(btn.textContent, '■ 종료', '모든 종목 전에는 타이머 유지');
+  assert.equal(btn.textContent, '종료', '모든 종목 전에는 타이머 유지');
   mock.timers.tick(10_000);
   complete(rows.at(-1));
-  assert.equal(btn.textContent, '▶ 운동 시작', '마지막 종목 완료 즉시 자동 종료');
+  assert.equal(btn.textContent, '운동 시작', '마지막 종목 완료 즉시 자동 종료');
   assert.equal(store.state.days[todayStr()].workSec, 30, '운동 경과 시간 기록');
   assert.equal(store.state.days[todayStr()].sessions.length, 1, '구간 한 번만 기록');
   assert.equal(localStorage.getItem('workout-check:session'), null, '진행 중인 세션을 삭제');
@@ -198,7 +198,7 @@ test('오늘: 마지막 세트 번호로 완료할 때도 타이머가 자동 �
   setTo(rows[0], 1);
   mock.timers.tick(12_000);
   complete(rows[0]);
-  assert.equal(root.querySelector('#wBtn').textContent, '▶ 운동 시작');
+  assert.equal(root.querySelector('#wBtn').textContent, '운동 시작');
   assert.equal(store.state.days[todayStr()].workSec, 12);
   store.actions.flushAll();
 });
@@ -213,7 +213,7 @@ test('오늘: 일시중지 상태에서 모두 완료하면 멈춘 시간만 자
   root.querySelector('#wPause').click();
   mock.timers.tick(20_000);
   for (const row of rows.slice(1)) complete(row);
-  assert.equal(root.querySelector('#wBtn').textContent, '▶ 운동 시작');
+  assert.equal(root.querySelector('#wBtn').textContent, '운동 시작');
   assert.equal(store.state.days[todayStr()].workSec, 15, '일시중지 시간을 제외');
   store.actions.flushAll();
 });
@@ -279,10 +279,10 @@ test('오늘: 모든 세트 체크를 되돌려도 저장된 시간은 유지하
   const check = root.querySelector('.row [data-f="check"]');
 
   complete(check); // 첫 종목 완료 → 자동 시작
-  assert.equal($$('#wBtn').textContent, '■ 종료');
+  assert.equal($$('#wBtn').textContent, '종료');
   mock.timers.tick(20_000);
   setTo(check, 0); // 되돌려 체크가 하나도 없음
-  assert.equal($$('#wBtn').textContent, '▶ 운동 시작', '재던 시간을 버림');
+  assert.equal($$('#wBtn').textContent, '운동 시작', '재던 시간을 버림');
   assert.equal($$('#wTime').textContent, '');
   assert.equal(localStorage.getItem('workout-check:session'), null);
   assert.equal(store.state.days[todayStr()].workSec, undefined);
@@ -307,7 +307,7 @@ test('오늘: 일부만 되돌리면 운동시간은 그대로', (t) => {
   complete(checks[1]);
   mock.timers.tick(20_000);
   setTo(checks[0], 0); // 둘째는 아직 체크됨
-  assert.equal($$('#wBtn').textContent, '■ 종료', '계속 재는 중');
+  assert.equal($$('#wBtn').textContent, '종료', '계속 재는 중');
   $$('#wBtn').click();
   assert.equal(store.state.days[todayStr()].workSec, 20);
   store.actions.flushAll();
@@ -325,14 +325,14 @@ test('하루 운동 두 회차: 다시 하기에서 체크는 비우고 이전 �
   mock.timers.tick(10_000);
   for (const r of rows) complete(r);
   // 첫 종목은 한 세트를 체크한 상태이므로 완료 버튼을 눌러 나머지를 체크합니다.
-  assert.equal(start.textContent, '▶ 운동 시작', '전 종목 완료 시 자동 종료');
+  assert.equal(start.textContent, '운동 시작', '전 종목 완료 시 자동 종료');
   assert.equal(root.querySelector('#roundAction').hidden, false);
   const date = todayStr();
   assert.equal(store.state.days[date].workSec, 10);
   assert.equal(store.allDone(), true);
   again.click();
   assert.equal(root.querySelector('#roundAction').hidden, true, '다시 시작하면 버튼 숨김');
-  assert.equal(start.textContent, '■ 종료', '운동 스톱워치 새로 시작');
+  assert.equal(start.textContent, '종료', '운동 스톱워치 새로 시작');
   assert.equal(store.allDone(), false, '새 회차는 미완료');
   assert.ok([...root.querySelectorAll('.row [data-set]')].every((b) => !b.classList.contains('on')), '세트 체크 초기화');
   assert.equal(store.state.days[date].workSec, 10, '이전 시간 유지');
@@ -375,7 +375,7 @@ test('세션 회귀: 2회차 체크를 모두 되돌려도 1회차 시간과 달
   assert.equal(store.hasProgress(date, { current: true }), true);
   setTo(rows[0], 0);
   assert.equal(store.hasProgress(date, { current: true }), false);
-  assert.equal(root.querySelector('#wBtn').textContent, '▶ 운동 시작', '2회차 타이머 취소');
+  assert.equal(root.querySelector('#wBtn').textContent, '운동 시작', '2회차 타이머 취소');
   assert.equal(localStorage.getItem('workout-check:session'), null);
   assert.equal(store.state.days[date].workSec, previous, '1회차 운동시간 유지');
   assert.equal(store.state.days[date].sessions.length, 1, '1회차 운동 구간 유지');
@@ -413,7 +413,7 @@ test('첫 동작이 마지막 세트 완료여도(운동시간을 잰 적 없음
   assert.equal(store.state.days[todayStr()]?.workSec, undefined);
   complete(rows.at(-1));
   assert.equal(store.allDone(), true);
-  assert.equal(root.querySelector('#wBtn').textContent, '▶ 운동 시작');
+  assert.equal(root.querySelector('#wBtn').textContent, '운동 시작');
   assert.equal(localStorage.getItem('workout-check:session'), null);
   assert.equal(store.state.days[todayStr()]?.workSec, undefined, '실제로 잰 시간이 없으면 생성하지 않음');
   store.actions.flushAll();
@@ -470,15 +470,15 @@ test('오늘: 앞서 운동 시간을 기록한 날에도 새 회차의 첫 세�
   $$('#wBtn').click(); // 종료: 1회차 기록·종료
   assert.ok(store.state.days[todayStr()].workSec > 0);
   $$('#wAgain').click(); // 한 번 더 하기: 시작됨
-  assert.equal($$('#wBtn').textContent, '■ 종료');
+  assert.equal($$('#wBtn').textContent, '종료');
   $$('#wCancel').click(); // 시간은 재지 않고 버림
-  assert.equal($$('#wBtn').textContent, '▶ 운동 시작');
+  assert.equal($$('#wBtn').textContent, '운동 시작');
   setTo(rows[0], 1);
-  assert.equal($$('#wBtn').textContent, '■ 종료', '새 회차의 첫 세트에서 자동 시작');
+  assert.equal($$('#wBtn').textContent, '종료', '새 회차의 첫 세트에서 자동 시작');
   mock.timers.tick(5_000);
   $$('#wCancel').click();
   setTo(rows[0], 2);
-  assert.equal($$('#wBtn').textContent, '▶ 운동 시작', '회차 도중 취소했으면 다시 켜지 않음');
+  assert.equal($$('#wBtn').textContent, '운동 시작', '회차 도중 취소했으면 다시 켜지 않음');
   store.actions.flushAll();
 });
 
@@ -489,13 +489,13 @@ test('오늘: 첫 회차 도중 초기화하면 다음 세트를 체크해도 �
   const $$ = (id) => root.querySelector(id);
   const row = root.querySelector('.row');
   setTo(row, 1); // 첫 세트: 자동 시작
-  assert.equal($$('#wBtn').textContent, '■ 종료');
+  assert.equal($$('#wBtn').textContent, '종료');
   $$('#wCancel').click(); // 기록된 시간이 없는 채로 초기화
   setTo(row, 2);
-  assert.equal($$('#wBtn').textContent, '▶ 운동 시작', '회차 도중 초기화했으면 다시 켜지 않음');
+  assert.equal($$('#wBtn').textContent, '운동 시작', '회차 도중 초기화했으면 다시 켜지 않음');
   setTo(row, 0); // 체크를 모두 되돌리면 새로 시작하는 회차
   setTo(row, 1);
-  assert.equal($$('#wBtn').textContent, '■ 종료', '다시 첫 세트부터면 자동 시작');
+  assert.equal($$('#wBtn').textContent, '종료', '다시 첫 세트부터면 자동 시작');
   $$('#wCancel').click();
   store.actions.flushAll();
 });

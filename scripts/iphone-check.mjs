@@ -3,7 +3,7 @@
 //   node scripts/iphone-check.mjs            점검만 (실패가 있으면 종료 코드 1)
 //   node scripts/iphone-check.mjs --shots    단계마다 화면도 shots/iphone/에 저장
 //
-// 확인하는 것: 시작 화면이 걷힘 · 가로로 넘치지 않음 · 지금 할 종목만 펼침·폭 전체 완료 버튼·나머지 한 줄 · 작은 폰에서도 스크롤 없이 한 화면 ·
+// 확인하는 것: 시작 화면이 걷힘 · 가로로 넘치지 않음 · 지금 할 종목만 펼침·폭 전체 완료 버튼·나머지 한 줄 · 작은 폰에서 첫 운동과 타이머를 바로 조작 ·
 // 세트 체크로 휴식 자동 시작 · 휴식 타이머 크기 불변과 진행 막대가 버튼을 가리지 않음 · ±15 · 마지막 3초 · 끝남(높이 그대로) ·
 // 새로고침 뒤 이어짐 · 모두 마치면 휴식 정지, 타이머가 탭 막대 위, 오늘의 마무리는 접힌 한 줄 · 맨 위 덮개 · 첫 실행 때 뷰포트가 바뀌어도 시작 화면 로고가 안 움직임 · 탭 이동 · 자바스크립트 오류 없음.
 // 시각은 가짜 시계로 고정하고 Firebase·날씨 요청은 막습니다. 실제 기기의 합성·소리·진동까지 대신하지는 못합니다.
@@ -76,11 +76,12 @@ async function open(page, origin) {
 }
 
 const metrics = (page) => page.evaluate(() => {
-  const p = document.querySelector('.page[data-tab="today"]');
+  const p = document.querySelector('.today-scroll');
   const r = (sel) => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect() : null; };
   const timer = r('#timerBar');
   const tab = r('#tabbar');
-  return { sh: p.scrollHeight, ch: p.clientHeight, pw: p.scrollWidth, docW: document.documentElement.scrollWidth, w: innerWidth, timerBottom: timer && timer.bottom, tabTop: tab.top, timerH: timer && timer.height };
+  return { sh: p.scrollHeight, ch: p.clientHeight, pw: p.scrollWidth, docW: document.documentElement.scrollWidth, w: innerWidth, timerBottom: timer && timer.bottom, tabTop: tab.top, timerH: timer && timer.height,
+    firstCheckBottom: r('.row.current .check')?.bottom };
 });
 
 /** 설치형 앱 첫 실행 흉내: 레이아웃 뷰포트가 화면 전체였다가 아래 34px(홈 표시줄)가 줄어들거나, 반대로 늘어나도 시작 화면 로고가 제자리인지 */
@@ -150,8 +151,8 @@ async function run(browser, devices, origin, { device, scheme }) {
     });
     check('지금 할 종목: 폭 전체·56px 완료 버튼', big.h === 56 && Math.abs(big.w - big.inner) < 1, JSON.stringify(big));
     check('나머지 종목은 한 줄(64px 이하)', big.rest.every((h) => h <= 64), JSON.stringify(big.rest));
-    let m = await metrics(page);
-    check('쉬기 전에 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
+    const idle = await metrics(page);
+    check('스크롤 없이 첫 운동과 타이머를 조작 가능', idle.firstCheckBottom <= idle.ch && idle.timerBottom <= idle.tabTop, JSON.stringify(idle));
     await page.locator('.row [data-f="more"]').nth(1).tap();
     check('⌄를 누르면 그 종목도 펼쳐짐', (await expanded()) === `${first},true,false`, await expanded());
     await page.locator('.row [data-f="more"]').nth(1).tap();
@@ -163,8 +164,8 @@ async function run(browser, devices, origin, { device, scheme }) {
     await page.clock.runFor(300);
     const frac = await page.evaluate(() => document.querySelector('.row [data-f="frac"]').textContent);
     check('빠른 두 번 누름은 한 세트만 완료', frac === '1/3', frac);
-    m = await metrics(page);
-    check('쉬는 중에도 스크롤 없이 한 화면', m.sh <= m.ch, JSON.stringify(m));
+    const resting = await metrics(page);
+    check('휴식이 시작돼도 목록과 타이머 크기가 같음', resting.ch === idle.ch && resting.timerH === idle.timerH, JSON.stringify(resting));
     await shot(page, 'resting');
     await ctx.close();
   }
@@ -226,20 +227,37 @@ async function run(browser, devices, origin, { device, scheme }) {
   check('쉬는 중 숫자가 잘리지 않음', clip <= 0, `넘침 ${clip}px`);
   m = await metrics(page);
   check('쉬는 중 타이머가 탭 막대 위에 보임', m.timerBottom <= m.tabTop, JSON.stringify(m));
+  const dock = await page.evaluate(() => {
+    const scroller = document.querySelector('.today-scroll');
+    const previous = scroller.scrollTop;
+    const timer = document.getElementById('timerBar');
+    const top = timer.getBoundingClientRect().top;
+    const space = document.createElement('div');
+    space.style.height = '800px';
+    scroller.append(space);
+    scroller.scrollTop = scroller.scrollHeight;
+    const after = timer.getBoundingClientRect();
+    const hit = document.elementFromPoint(after.left + after.width / 2, after.top + after.height / 2);
+    const result = { scrollTop: scroller.scrollTop, fixed: Math.abs(after.top - top) < 1, hit: timer.contains(hit) };
+    space.remove();
+    scroller.scrollTop = previous;
+    return result;
+  });
+  check('운동 목록을 스크롤해도 타이머가 고정되고 터치 가능', dock.scrollTop > 0 && dock.fixed && dock.hit, JSON.stringify(dock));
   await page.clock.runFor(20000);
   await shot(page, '2-resting');
   const left = await page.evaluate(() => document.getElementById('tTime').textContent);
-  check('카운트다운이 흘러감', ['0:40', '0:39'].includes(left), left);
+  check('카운트다운이 흘러감', ['0:10', '0:09'].includes(left), left);
   await page.locator('#tPlus').tap();
-  check('+15가 쉬는 중에도 적용', ['0:55', '0:54'].includes(await page.evaluate(() => document.getElementById('tTime').textContent)));
+  check('+15가 쉬는 중에도 적용', ['0:25', '0:24'].includes(await page.evaluate(() => document.getElementById('tTime').textContent)));
   await page.locator('#tMinus').tap();
-  await page.clock.runFor(37500);
+  await page.clock.runFor(7500);
   const e = await page.evaluate(() => ({ ending: document.getElementById('timerBar').classList.contains('ending'), color: getComputedStyle(document.getElementById('tTime')).color }));
   check('마지막 3초는 주황', e.ending && e.color === 'rgb(255, 197, 102)', JSON.stringify(e));
   await shot(page, '3-ending');
   await page.clock.runFor(3000);
   const d = await page.evaluate(() => { const b = document.getElementById('timerBar'); return { done: b.classList.contains('done'), h: b.getBoundingClientRect().height }; });
-  check('휴식 끝: 같은 높이의 초록 줄(레이아웃이 튀지 않음)', d.done && d.h === wantH, JSON.stringify(d));
+  check('휴식 끝: 같은 높이의 강조 표시(레이아웃이 튀지 않음)', d.done && d.h === wantH, JSON.stringify(d));
   await shot(page, '4-done');
 
   await page.locator('#tGo').tap();
@@ -248,7 +266,7 @@ async function run(browser, devices, origin, { device, scheme }) {
   await page.clock.runFor(2000);
   await page.waitForFunction(() => !document.getElementById('splash'), null, { timeout: 8000 }).catch(() => {});
   const r = await page.evaluate(() => ({ running: document.getElementById('timerBar').classList.contains('running'), text: document.getElementById('tTime').textContent, work: document.querySelector('.headline').classList.contains('working') }));
-  check('새로고침 뒤에도 휴식과 운동 시간이 이어짐', r.running && r.work && /^0:5[0-4]$/.test(r.text), JSON.stringify(r));
+  check('새로고침 뒤에도 휴식과 운동 시간이 이어짐', r.running && r.work && /^0:2[0-4]$/.test(r.text), JSON.stringify(r));
   await page.locator('#tGo').tap();
 
   for (let i = 0; i < 3; i++) {
@@ -259,7 +277,7 @@ async function run(browser, devices, origin, { device, scheme }) {
   }
   await page.clock.runFor(1000);
   const fin = await page.evaluate(() => ({ running: document.getElementById('timerBar').classList.contains('running'), timerHidden: document.getElementById('timer').hidden, mode: document.getElementById('jBox').dataset.mode, hidden: document.getElementById('jBox').hidden }));
-  check('모두 마치면 휴식이 멈추고 타이머는 숨김(마무리에 집중)', !fin.running && fin.timerHidden, JSON.stringify(fin));
+  check('모두 마치면 휴식이 멈추고 타이머는 계속 보임', !fin.running && !fin.timerHidden, JSON.stringify(fin));
   check('오늘의 마무리는 접힌 한 줄로 시작', !fin.hidden && fin.mode === 'closed', JSON.stringify(fin));
   await shot(page, '5-alldone');
   // 오늘의 마무리를 펼치면 입력 칸과 버튼이 휴식 타이머·탭 막대 뒤에 가려지지 않아야 함
@@ -271,7 +289,7 @@ async function run(browser, devices, origin, { device, scheme }) {
     const tabTop = document.getElementById('tabbar').getBoundingClientRect().top;
     const limit = timer.hidden ? tabTop : Math.min(document.getElementById('timerBar').getBoundingClientRect().top, tabTop); // 숨긴 타이머는 가리지 않음
     const bottom = (id) => document.getElementById(id).getBoundingClientRect().bottom;
-    return { limit, thanks: bottom('jThanks'), later: bottom('jLater') };
+    return { limit, thanks: bottom('jThanks'), later: bottom('jDone') };
   });
   check('마무리를 펼치면 입력 칸·버튼이 타이머·탭 막대 위에 보임', jr.thanks <= jr.limit + 0.5 && jr.later <= jr.limit + 0.5, JSON.stringify(jr));
   await shot(page, '5b-journal-open');

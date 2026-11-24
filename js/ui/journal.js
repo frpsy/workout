@@ -7,9 +7,10 @@ import { labelMD } from '../dates.js';
 import { NOTE_MAX } from '../model.js';
 import { isDone } from '../stats.js';
 import { $ } from './dom.js';
+import { icon } from './icon.js';
 
-const PEN = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
-const CHECK = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>';
+const PEN = icon('edit', 18);
+const CHECK = icon('check', 14);
 
 export function mountJournal(root, store) {
   root.innerHTML = `
@@ -66,7 +67,7 @@ export function mountJournal(root, store) {
   function liftToTop() {
     clearTimeout(leaveTimer);
     document.documentElement.classList.add('typing');
-    const page = root.closest('.page');
+    const page = root.closest('.today-scroll, .page');
     const box = $('#jBox', root);
     if (!page || box.hidden) return;
     const wrap = page.querySelector('.wrap');

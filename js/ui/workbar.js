@@ -7,6 +7,7 @@ import { playSound } from '../sound.js';
 import { setScreenAwake } from '../screen-awake.js';
 import { MAX_SESSIONS } from '../model.js';
 import { $, haptic } from './dom.js';
+import { icon } from './icon.js';
 import { EV, emit, on } from '../events.js';
 
 /** 돌려주는 값: render(저장 상태가 바뀔 때 다시 그림), autoStart(세트 체크 전후 상태를 받아 첫 세트면 시작) */
@@ -57,7 +58,10 @@ export function mountWorkbar(root, store) {
     wTime.textContent = running ? fmtClock(session.elapsed()) : total ? `총 ${fmtKo(total)}` : '';
     wTime.classList.toggle('running', running);
     wTime.classList.toggle('paused', paused);
-    btn.textContent = running ? '■ 종료' : '▶ 운동 시작';
+    if (btn.dataset.running !== String(running)) {
+      btn.dataset.running = String(running);
+      btn.innerHTML = running ? `${icon('stop', 18)}종료` : `${icon('play', 18)}운동 시작`;
+    }
     btn.classList.toggle('stop', running);
     btn.disabled = !state.ready;
     // 지난 날을 고치는 중에는 시작 버튼을 숨김 (시간은 늘 오늘 기록으로 들어가므로 헷갈리지 않게)
@@ -116,8 +120,6 @@ export function mountWorkbar(root, store) {
     finishWork({ sound: false });
     actions.closeSession();
   });
-  // 휴식 타이머가 끝나 시간이 흐를 때 '종료'를 누르면 ■ 종료와 같게 기록(운동 중이 아니면 아무것도 안 함)
-  on(EV.endRequested, () => finishWork());
   $('#wAgain', root).addEventListener('click', () => {
     if (session.running || !actions.startAnotherSession()) return;
     startWork();

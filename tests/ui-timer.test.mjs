@@ -3,7 +3,6 @@ import { mock, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addDays, todayStr } from '../js/dates.js';
 import { mountTimer, setup, today, complete, setTo } from './helpers/ui-env.mjs';
-import { EV } from '../js/events.js';
 
 test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림', (t) => {
   mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
@@ -47,7 +46,7 @@ test('타이머: 한 줄 UI에서 시간 조절·시작·중지·끝남 알림',
   mock.timers.tick(45_500);
   assert.equal(root.querySelector('#timerBar').classList.contains('done'), true, '끝나면 알림 표시');
   assert.equal(root.querySelector('#tDone').textContent, '휴식이 끝났습니다');
-  assert.equal(root.querySelector('#tGo').textContent, '종료', '시간이 흐르는 동안 종료 버튼');
+  assert.equal(root.querySelector('#tGo').textContent, '다시 시작', '휴식이 끝난 뒤 다시 시작할 수 있음');
   assert.equal(time(), '휴식 끝+0:00', '끝난 뒤 지난 시간을 보여 줌');
   assert.equal(root.querySelector('#tMinus').disabled, false);
   mock.timers.tick(7_000);
@@ -117,15 +116,7 @@ test('타이머: 휴식 끝 표시는 시간을 누르면 닫히고(프리셋은
   root.querySelector('#tGo').click();
   mock.timers.tick(30_500);
   assert.equal(bar.classList.contains('done'), true);
-  let endRequests = 0;
-  const onEnd = () => endRequests++;
-  document.addEventListener(EV.endRequested, onEnd);
-  root.querySelector('#tGo').click(); // 끝난 표시가 떠 있을 때는 종료 요청(휴식은 다시 시작하지 않음)
-  assert.equal(endRequests, 1, '종료 버튼은 운동 종료를 요청');
-  assert.equal(bar.classList.contains('done'), true, '종료 요청만으로는 휴식 표시를 바꾸지 않음');
-  document.removeEventListener(EV.endRequested, onEnd);
-  time.click(); // 닫은 뒤 다시 시작
-  root.querySelector('#tGo').click();
+  root.querySelector('#tGo').click(); // 휴식이 끝난 상태에서도 다시 시작
   assert.equal(bar.classList.contains('done'), false);
   assert.equal(time.textContent, '0:30');
   mock.timers.tick(5_000);

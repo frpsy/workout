@@ -13,34 +13,34 @@
 /* ── 디자인 값 ─────────────────────────────────────────── */
 :root {
   /* 색 (어두운 테마 값은 아래 두 블록) */
-  --bg: #F2F7F3;
+  --bg: #F8F9FF;
   --surface: #FFFFFF;
-  --fg: #16221D;
-  --muted: #4E6157;
-  --line: #D5E0DA;
-  --accent: #0A7550;
-  --accent-soft: #DCF1E7;
+  --fg: #191B24;
+  --muted: #464957;
+  --line: #DADBE7;
+  --accent: #3B53A4;
+  --accent-soft: #DCE3FF;
   --on-accent: #FFFFFF;
   --warn: #8A5200;
   --warn-soft: #F6E7CC;
   --err: #B3261E;
-  --ctrl-line: #7F8F87; /* 입력칸·스위치 테두리: 배경과 3:1 이상(3.07~3.28) */
-  --accent-fill: #0A7550; /* 넓게 칠하는 초록(버튼·완료) */
+  --ctrl-line: #767989; /* 입력칸·스위치 테두리: 배경과 3:1 이상(3.07~3.28) */
+  --accent-fill: #3B53A4; /* 넓게 칠하는 초록(버튼·완료) */
   --knob: #FFFFFF;
-  --seg-on: #FFFFFF; /* 난이도·보기에서 고른 칸 */
-  --fill: #E9F0EC; /* 조용한 버튼·조절칸 바탕(테두리 대신) */
-  --fill-press: #DCE7E1;
-  --hero: #16221D; /* 쉬는 동안의 휴식 타이머 바탕 */
+  --seg-on: #DCE3FF; /* 난이도·보기에서 고른 칸 */
+  --fill: #ECEEF7; /* 조용한 버튼·조절칸 바탕(테두리 대신) */
+  --fill-press: #DEE2F1;
+  --hero: #191B24; /* 쉬는 동안의 휴식 타이머 바탕 */
   --hero-fg: #FFFFFF;
-  --hero-accent: #55D1A3;
+  --hero-accent: #B7C5FF;
   --hero-warn: #FFC566;
-  --hero-ctrl: #2B3A33;
+  --hero-ctrl: #343949;
   --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235C6B65' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --bell: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5a6.5 6.5 0 0 0-6.5 6.5v3.6l-1.7 3.2a1 1 0 0 0 .9 1.5h14.6a1 1 0 0 0 .9-1.5l-1.7-3.2V9A6.5 6.5 0 0 0 12 2.5zM9.5 19a2.6 2.6 0 0 0 5 0z'/%3E%3C/svg%3E"); /* 휴식 끝 종(마스크로 써서 글자색을 따름) */
 
   /* 글꼴 */
   --font-body: 'Noto Sans KR', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  --font-num: 'Barlow Condensed', 'Arial Narrow', 'Noto Sans KR', system-ui, sans-serif;
+  --font-num: Roboto, 'Noto Sans KR', system-ui, sans-serif;
 
   /* 글자 크기: 본문 15px 기준. 입력칸은 16px(iOS가 포커스할 때 확대하지 않는 최소값), 20px 이상은 주로 숫자(--font-num)와 제목 */
   --fs-3xs: 10px;
@@ -59,7 +59,7 @@
 
   /* 자간: 한글 본문은 살짝, 제목은 조금 더 좁혀 단단하게 */
   --track: -0.01em;
-  --track-tight: -0.03em;
+  --track-tight: -0.02em;
 
   /* 간격 */
   --gap-xs: 4px;
@@ -68,32 +68,33 @@
   --gap-md: 10px;
   --gap-lg: 12px;
   --gutter: 16px; /* 화면 좌우 여백(저장 줄이 끝까지 닿도록 같은 값을 씀) */
-  /* 아래 탭 막대: 버튼 50px + 테두리 1px + 아래 여백. 아이폰 홈 표시줄 영역(34px)은 12px 덜 써서 22px만 둠(표시줄과 글자가 겹치지 않는 선), 없는 기기는 8px */
+  /* 아래 탭 막대: 버튼 58px + 테두리 1px + 아래 여백. 아이폰 홈 표시줄 영역(34px)은 12px 덜 써서 22px만 둠(표시줄과 글자가 겹치지 않는 선), 없는 기기는 8px */
   --tabbar-pad: max(calc(env(safe-area-inset-bottom, 0px) - 12px), 8px);
-  --tabbar-h: calc(51px + var(--tabbar-pad));
+  --tabbar-h: calc(59px + var(--tabbar-pad));
 
   /* 모서리 */
-  --r-ctrl: 10px; /* 버튼·입력칸 */
-  --r-seg: 8px; /* 난이도·보기 안쪽 칸(바깥 틀 --r-ctrl − 틀 두께 2px) */
-  --r-card: 16px; /* 카드 */
+  --r-ctrl: 20px; /* 버튼 */
+  --r-field: 8px; /* 입력칸 */
+  --r-seg: 18px; /* 난이도·보기 안쪽 칸(바깥 틀 --r-ctrl − 틀 두께 2px) */
+  --r-card: 24px; /* 카드 */
   --r-bar: 3px; /* 얇은 진행 막대 */
   --r-pill: 999px;
 
   /* 그림자 (두 테마 같은 값) */
-  --shadow-seg: 0 1px 4px rgba(0, 0, 0, 0.16); /* 난이도·보기에서 고른 칸 */
+  --shadow-seg: none; /* 난이도·보기에서 고른 칸 */
   --shadow-knob: 0 1px 3px rgba(0, 0, 0, 0.25); /* 스위치 손잡이 */
   --shadow-drag: 0 8px 24px rgba(0, 0, 0, 0.18); /* 끌어서 옮기는 종목 줄 */
-    --shadow-card: none; /* 카드: 그림자 없이 얇은 테두리만(미니멀) */
+  --shadow-card: none; /* 카드: 그림자 없이 얇은 테두리만(미니멀) */
   --shadow-press: none; /* 주 버튼도 평평하게 */
 }
 /* 어두운 테마: 기기 설정을 따르고, data-theme(claude.ai 아티팩트 뷰어)이 있으면 그것을 따름. 두 블록은 같아야 함(tests/style.test.mjs) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0B100E; --surface: #151E1A; --fg: #E8F1EC; --muted: #A4B7AD; --line: #26352D;
-    --accent: #55D1A3; --accent-soft: #163B2D; --on-accent: #06180F;
+    --bg: #12131A; --surface: #1D1F29; --fg: #E3E4EF; --muted: #C4C5D3; --line: #373A49;
+    --accent: #B7C5FF; --accent-soft: #303E74; --on-accent: #142454;
     --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
-    --ctrl-line: #64776D; --accent-fill: #3FB387; --knob: #E8F1EC; --seg-on: #34453C;
-    --fill: #1D2A24; --fill-press: #26352D; --hero: #133426; --hero-fg: #F2FBF6; --hero-accent: #55D1A3; --hero-warn: #FFC566; --hero-ctrl: #1E4937;
+    --ctrl-line: #838699; --accent-fill: #B7C5FF; --knob: #E3E4EF; --seg-on: #3D4875;
+    --fill: #272936; --fill-press: #373A49; --hero: #232A46; --hero-fg: #F4F3FF; --hero-accent: #B7C5FF; --hero-warn: #FFC566; --hero-ctrl: #3A4569;
     --shadow-card: none; --shadow-press: none;
     --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2393A69D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     color-scheme: dark;
@@ -101,11 +102,11 @@
 }
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] {
-  --bg: #0B100E; --surface: #151E1A; --fg: #E8F1EC; --muted: #A4B7AD; --line: #26352D;
-  --accent: #55D1A3; --accent-soft: #163B2D; --on-accent: #06180F;
+  --bg: #12131A; --surface: #1D1F29; --fg: #E3E4EF; --muted: #C4C5D3; --line: #373A49;
+  --accent: #B7C5FF; --accent-soft: #303E74; --on-accent: #142454;
   --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
-  --ctrl-line: #64776D; --accent-fill: #3FB387; --knob: #E8F1EC; --seg-on: #34453C;
-  --fill: #1D2A24; --fill-press: #26352D; --hero: #133426; --hero-fg: #F2FBF6; --hero-accent: #55D1A3; --hero-warn: #FFC566; --hero-ctrl: #1E4937;
+  --ctrl-line: #838699; --accent-fill: #B7C5FF; --knob: #E3E4EF; --seg-on: #3D4875;
+  --fill: #272936; --fill-press: #373A49; --hero: #232A46; --hero-fg: #F4F3FF; --hero-accent: #B7C5FF; --hero-warn: #FFC566; --hero-ctrl: #3A4569;
   --shadow-card: none; --shadow-press: none;
   --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2393A69D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: dark;
@@ -182,6 +183,14 @@ button:disabled, input:disabled, select:disabled { opacity: 0.45; cursor: defaul
   overscroll-behavior-y: contain; /* 내용이 화면에 딱 맞을 때 앱 전체가 고무줄처럼 끌려가지 않게 */
   -webkit-overflow-scrolling: touch;
 }
+.page[data-tab="today"] {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  padding-bottom: calc(var(--tabbar-h) + 8px);
+}
+.today-scroll { overflow: hidden auto; overscroll-behavior-y: contain; }
+.today-scroll .wrap { padding-bottom: var(--gap-md); }
 /* 운동 중 자주 누르는 조작부(완료 버튼·조절 칸·머리말 버튼·타이머): 손가락이 옆으로 미끄러져도 옆 탭으로 넘어가지 않게(세로 스크롤만 허용). 그 밖의 곳을 밀면 그대로 넘어감 */
 .work, .levels, .stepper, .rows .check, #timer { touch-action: pan-y pinch-zoom; }
 
@@ -296,7 +305,7 @@ input[type="date"], input[type="number"], input:not([type]), select {
   min-width: 0;
   height: 44px; /* 입력칸 자체가 누르는 영역이라 44px */
   border: 1px solid var(--ctrl-line);
-  border-radius: var(--r-ctrl);
+  border-radius: var(--r-field);
   background: var(--surface);
   padding: 0 10px;
   font-size: var(--fs-input);
@@ -332,7 +341,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   border-radius: var(--r-ctrl);
   background: var(--fill);
 }
-.row.done .stepper { background: var(--surface); } /* 마친 종목의 바탕(--fill)과 같아 묻히지 않게 */
+.row.current .stepper, .row.done .stepper { background: var(--surface); } /* 마친 종목의 바탕(--fill)과 같아 묻히지 않게 */
 .stepper button {
   position: relative;
   width: 38px;
@@ -371,7 +380,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 }
 .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-/* 세그먼트(난이도·보기): 옅은 바탕 위에서 고른 칸만 떠오르는 모양(아이폰 기본 선택 버튼과 같은 방식). 겉 높이 34px(30 + 틀 위아래 2) */
+/* 난이도 선택: 선택한 옵션을 색으로 강조 */
 .levels {
   display: flex;
   flex: none;
@@ -452,8 +461,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   padding: 0 0 4px; /* 좌우 여백 없음: 로고·날짜·버튼의 바깥 모서리가 아래 카드의 바깥 모서리와 같은 줄에 맞음 */
 }
 .brandline { display: flex; align-items: center; min-width: 0; gap: var(--gap); padding: 0 0 var(--gap-md); border-bottom: 1px solid var(--line); }
-.brand-symbol { width: 24px; height: 24px; flex: none; border-radius: 7px; }
-.brand-name { display: block; width: 50px; height: 15px; color: var(--fg); }
+.brand-symbol { width: 30px; height: 30px; flex: none; border-radius: 10px; }
+.brand-name { display: block; width: 62px; height: 18px; color: var(--fg); }
 /* 운동 상태 알약: 준비(회색) → 진행 중(옅은 포인트 색 + 굵게) → 완료(포인트 색 + 체크) */
 .brand-state {
   flex: none;
@@ -598,7 +607,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 
 /* 종목 줄: (이름·목표·세트 번호 | 완료) / (개수 − [ ] + × 세트 − [ ] +) 두 줄. 3종목이 한 화면에 들어옴 */
 .rows { display: flex; flex-direction: column; gap: var(--gap); }
-/* 스트레칭: 운동 목록 위·아래의 얇은 한 줄. 안 했을 땐 조용한 점선 테두리, 하면 옅은 초록으로 채움(체크 표시) */
+/* 스트레칭: 운동 목록 위·아래의 얇은 한 줄. 안 했을 땐 조용한 윤곽선, 하면 옅은 포인트 색으로 채움(체크 표시) */
 .stretch {
   display: flex;
   align-items: center;
@@ -607,7 +616,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   min-height: 48px;
   margin: var(--gap) 0;
   padding: 0 var(--gap-md);
-  border: 1.5px dashed var(--line);
+  border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: transparent;
   color: var(--muted);
@@ -619,6 +628,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
+.material-stack { display: inline-grid; place-items: center; }
+.material-stack > svg { grid-area: 1 / 1; }
 .stretch .tick { opacity: 0; }
 .stretch[aria-pressed="true"] { border-style: solid; border-color: transparent; background: var(--accent-soft); color: var(--accent); }
 .stretch[aria-pressed="true"] .tick { opacity: 1; }
@@ -642,7 +653,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   background: var(--surface);
   box-shadow: var(--shadow-card);
 }
-.row { scroll-margin-top: var(--gap); scroll-margin-bottom: calc(var(--tabbar-h) + 84px); } /* 종목을 마치고 다음 종목으로 넘길 때 휴식 타이머·탭 막대에 가리지 않게 */
+.row { scroll-margin-top: var(--gap); scroll-margin-bottom: var(--gap); }
 /* 종목 줄 세 상태: 지금 할 종목(.current) 하나만 크게 펼치고, 마친 종목과 남은 종목은 한 줄로 접음 */
 .row:not(.current) { min-height: 52px; padding-top: 6px; padding-bottom: 6px; }
 .row:not(.current) .info { display: flex; align-items: center; gap: var(--gap); }
@@ -661,7 +672,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   grid-template-areas: "info" "check" "ctrl";
   gap: var(--gap-md);
   padding: 12px 14px 14px;
-  border-color: var(--accent);
+  background: var(--accent-soft);
+  border-color: transparent;
 }
 .row.current:not(.open):not(.timing) { grid-template-areas: "info" "check"; }
 .row.current .goal .num { font-size: var(--fs-hero); line-height: 40px; }
@@ -871,7 +883,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .typing .page[data-tab="today"] .wrap { padding-bottom: 100vh; }
 .typing.kb .tabbar, .typing.kb #timer { visibility: hidden; }
 .journal {
-  scroll-margin-bottom: calc(var(--tabbar-h) + 84px); /* 탭 막대 + 그 위에 떠 있는 휴식 타이머(최대 64px) + 여백 */
+  scroll-margin-bottom: var(--gap);
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
@@ -911,12 +923,11 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 
 /* 휴식 타이머는 늘 탭 막대 바로 위에: 종목이 많거나 화면이 작아 내용이 넘쳐도 스크롤 없이 누를 수 있음 */
 #timer {
-  margin-top: auto; /* 내용이 짧으면 탭 막대 바로 위로 내려가 빈 띠가 생기지 않게 */
-  position: sticky;
-  bottom: calc(var(--tabbar-h) + 8px);
-  z-index: 3;
-  border-radius: var(--r-card);
-  box-shadow: 0 9px 0 var(--bg), 0 -6px 0 var(--bg); /* 내용 위에 떠 있을 때 타이머 위아래 틈으로 내용이 비치지 않게 */
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
+  padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px))
+    max(var(--gutter), env(safe-area-inset-right, 0px));
 }
 
 /* 휴식 타이머: 늘 같은 한 줄(48px). 쉬는 동안은 크기를 바꾸지 않고 어두운 바탕·흰 숫자·진행 막대로 강조만 함 */
@@ -946,7 +957,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer.running { background: var(--hero); }
 .timer.running button.tlabel, .timer.running button.tlabel b { color: color-mix(in srgb, var(--hero-fg) 70%, transparent); }
 .timer.running button.tlabel[aria-pressed="true"] b { color: var(--hero-accent); }
-/* 휴식 끝: 줄 전체를 초록으로 칠해, 멀리서 흘끗 봐도 알 수 있게 */
+/* 휴식 끝: 줄 전체를 포인트 색으로 칠해, 멀리서 흘끗 봐도 알 수 있게 */
 .timer.done { padding: 0 8px 0 16px; background: var(--accent-fill); box-shadow: var(--shadow-press); }
 .timer.done .tstep, .timer.done button.tlabel { display: none; } /* '휴식 끝 +0:07'만 크게 */
 .timer.done .time { display: flex; align-items: center; gap: var(--gap-md); text-align: left; color: var(--on-accent); font-size: var(--fs-5xl); }
@@ -984,6 +995,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   touch-action: manipulation;
   border-radius: var(--r-ctrl);
 }
+.timer .time { white-space: nowrap; }
 .timer .time:disabled { opacity: 1; cursor: default; }
 .timer .time:not(:disabled):active { background: var(--fill); }
 .timer.running .time { color: var(--hero-fg); }
@@ -1041,7 +1053,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   cursor: pointer;
   touch-action: manipulation;
 }
-.timer:not(.running):not(.done) .tgo { background: var(--accent-soft); color: var(--accent); } /* 쉬기 전: 진한 초록은 큰 완료 버튼 하나만(휴식은 세트를 마치면 자동 시작) */
+.timer:not(.running):not(.done) .tgo { background: var(--accent-soft); color: var(--accent); } /* 쉬기 전: 진한 포인트 색은 큰 완료 버튼에 사용(휴식은 세트를 마치면 자동 시작) */
 .timer .tgo.stop { background: var(--hero-ctrl); color: var(--hero-fg); font-weight: 500; }
 /* 쉬는 중의 중지 버튼은 ■ 표시만(글자는 화면 읽기용으로 남김): 시작 버튼과 같은 폭이라 숫자 자리는 그대로 */
 .timer .tgo.stop { width: var(--tside); padding: 0; color: transparent; white-space: nowrap; } /* 글자는 보이지 않게(overflow를 자르면 누르는 영역도 잘려서 투명하게만) */
@@ -1049,8 +1061,11 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .timer .tstep::after, .timer .tgo::after, .timer button.tlabel::after { content: ''; position: absolute; inset: -5px 0; } /* 보이는 크기는 작게, 누르는 영역은 44px */
 .timer .tstep::after { inset: -6px 0; }
 
+.material-icon { flex: none; vertical-align: middle; }
+.wbtn, .round-repeat { display: inline-flex; align-items: center; justify-content: center; gap: var(--gap-xs); }
+
 /* ── 기록 탭 ───────────────────────────────────────────── */
-.page-title { margin: 2px 0 2px; font-size: var(--fs-2xl); } /* 기록·설정 탭 제목 */
+.page-title { margin: 8px 0 6px; font-size: var(--fs-3xl); } /* 기록·설정 탭 제목 */
 
 /* 카드는 맨 위 하나(달력 + 고른 날 기록)만. 그 아래 통계는 카드 없이 구분선으로 나눠 위계를 만듦 */
 #history > .hmain, #history > .history-empty {
@@ -1272,7 +1287,7 @@ tr.cur td { background: var(--accent-soft); }
 /* ── 설정 탭 ───────────────────────────────────────────── */
 /* 작은 제목 아래 줄 목록(왼쪽 이름, 오른쪽 값·조작) */
 .sgroup { display: flex; flex-direction: column; gap: var(--gap); }
-.sgh { margin: 10px 0 0; font-size: var(--fs-base); font-weight: 700; color: var(--fg); }
+.sgh { margin: 10px 0 0; font-size: var(--fs-md); font-weight: 700; color: var(--accent); }
 .sgroup > .sgh + .sub { margin-top: -4px; }
 .sgroup > .sub, .sgroup > .status { margin: 0; }
 .shint { font-size: var(--fs-xs); color: var(--muted); }
@@ -1396,42 +1411,41 @@ tr.cur td { background: var(--accent-soft); }
   z-index: 10;
   display: flex;
   justify-content: center;
-  background: var(--surface);
+  background: var(--fill);
   border-top: 1px solid var(--line);
   padding-bottom: var(--tabbar-pad);
   touch-action: none; /* 탭 막대를 잡고 끌어도 화면이 움직이지 않게 */
 }
 .tabbar button {
+  z-index: 1;
   flex: 1;
   max-width: 186px;
-  height: 50px;
+  height: 58px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 7px;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
   font-weight: 500;
   cursor: pointer;
   touch-action: manipulation;
 }
-.tabbar button svg { stroke-width: 1.8; }
 .tabbar button[aria-current="page"] { color: var(--accent); font-weight: 700; }
-.tabbar button[aria-current="page"] svg { stroke-width: 2.2; }
 .tabbar button svg { flex: none; }
-/* 고른 탭 위의 짧은 막대: 화면을 미는 만큼 옆 탭 쪽으로 따라 움직임(위치는 tabs.js가 정함) */
+/* 선택한 아이콘 뒤의 표시가 탭 스와이프를 따라 움직임 */
 .tab-ind {
   position: absolute;
-  top: -1px;
+  top: 5px;
   left: 0;
-  width: 20px;
-  height: 2px;
-  border-radius: 0 0 var(--r-bar) var(--r-bar);
-  background: var(--accent);
+  width: 64px;
+  height: 30px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
   pointer-events: none;
   will-change: transform;
 }
@@ -1528,7 +1542,8 @@ tr.cur td { background: var(--accent-soft); }
 }
 @media (max-width: 360px) {
   .timer { gap: var(--gap-xs); --tside: 64px; }
-  .timer .tstep { width: 36px; flex: none; }
+  .timer .tstep { width: 32px; flex: none; }
+  .timer .time { font-family: 'Barlow Condensed', var(--font-num); }
   .timer button.tlabel { flex: none; }
   .timer .tgo { padding: 0 4px; font-size: var(--fs-sm); }
   .row { gap: 6px 8px; padding: 8px 10px 10px; }
@@ -1559,6 +1574,10 @@ tr.cur td { background: var(--accent-soft); }
 @media (max-height: 600px) {
   .wrap { gap: var(--gap-sm); }
   .head { gap: var(--gap-sm); padding-bottom: 0; }
+  .brandline { padding-bottom: var(--gap-xs); }
+  .stretch { min-height: 44px; margin-block: var(--gap-xs); }
+  .row.current { gap: var(--gap-xs); padding-block: 8px; }
+  .row:not(.current) { min-height: 44px; padding-block: 1px; }
 }
 
 /* ── 움직임 ────────────────────────────────────────────── */

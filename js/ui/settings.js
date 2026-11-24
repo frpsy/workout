@@ -8,6 +8,7 @@ import { canPlayInSilentMode, isSilentModeOn, playSound, setSilentMode } from '.
 import { THEMES, THEME_LABEL } from '../theme.js';
 import { VERSION } from '../version.js';
 import { $, esc } from './dom.js';
+import { icon } from './icon.js';
 import { mountSoundToggle } from './sound-ui.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -208,8 +209,8 @@ export function mountSettings(root, store, theme = null) {
         <div class="exrow3">
           <label class="usechk"><span class="switch sm"><input type="checkbox" role="switch" data-k="active"${e.active ? ' checked' : ''} id="ac-${e.id}"><i aria-hidden="true"></i></span> 사용</label>
           <span class="spacer"></span>
-          <button type="button" class="icon" data-act="up"${i === 0 ? ' disabled' : ''} aria-label="${esc(e.name)} 위로">↑</button>
-          <button type="button" class="icon" data-act="down"${i === n - 1 ? ' disabled' : ''} aria-label="${esc(e.name)} 아래로">↓</button>
+          <button type="button" class="icon" data-act="up"${i === 0 ? ' disabled' : ''} aria-label="${esc(e.name)} 위로">${icon('up', 18)}</button>
+          <button type="button" class="icon" data-act="down"${i === n - 1 ? ' disabled' : ''} aria-label="${esc(e.name)} 아래로">${icon('moveDown', 18)}</button>
           <button type="button" class="icon danger" data-act="del">${confirmDelete === e.id ? '삭제 확인' : '삭제'}</button>
         </div>
       </div>`
