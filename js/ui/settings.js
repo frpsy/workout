@@ -10,6 +10,7 @@ import { VERSION } from '../version.js';
 import { $, esc } from './dom.js';
 import { icon } from './icon.js';
 import { mountSoundToggle } from './sound-ui.js';
+import { applyProgram, PROGRAMS, weeklyRunMin } from '../program.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
@@ -21,6 +22,25 @@ export function versionLabel({ sha, builtAt } = {}) {
   return `버전 ${sha} · ${d.getMonth() + 1}월 ${d.getDate()}일 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+const WEEK = [1, 2, 3, 4, 5, 6, 0];
+
+/** 프로그램 카드: 이름·한 줄 설명, 한 주 요일별 배치(근·달), 주간 합계 */
+function programCard(p) {
+  const days = WEEK.map((d) => {
+    const s = p.strength.includes(d);
+    const r = p.run[d];
+    const kind = s ? 'str' : r ? 'run' : 'off';
+    return `<span class="pd ${kind}" title="${DOW[d]} ${s ? '근력' : r ? `달리기 ${r}분` : '쉬는 날'}"><b>${DOW[d]}</b><i>${s ? '근력' : r ? r : '쉼'}</i></span>`;
+  }).join('');
+  return (
+    `<button type="button" class="program" role="radio" aria-checked="false" data-program="${p.id}">` +
+    `<span class="program-head"><b>${p.name}</b><span>${p.desc}</span></span>` +
+    `<span class="program-week" aria-hidden="true">${days}</span>` +
+    `<span class="program-sum">근력 주 ${p.strength.length}회 · 달리기 주 ${Object.keys(p.run).length}회 ${weeklyRunMin(p.run)}분</span>` +
+    '</button>'
+  );
+}
+
 export function mountSettings(root, store, theme = null) {
   const { actions } = store;
   let draft = null;
@@ -30,6 +50,14 @@ export function mountSettings(root, store, theme = null) {
   let confirmTimer;
 
   root.innerHTML = `
+    <section class="sgroup" id="progBox">
+      <h2 class="sgh">운동 프로그램</h2>
+      <div class="programs" id="programs" role="radiogroup" aria-label="운동 프로그램">
+        ${PROGRAMS.map(programCard).join('')}
+      </div>
+      <p class="shint">프로그램을 고르면 근력하는 요일과 달리기 목표가 바로 바뀝니다. 근력과 Zone 2 달리기를 한 주에 고르게 나눴습니다. 근력은 이틀 연속 하지 않고, 긴 달리기 다음 날은 짧게 달리며, 한 주에 하루는 온전히 쉽니다. 몸이 아픈 날은 계획보다 쉬는 것을 먼저 챙겨 주세요.</p>
+    </section>
+
     <section class="sgroup" id="acctBox">
       <div class="slist">
         <div class="srow col" id="themeRow" role="group" aria-labelledby="lbTheme"${theme ? '' : ' hidden'}>
@@ -185,6 +213,7 @@ export function mountSettings(root, store, theme = null) {
     el('recRatio').value = String(draft.plan.recoveryRatio);
     el('recRatio').disabled = draft.plan.recoveryEvery === 0;
     for (const box of root.querySelectorAll('#restDays input')) box.checked = (draft.restDays || []).includes(+box.value);
+    for (const b of root.querySelectorAll('.program')) b.setAttribute('aria-checked', String(b.dataset.program === draft.program));
     renderList();
   }
 
@@ -333,7 +362,18 @@ export function mountSettings(root, store, theme = null) {
 
   el('restDays').addEventListener('change', () => {
     draft.restDays = [...root.querySelectorAll('#restDays input:checked')].map((b) => +b.value).sort((a, b) => a - b);
+    delete draft.program; // 직접 고치면 프로그램 표시는 풀고, 달리기 계획은 그대로 둠
+    for (const b of root.querySelectorAll('.program')) b.setAttribute('aria-checked', 'false');
     markDirty();
+  });
+
+  // 프로그램은 누르는 즉시 적용(쉬는 요일·달리기 계획을 바꾸고 저장). 고른 프로그램을 다시 누르면 해제
+  el('programs').addEventListener('click', (ev) => {
+    const b = ev.target.closest('.program');
+    if (!b || !store.state.ready) return;
+    draft = applyProgram(draft, draft.program === b.dataset.program ? null : b.dataset.program);
+    renderDraft();
+    el('saveCfg').click();
   });
 
   el('saveCfg').addEventListener('click', async () => {

@@ -12,7 +12,11 @@ import { mountWorkbar } from './workbar.js';
 import { createRow, paintRow } from './exercise-row.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
-import { fmtKm, fmtRunTime } from '../run.js';
+import { fmtKm, fmtRunTime, RUN_KM_PRESETS, RUN_MIN_PRESETS } from '../run.js';
+import { planOn } from '../program.js';
+
+/** 오늘 계획 한마디: ‘근력 · 달리기 45분’, ‘달리기 30분’, ‘쉬는 날’ */
+const planText = (p) => [p.strength && '근력', p.runMin && `달리기 ${p.runMin}분`].filter(Boolean).join(' · ') || '쉬는 날';
 
 // 스트레칭 버튼 앞의 체크 표시(했으면 채워진 동그라미 안의 ✓)
 const STRETCH_ICON = `<span class="stretch-mark material-stack">${icon('circle', 22)}${icon('check', 15, 'tick')}</span>`;
@@ -72,12 +76,15 @@ export function mountToday(root, store) {
     <button type="button" class="stretch" id="stretchPre" data-kind="pre" aria-pressed="false">${STRETCH_ICON}<span>운동 전 스트레칭</span></button>
     <section aria-label="운동 체크" class="rows" id="rows"></section>
     <button type="button" class="stretch" id="stretchPost" data-kind="post" aria-pressed="false">${STRETCH_ICON}<span>운동 후 스트레칭</span></button>
-    <section class="runbox" id="runBox" aria-label="전투 달리기">
-      <button type="button" class="stretch run-check" id="runBtn" aria-pressed="false">${STRETCH_ICON}<span>전투 달리기</span><span class="run-sum" id="runSum"></span></button>
+    <section class="runbox" id="runBox" aria-label="달리기">
+      <button type="button" class="stretch run-check" id="runBtn" aria-pressed="false">${STRETCH_ICON}<span class="run-title">달리기<small>Zone 2</small></span><span class="run-sum" id="runSum"></span></button>
+      <div class="chips" id="runMinChips" role="group" aria-label="달린 시간 빠르게 넣기">${RUN_MIN_PRESETS.map((m) => `<button type="button" class="chip" data-min="${m}" aria-pressed="false">${m}분</button>`).join('')}</div>
+      <div class="chips" id="runKmChips" role="group" aria-label="달린 거리 빠르게 넣기">${RUN_KM_PRESETS.map((k) => `<button type="button" class="chip" data-km="${k}" aria-pressed="false">${k}km</button>`).join('')}</div>
       <div class="run-detail" id="runDetail" hidden>
         <span class="run-field"><span>시간</span><input id="runMin" type="number" inputmode="numeric" min="0" max="1439" placeholder="0" aria-label="달린 시간(분)">분<input id="runSec" type="number" inputmode="numeric" min="0" max="59" placeholder="0" aria-label="달린 시간(초)">초</span>
         <span class="run-field"><span>거리</span><input id="runKm" type="number" inputmode="decimal" min="0" max="500" step="0.01" placeholder="0" aria-label="달린 거리(km)">km</span>
       </div>
+      <p class="run-hint" id="runHint">숨이 조금 차도 대화할 수 있는 편한 속도로 달려요.</p>
     </section>
     <span class="sr" id="nextNote" role="status"></span>`;
 
@@ -94,7 +101,7 @@ export function mountToday(root, store) {
     });
   }
 
-  // 전투 달리기: 눌러 달렸다고 표시(다시 누르면 취소), 표시한 날은 달린 시간(분·초)·거리(km)를 적는 칸이 열림
+  // 달리기: 눌러 달렸다고 표시(다시 누르면 취소), 표시한 날은 달린 시간(분·초)·거리(km)를 적는 칸이 열림
   $('#runBtn', root).addEventListener('click', () => {
     if (!store.state.ready) return;
     const { selected } = store.state;
@@ -109,6 +116,18 @@ export function mountToday(root, store) {
   $('#runMin', root).addEventListener('input', saveRunTime);
   $('#runSec', root).addEventListener('input', saveRunTime);
   $('#runKm', root).addEventListener('input', (ev) => actions.setRun(store.state.selected, { km: num(ev.target) }));
+  // 프리셋: 한 번 누르면 달렸다고 표시하면서 그 값을 넣음(이미 그 값이면 그 값만 지움)
+  root.querySelector('#runBox').addEventListener('click', (ev) => {
+    const chip = ev.target.closest('.chip');
+    if (!chip || !store.state.ready) return;
+    const { selected } = store.state;
+    const run = store.state.days[selected]?.run || {};
+    const first = !run.done;
+    const patch = chip.dataset.min
+      ? { sec: run.sec === chip.dataset.min * 60 ? 0 : chip.dataset.min * 60 }
+      : { km: run.km === Number(chip.dataset.km) ? 0 : Number(chip.dataset.km) };
+    if (actions.setRun(selected, patch) && first) haptic();
+  });
 
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
@@ -280,7 +299,7 @@ export function mountToday(root, store) {
 
     $('#weekLabel', root).innerHTML =
       w >= 0
-        ? `<span>${w + 1}주차 · ${dayNo}일째</span>${rec ? '<span class="tag">회복주</span>' : ''}`
+        ? `<span>${w + 1}주차 · ${config.program ? planText(planOn(config, selected)) : `${dayNo}일째`}</span>${rec ? '<span class="tag">회복주</span>' : ''}`
         : `<span>시작 ${-dayNo + 1}일 전</span>`;
     $('#dateLabel', root).textContent = `${labelMD(selected)} ${dowName(selected)}요일`;
 
@@ -304,10 +323,24 @@ export function mountToday(root, store) {
     }
 
     const run = state.days[selected]?.run;
+    const plan = planOn(config, selected);
     $('#runBtn', root).setAttribute('aria-pressed', String(!!run));
     $('#runBtn', root).disabled = !state.ready;
-    $('#runSum', root).textContent = run ? [run.sec ? fmtRunTime(run.sec) : '', run.km ? fmtKm(run.km) : ''].filter(Boolean).join(' · ') : '';
+    $('#runSum', root).textContent = run
+      ? [run.sec ? fmtRunTime(run.sec) : '', run.km ? fmtKm(run.km) : ''].filter(Boolean).join(' · ')
+      : plan.runMin ? `목표 ${plan.runMin}분` : '';
+    $('#runBox', root).classList.toggle('planned', !!plan.runMin && !run);
+    // 근력 없이 달리기만 하는 날은 달리기를 맨 위로(오늘 할 일이 먼저 보이게)
+    const runFirst = !!plan.runMin && !plan.strength;
+    const box = $('#runBox', root);
+    const anchor = runFirst ? $('#stretchPre', root) : $('#stretchPost', root).nextSibling;
+    if (runFirst ? box.nextElementSibling !== anchor : box.previousElementSibling?.id !== 'stretchPost') anchor.parentNode.insertBefore(box, anchor);
     $('#runDetail', root).hidden = !run;
+    $('#runHint', root).hidden = !!run;
+    for (const c of root.querySelectorAll('#runBox .chip')) {
+      c.setAttribute('aria-pressed', String(!!run && (c.dataset.min ? run.sec === c.dataset.min * 60 : run.km === Number(c.dataset.km))));
+      c.disabled = !state.ready;
+    }
     // 적는 중인 칸은 건드리지 않음(입력하는 대로 저장되며 다시 그려지므로)
     const fill = (id, v) => {
       const el = $(id, root);

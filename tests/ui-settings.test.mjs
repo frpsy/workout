@@ -288,3 +288,24 @@ test('설정: 앱을 켜 둔 채 자정이 지나면 운동 시간 넣기 날짜
   assert.equal(date().value, addDays(next, -5));
   store.actions.flushAll();
 });
+
+test('설정: 운동 프로그램을 누르면 바로 저장되고, 다시 누르면 해제', async () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  const cards = root.querySelectorAll('.program');
+  assert.equal(cards.length, 3);
+  const balance = root.querySelector('[data-program="balance"]');
+  balance.click(); await tick();
+  const saved = ad.saved.config.at(-1);
+  assert.equal(saved.program, 'balance');
+  assert.deepEqual(saved.restDays, [0, 2, 4, 6]);
+  assert.deepEqual(saved.runPlan, { 2: 45, 4: 45, 6: 60 });
+  assert.equal(balance.getAttribute('aria-checked'), 'true');
+  assert.deepEqual([...root.querySelectorAll('#restDays input:checked')].map((b) => +b.value).sort(), [0, 2, 4, 6], '쉬는 요일 칸도 함께 바뀜');
+  balance.click(); await tick();
+  assert.equal('program' in ad.saved.config.at(-1), false);
+  assert.equal(balance.getAttribute('aria-checked'), 'false');
+});

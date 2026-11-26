@@ -575,7 +575,7 @@ test('오늘: 운동 전·후 스트레칭 버튼은 눌러 켜고 다시 눌러
   store.actions.flushAll();
 });
 
-test('오늘: 전투 달리기를 눌러 표시하면 시간·거리 칸이 열리고, 적는 대로 그날 기록에 남으며 진행률에는 영향 없음', () => {
+test('오늘: 달리기를 눌러 표시하면 시간·거리 칸이 열리고, 적는 대로 그날 기록에 남으며 진행률에는 영향 없음', () => {
   const { store, root } = setup(today);
   const btn = root.querySelector('#runBtn');
   const detail = root.querySelector('#runDetail');
@@ -602,5 +602,24 @@ test('오늘: 전투 달리기를 눌러 표시하면 시간·거리 칸이 열�
   btn.click();
   assert.equal('run' in store.state.days[store.state.today], false, '다시 누르면 취소');
   assert.equal(detail.hidden, true);
+  store.actions.flushAll();
+});
+
+test('오늘: 프로그램을 쓰면 주차 옆에 오늘 계획이 보이고, 달리기만 하는 날은 달리기 카드가 맨 위로', () => {
+  const dow = new Date(`${todayStr()}T12:00:00`).getDay();
+  const others = [0, 1, 2, 3, 4, 5, 6].filter((d) => d !== dow);
+  // 오늘은 근력 쉬고 40분 달리는 날
+  const { store, root } = setup(today, { config: { startDate: addDays(todayStr(), -3), restDays: [dow], program: 'balance', runPlan: { [dow]: 40 } } });
+  assert.match(root.querySelector('#weekLabel').textContent, /주차 · 달리기 40분/);
+  const box = root.querySelector('#runBox');
+  assert.equal(box.nextElementSibling.id, 'stretchPre', '달리기 카드가 스트레칭·근력보다 위');
+  assert.equal(box.classList.contains('planned'), true);
+  assert.equal(root.querySelector('#runSum').textContent, '목표 40분');
+  root.querySelector('#runMinChips [data-min="45"]').click();
+  assert.deepEqual(store.state.days[todayStr()].run, { done: true, sec: 2700 }, '프리셋 한 번에 달림 표시와 시간 입력');
+  assert.equal(root.querySelector('#runMinChips [data-min="45"]').getAttribute('aria-pressed'), 'true');
+  root.querySelector('#runMinChips [data-min="45"]').click();
+  assert.deepEqual(store.state.days[todayStr()].run, { done: true }, '같은 프리셋을 다시 누르면 그 값만 지움');
+  assert.equal(others.length, 6);
   store.actions.flushAll();
 });

@@ -636,15 +636,31 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .stretch:active:not(:disabled) { background: var(--fill-press); }
 .stretch:disabled { opacity: 0.5; cursor: default; }
 .stretch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* 전투 달리기: 스트레칭과 같은 한 줄 버튼. 달린 날은 오른쪽에 시간·거리, 아래에 적는 칸 */
-.runbox { margin: var(--gap) 0; }
-.runbox .run-check { margin: 0; }
+/* 달리기(Zone 2): 근력(파랑)과 구분되는 따뜻한 색. 한 장의 카드 안에 체크 줄 → 시간·거리 프리셋 → 직접 입력 */
+.runbox { margin: var(--gap-lg) 0 var(--gap); padding: var(--gap-sm); border-radius: var(--r-card); background: var(--surface); border: 1px solid var(--line); }
+.runbox.planned { border-color: var(--warn); }
+.runbox .run-check { margin: 0; border: 0; }
+.runbox .run-check[aria-pressed="true"] { background: var(--warn-soft); color: var(--warn); }
+.run-title { display: inline-flex; align-items: baseline; gap: var(--gap-sm); }
+.run-title small { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.02em; color: var(--warn); }
 .run-sum { margin-left: auto; font-family: var(--font-num); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; }
-.run-detail { display: flex; flex-wrap: wrap; gap: var(--gap) var(--gap-lg); padding: var(--gap) var(--gap-md) 0; font-size: var(--fs-md); color: var(--muted); }
-.run-detail[hidden] { display: none; }
+.runbox.planned .run-sum { color: var(--warn); }
+.chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap-sm); padding: var(--gap-sm) var(--gap-xs) 0; }
+.chip {
+  min-height: 40px; border: 0; border-radius: var(--r-ctrl); background: var(--fill); color: var(--fg);
+  font: inherit; font-family: var(--font-num); font-size: var(--fs-md); font-weight: 600;
+  cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.chip[aria-pressed="true"] { background: var(--warn); color: var(--surface); }
+.chip:active:not(:disabled) { background: var(--fill-press); }
+.chip:disabled { opacity: 0.5; }
+.chip:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
+.run-detail { display: flex; flex-wrap: wrap; gap: var(--gap) var(--gap-lg); padding: var(--gap-md) var(--gap-sm) var(--gap-xs); font-size: var(--fs-md); color: var(--muted); }
+.run-detail[hidden], .run-hint[hidden] { display: none; }
 .run-field { display: inline-flex; align-items: center; gap: var(--gap-xs); }
 .run-field > span { margin-right: var(--gap-xs); font-weight: 600; }
-.run-field input[type="number"] { width: 64px; text-align: right; }
+.run-field input[type="number"] { width: 60px; text-align: right; }
+.run-hint { margin: 0; padding: var(--gap-sm) var(--gap-sm) var(--gap-xs); font-size: var(--fs-xs); color: var(--muted); }
 /* 끌어서 순서 바꾸기(ui/row-drag.js): 길게 누를 때 글자 선택·메뉴가 뜨지 않게. 집은 줄은 떠 보이고, 다른 줄은 부드럽게 비켜남 */
 .rows .info { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .rows.sorting .row { transition: transform 0.15s ease; }
@@ -1095,6 +1111,39 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 #plan-sec details.block { padding: 12px 0 0; border-top: 1px solid var(--line); } /* 앞으로 4주 목표: 기본은 접힌 한 줄 */
 #planBox > summary { min-height: 0; margin-bottom: 12px; }
 
+/* 이번 주 습관: 맨 위 벤토(크기가 다른 타일을 격자로 묶음). 근력은 파랑, 달리기는 주황으로 같은 뜻을 늘 같은 색으로 */
+#history > .habit { padding: 0 0 var(--gap-lg); }
+#history > .habit[hidden] { display: none; }
+.habit-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--gap); margin-bottom: var(--gap); }
+.habit-head .sec { margin: 0; }
+.habit-rate { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.habit-rate b { color: var(--fg); }
+.habit-week { list-style: none; margin: 0 0 var(--gap); padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--gap-xs); }
+.habit-week li { display: flex; flex-direction: column; align-items: center; gap: var(--gap-sm); padding: var(--gap) 0; border-radius: var(--r-ctrl); }
+.habit-week li.today { background: var(--surface); outline: 1px solid var(--line); }
+.habit-week li.future { opacity: 0.55; }
+.hw-dow { font-size: var(--fs-2xs); color: var(--muted); font-weight: 600; }
+.habit-week li.today .hw-dow { color: var(--fg); }
+.hw-marks { display: flex; flex-direction: column; align-items: center; gap: var(--gap-xs); min-height: 34px; }
+.hm { display: block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; box-sizing: border-box; }
+.hm.str { color: var(--accent); }
+.hm.run { color: var(--warn); }
+.hm.on { background: currentColor; }
+.hm.extra { border-style: dashed; } /* 계획에 없던 날 더 한 운동 */
+.hw-rest { font-size: var(--fs-3xs); color: var(--muted); line-height: 34px; }
+.bento { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
+.tile { display: flex; flex-direction: column; gap: var(--gap-xs); min-width: 0; padding: 14px 16px; border-radius: var(--r-card); background: var(--surface); border: 1px solid var(--line); }
+.tile.wide { grid-column: 1 / -1; }
+.tile.run { background: var(--warn-soft); border-color: transparent; }
+.tile.run .tl { color: var(--warn); }
+.tile.str .tl { color: var(--accent); }
+.tl { font-size: var(--fs-xs); font-weight: 700; color: var(--muted); }
+.tv { font-family: var(--font-num); font-size: var(--fs-3xl); font-weight: 700; letter-spacing: var(--track-tight); line-height: 1.1; }
+.tv small { font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 500; color: var(--muted); letter-spacing: 0; }
+.tsub { font-size: var(--fs-xs); color: var(--muted); }
+.tbar { display: block; height: 6px; margin-top: var(--gap-xs); border-radius: var(--r-bar); background: color-mix(in srgb, var(--warn) 22%, transparent); overflow: hidden; }
+.tbar i { display: block; height: 100%; border-radius: inherit; background: var(--warn); }
+
 /* 달력 */
 .cal-bar { display: flex; justify-content: flex-start; align-items: center; gap: var(--gap); margin-bottom: 8px; }
 .cal-bar .sec { margin: 0; }
@@ -1167,7 +1216,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .cell .pips { display: flex; gap: 3px; }
 .cell .pips i { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
 .cell .pips i.on { background: var(--accent); }
-/* 전투 달리기 한 날: 날짜 오른쪽 위의 작은 주황 점 */
+/* 달리기 한 날: 날짜 오른쪽 위의 작은 주황 점 */
 .cell.ran::after { content: ''; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
 .cell .frac { font-size: var(--fs-3xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .cell.full .dn { color: var(--accent); font-weight: 700; }
@@ -1301,6 +1350,27 @@ tr.cur td { background: var(--accent-soft); }
 .sgh { margin: 10px 0 0; font-size: var(--fs-md); font-weight: 700; color: var(--accent); }
 .sgroup > .sgh + .sub { margin-top: -4px; }
 .sgroup > .sub, .sgroup > .status { margin: 0; }
+/* 운동 프로그램: 고르는 카드 세 장. 한 주 배치를 요일 칸으로 바로 보여 줌(근력 파랑 · 달리기 주황 · 쉼 비움) */
+.programs { display: flex; flex-direction: column; gap: var(--gap); }
+.program {
+  display: flex; flex-direction: column; gap: var(--gap-md); width: 100%; padding: 14px 16px;
+  border: 1.5px solid var(--line); border-radius: var(--r-card); background: var(--surface); color: var(--fg);
+  font: inherit; text-align: left; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.program[aria-checked="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); }
+.program:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.program-head { display: flex; align-items: baseline; gap: var(--gap); }
+.program-head b { font-size: var(--fs-lg); }
+.program-head span { font-size: var(--fs-sm); color: var(--muted); }
+.program[aria-checked="true"] .program-head::after { content: '사용 중'; margin-left: auto; font-size: var(--fs-xs); font-weight: 700; color: var(--accent); }
+.program-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--gap-xs); }
+.pd { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--gap-sm) 0; border-radius: var(--r-field); background: var(--fill); }
+.pd b { font-size: var(--fs-2xs); font-weight: 600; color: var(--muted); }
+.pd i { font-style: normal; font-family: var(--font-num); font-size: var(--fs-xs); font-weight: 700; }
+.pd.str { background: var(--accent-soft); color: var(--accent); }
+.pd.run { background: var(--warn-soft); color: var(--warn); }
+.pd.off i { color: var(--muted); font-weight: 500; }
+.program-sum { font-size: var(--fs-xs); color: var(--muted); }
 .shint { font-size: var(--fs-xs); color: var(--muted); }
 .slist { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 0 16px; }
 /* 설정의 ‘운동 시간 기록’: 날짜 · 시간 · 지우기 한 줄씩 */
@@ -1619,6 +1689,13 @@ tr.cur td { background: var(--accent-soft); }
   .timer.done ~ .restflash { animation: rest-flash 0.7s ease-in-out 2; }
   .timer.ending .time { animation: timer-tick 1s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; } /* 마지막 3초: 1초마다 숫자가 살짝 튐(크기 변화 없이 transform만) */
   .wbtn.ready { animation: ready-pulse 1.4s ease-in-out infinite; }
+  /* 습관 체크의 작은 반응: 버튼·칩은 눌리는 즉시 살짝 줄고, 체크 표시는 그려지듯 나타남 */
+  .stretch, .chip, .program { transition: background-color 0.18s, border-color 0.18s, color 0.18s, transform 0.08s; }
+  .stretch:active:not(:disabled), .chip:active:not(:disabled), .program:active { transform: scale(0.97); }
+  .stretch .tick { stroke-dasharray: 14; stroke-dashoffset: 14; transition: stroke-dashoffset 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.1s; }
+  .stretch[aria-pressed="true"] .tick { stroke-dashoffset: 0; }
+  .hm.on { animation: pip-pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .tbar i { transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
 }
 @media (prefers-reduced-motion: reduce) {
   .splash.leaving { animation-duration: 0.12s; }

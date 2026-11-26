@@ -3,13 +3,14 @@
 import { UNITS } from '../config.js';
 import { addDays, diffDays, dowName, fmt, labelMD, mondayOf, pad, parse, shortMD } from '../dates.js';
 import { weekIndex } from '../progression.js';
-import { achievement, bestStreak, completeDayCount, currentStreak, doneCount, isComplete, isDone, percent, periodSummary } from '../stats.js';
+import { achievement, bestStreak, currentStreak, doneCount, isComplete, isDone, percent, periodSummary } from '../stats.js';
 import { activeSessionDate, fmtKo, SESSION_EVENT } from '../session.js';
 import { setsOf, volume } from '../setlog.js';
 import { $, esc } from './dom.js';
 import { icon } from './icon.js';
 import { EV, emit } from '../events.js';
-import { bestRunStreak, fmtKm, fmtPace, fmtRunTime, ranOn, runStreak, runSummary, runWeekStreak } from '../run.js';
+import { bestRunStreak, fmtKm, fmtPace, fmtRunTime, ranOn, runStreak, runSummary } from '../run.js';
+import { habitWeekStreak, weekHabit } from '../program.js';
 
 const MAX_PIPS = 6;
 
@@ -25,6 +26,11 @@ const HEAD = '<div class="cal-head"><span></span>' + ['월', '화', '수', '목'
 
 export function mountHistory(root, store) {
   root.innerHTML = `
+    <section class="habit" id="habitBox" aria-labelledby="habitTitle" hidden>
+      <div class="habit-head"><h2 class="sec" id="habitTitle">이번 주 습관</h2><span class="habit-rate" id="habitRate"></span></div>
+      <ol class="habit-week" id="habitWeek"></ol>
+      <div class="bento" id="habitBento"></div>
+    </section>
     <section class="hmain" aria-label="달력과 그날 기록">
       <div class="cal-bar">
         <h2 class="sec" id="calTitle">이번 주</h2>
@@ -49,13 +55,12 @@ export function mountHistory(root, store) {
     <section class="hflat" id="historySummary">
       <h2 class="sec">달성·연속</h2>
       <dl class="totals" id="summary"></dl>
-      <p class="tallytext" id="tallyText"></p>
       <p class="tallytext" id="workText"></p>
     </section>
     <section class="hflat" id="historyRun" hidden>
-      <h2 class="sec">전투 달리기</h2>
-      <dl class="totals" id="runTotals"></dl>
+      <h2 class="sec">달리기</h2>
       <ul class="vol" id="runVol"></ul>
+      <p class="tallytext" id="runStreak"></p>
       <p class="tallytext" id="runMonth"></p>
       <p class="tallytext" id="runAll"></p>
     </section>
@@ -140,7 +145,7 @@ export function mountHistory(root, store) {
           ids.length <= MAX_PIPS
             ? '<span class="pips">' + ids.map((id) => `<i class="${isDone(day, id) ? 'on' : ''}"></i>`).join('') + '</span>'
             : `<span class="frac">${n}/${ids.length}</span>`;
-        h += `<button type="button" class="${cls}" data-date="${d}"${d > today ? ' disabled' : ''}${d === selected ? ' aria-current="date"' : ''} aria-label="${labelMD(d)}, ${n}종목 완료${cls.includes('wkstart') ? `, ${weekIndex(d, config.startDate) + 1}주차 시작` : ''}${cls.includes('rest') ? ', 쉬는 날' : ''}${ran ? ', 전투 달리기' : ''}"><span class="dn">${parse(d).getDate()}</span>${pips}</button>`;
+        h += `<button type="button" class="${cls}" data-date="${d}"${d > today ? ' disabled' : ''}${d === selected ? ' aria-current="date"' : ''} aria-label="${labelMD(d)}, ${n}종목 완료${cls.includes('wkstart') ? `, ${weekIndex(d, config.startDate) + 1}주차 시작` : ''}${cls.includes('rest') ? ', 쉬는 날' : ''}${ran ? ', 달리기' : ''}"><span class="dn">${parse(d).getDate()}</span>${pips}</button>`;
       }
       h += '</div>';
     }
@@ -176,10 +181,6 @@ export function mountHistory(root, store) {
     const period = $('#periodText', root);
     period.hidden = !ps.total && !ps.workSec; // 이번 주 첫날처럼 아직 셀 날이 없으면 숨김
     period.innerHTML = [ps.total ? `${label} <b>${ps.done}</b>/${ps.total}일 모두 마침` : '', ps.workSec ? `${ps.total ? '' : `${label} `}운동시간 <b>${fmtKo(ps.workSec)}</b>` : ''].filter(Boolean).join(' · ');
-
-    /* 모두 마친 날 수 */
-    const complete = completeDayCount(days, exs);
-    $('#tallyText', root).innerHTML = `모두 마친 날 <b>${complete}</b>일`;
 
     /* 운동시간: 오늘과 최근 7일 (스톱워치로 잰 총 운동시간) */
     const secOf = (d) => (days[d] && days[d].workSec) || 0;
@@ -253,19 +254,41 @@ export function mountHistory(root, store) {
       .join('');
   }
 
-  /** 전투 달리기: 이번 주 횟수·연속·누적 시간, 최근 7일 달린 시간 막대, 이번 달·누적 합계. 한 번도 안 달렸으면 숨김 */
+  /** 이번 주 습관: 요일마다 계획(테두리)과 한 것(채움), 계획 달성률, 근력·달리기·연속·누적 타일 */
+  function renderHabit(state, ctx) {
+    const { days, today, config } = state;
+    const h = weekHabit(days, today, config, ctx.exs);
+    const streak = habitWeekStreak(days, today, config, ctx.exs);
+    const total = runSummary(days, '', today);
+    const mark = (kind, planned, done, label) =>
+      planned || done ? `<i class="hm ${kind}${done ? ' on' : ''}${planned ? '' : ' extra'}" aria-hidden="true"></i>` + `<span class="sr">${label} ${done ? '함' : '안 함'}</span>` : '';
+    $('#habitWeek', root).innerHTML = h.days
+      .map((d) => {
+        const empty = !d.plan.strength && !d.plan.runMin && !d.strength && !d.run;
+        return (
+          `<li class="${d.date === today ? 'today' : ''}${d.future ? ' future' : ''}${empty ? ' off' : ''}">` +
+          `<span class="hw-dow">${dowName(d.date)}</span>` +
+          `<span class="hw-marks">${mark('str', d.plan.strength, d.strength, '근력')}${mark('run', d.plan.runMin, d.run, '달리기')}${empty ? '<span class="hw-rest">쉼</span>' : ''}</span></li>`
+        );
+      })
+      .join('');
+    $('#habitRate', root).innerHTML = h.rate === null ? '' : `계획 <b>${h.done}/${h.planned}</b> · ${h.rate}%`;
+    const runPct = h.runPlanMin ? Math.min(100, Math.round((h.runMin / h.runPlanMin) * 100)) : 0;
+    const totalTime = total.sec >= 3600 ? `${Math.floor(total.sec / 3600)}<small>시간</small> ${Math.round((total.sec % 3600) / 60)}<small>분</small>` : `${Math.round(total.sec / 60)}<small>분</small>`;
+    $('#habitBento', root).innerHTML =
+      `<div class="tile wide run"><span class="tl">달리기 · Zone 2</span><span class="tv">${h.runMin}<small>${h.runPlanMin ? ` / ${h.runPlanMin}분` : '분'}</small></span>` +
+      (h.runPlanMin ? `<span class="tbar" role="img" aria-label="이번 주 달리기 계획의 ${runPct}%"><i style="width:${runPct}%"></i></span>` : '') + '</div>' +
+      `<div class="tile str"><span class="tl">근력</span><span class="tv">${h.strengthDone}<small> / ${h.strengthPlanned}회</small></span></div>` +
+      `<div class="tile"><span class="tl">습관 연속</span><span class="tv">${streak}<small>주</small></span></div>` +
+      `<div class="tile wide"><span class="tl">달리기 누적</span><span class="tv">${totalTime}</span><span class="tsub">${total.count}회${total.km ? ` · ${fmtKm(total.km)}` : ''}</span></div>`;
+  }
+
+  /** 달리기: 최근 7일 달린 시간 막대, 연속, 이번 달·누적 합계. 한 번도 안 달렸으면 숨김 */
   function renderRun(days, today) {
     const all = runSummary(days, '', today);
     $('#historyRun', root).hidden = !all.count;
     if (!all.count) return;
-    const week = runSummary(days, mondayOf(today), today);
     const month = runSummary(days, monthOf(today), today);
-    const streak = runStreak(days, today);
-    const weeks = runWeekStreak(days, today);
-    $('#runTotals', root).innerHTML =
-      `<div><dt>이번 주</dt><dd>${week.count}<small>회</small></dd></div>` +
-      `<div><dt>연속</dt><dd>${streak}<small>일</small></dd><dd class="best">${weeks > 1 ? `${weeks}주 연속 달림` : `최고 ${bestRunStreak(days)}일`}</dd></div>` +
-      `<div><dt>누적 시간</dt><dd>${all.sec >= 3600 ? Math.floor(all.sec / 3600) : Math.round(all.sec / 60)}<small>${all.sec >= 3600 ? '시간' : '분'}</small></dd></div>`;
     const from = addDays(today, -6);
     const week7 = Array.from({ length: 7 }, (_, i) => addDays(from, i));
     const per = week7.map((d) => (ranOn(days, d) ? days[d].run.sec || 0 : -1));
@@ -280,11 +303,12 @@ export function mountHistory(root, store) {
       .join('');
     $('#runVol', root).innerHTML =
       `<li><span class="vol-name">최근 7일</span><span class="vol-sum"><b>${n7}</b>회${sum7 ? ` · ${fmtRunTime(sum7)}` : ''}</span>` +
-      `<span class="vol-bars" role="img" aria-label="최근 7일 전투 달리기 ${n7}회">${bars}</span></li>`;
+      `<span class="vol-bars" role="img" aria-label="최근 7일 달리기 ${n7}회">${bars}</span></li>`;
     const line = (label, x) => {
       const pace = fmtPace(x.paceSec, x.paceKm);
       return `${label} <b>${x.count}</b>회` + (x.sec ? ` · ${fmtRunTime(x.sec)}` : '') + (x.km ? ` · ${fmtKm(x.km)}` : '') + (pace ? ` <span class="nowrap">(평균 페이스 ${pace}/km)</span>` : '');
     };
+    $('#runStreak', root).innerHTML = `연속 <b>${runStreak(days, today)}</b>일 · 최고 <b>${bestRunStreak(days)}</b>일`;
     $('#runMonth', root).innerHTML = line(`${parse(today).getMonth() + 1}월`, month);
     $('#runAll', root).innerHTML = line('누적', all);
   }
@@ -337,10 +361,10 @@ export function mountHistory(root, store) {
       `<div class="day-head"><h2 class="sec">${labelMD(date)} <small>(${dowName(date)})${date === state.today ? ' · 오늘' : ''}</small></h2>` +
       `<span class="log-total${total || live ? '' : ' none'}">${timeText}</span></div>` +
       (times ? `<p class="log-time">${times}</p>` : '') +
-      (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? '쉬는 날입니다.' : '기록이 없습니다.'}</p>`) +
+      (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? (day?.run?.done ? '근력은 쉬는 날입니다.' : '쉬는 날입니다.') : '기록이 없습니다.'}</p>`) +
       roundHtml +
       (stretchText ? `<p class="note-line"><b>스트레칭</b> ${stretchText}</p>` : '') +
-      (day?.run?.done ? `<p class="note-line"><b>전투 달리기</b> ${[day.run.sec ? fmtRunTime(day.run.sec) : '완료', day.run.km ? fmtKm(day.run.km) : '', fmtPace(day.run.sec, day.run.km) ? `${fmtPace(day.run.sec, day.run.km)}/km` : ''].filter(Boolean).join(' · ')}</p>` : '') +
+      (day?.run?.done ? `<p class="note-line"><b>달리기</b> ${[day.run.sec ? fmtRunTime(day.run.sec) : '완료', day.run.km ? fmtKm(day.run.km) : '', fmtPace(day.run.sec, day.run.km) ? `${fmtPace(day.run.sec, day.run.km)}/km` : ''].filter(Boolean).join(' · ')}</p>` : '') +
       (note.feel ? `<p class="note-line"><b>소감</b> ${esc(note.feel)}</p>` : '') +
       (note.thanks ? `<p class="note-line"><b>감사</b> ${esc(note.thanks)}</p>` : '') +
       `<button type="button" class="btn ghost sm" data-edit="${date}">${date === state.today ? '오늘 탭에서 체크하기' : '이 날 기록 고치기'}</button>`
@@ -394,6 +418,8 @@ export function mountHistory(root, store) {
     renderCal(state, ctx);
     $('#dayCard', root).innerHTML = dayCardHtml(state, ctx, picked || state.today);
     renderStats(state, ctx);
+    $('#habitBox', root).hidden = !hasRecord && !state.config.program;
+    renderHabit(state, ctx);
   }
   return render;
 }

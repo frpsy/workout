@@ -1,9 +1,12 @@
-// 전투 달리기: 그날 달렸는지(day.run.done)와 달린 시간(sec)·거리(km) 기록, 누적·연속 통계 (순수 함수)
+// 달리기: 그날 달렸는지(day.run.done)와 달린 시간(sec)·거리(km) 기록, 누적·연속 통계 (순수 함수)
 
 import { addDays, mondayOf } from './dates.js';
 
 export const RUN_MAX_SEC = 86400; // 하루 달린 시간 상한(24시간)
 export const RUN_MAX_KM = 500;
+/** 오늘 화면의 빠른 입력: Zone 2 달리기에 흔한 시간·거리 */
+export const RUN_MIN_PRESETS = [20, 30, 45, 60];
+export const RUN_KM_PRESETS = [3, 5, 7, 10];
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const inRange = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
