@@ -95,6 +95,10 @@ export function mountSettings(root, store, theme = null) {
           <span>시작일</span>
           <input id="startDate" type="date">
         </label>
+        <label class="srow">
+          <span>나이<small class="shint"> · 달리기 심박 안내용</small></span>
+          <input id="age" type="number" inputmode="numeric" min="10" max="100" placeholder="선택">
+        </label>
         <div class="srow col" role="group" aria-labelledby="lbMode">
           <span id="lbMode">늘리는 방식</span>
           <div class="modes">
@@ -219,6 +223,7 @@ export function mountSettings(root, store, theme = null) {
 
   function renderDraft() {
     el('startDate').value = draft.startDate;
+    el('age').value = draft.age ?? '';
     el('modeLinear').checked = draft.plan.mode === 'linear';
     el('modeAdaptive').checked = draft.plan.mode === 'adaptive';
     el('passDays').value = String(draft.plan.passDays);
@@ -373,6 +378,12 @@ export function mountSettings(root, store, theme = null) {
     renderList();
   });
 
+  el('age').addEventListener('input', (e) => {
+    const v = parseInt(e.target.value, 10);
+    if (v >= 10 && v <= 100) draft.age = v;
+    else delete draft.age; // 비우거나 범위 밖이면 심박 안내 없음
+    markDirty();
+  });
   el('startDate').addEventListener('input', (e) => {
     draft.startDate = e.target.value;
     markDirty();

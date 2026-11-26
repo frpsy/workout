@@ -60,3 +60,16 @@ test('연속 달린 날·최고 연속·연속 주', () => {
   assert.equal(runWeekStreak({ '2026-11-17': ran() }, '2026-11-26'), 1, '이번 주 아직이면 지난주까지');
   assert.equal(runWeekStreak({ '2026-11-10': ran() }, '2026-11-26'), 0);
 });
+
+test('러닝머신: 속도·경사 정규화, 속도 × 시간 = 거리, 한 줄 요약, Zone 2 심박', async () => {
+  const { normalizeRun, kmFrom, runLine, zone2 } = await import('../js/run.js');
+  assert.deepEqual(normalizeRun({ done: true, sec: 1800, speed: 7.04, incline: 1.3 }), { done: true, sec: 1800, speed: 7, incline: 1.5 });
+  assert.deepEqual(normalizeRun({ done: true, speed: 0, incline: 0 }), { done: true });
+  assert.equal(kmFrom(7, 1800), 3.5);
+  assert.equal(kmFrom(6.5, 2700), 4.88);
+  assert.equal(kmFrom(0, 1800), 0);
+  assert.equal(runLine({ done: true, sec: 1530, km: 3.2 }), `25분 30초 · 3.2km · 7'58"/km`);
+  assert.equal(runLine({ done: true, sec: 1800, km: 3.5, speed: 7, incline: 1 }), '30분 · 3.5km · 7km/h · 경사\u00a01%');
+  assert.deepEqual(zone2(40), { lo: 108, hi: 126 });
+  assert.equal(zone2(undefined), null);
+});

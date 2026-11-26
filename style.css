@@ -679,9 +679,9 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .runbox.collapsed { padding: 0; border: 0; background: transparent; }
 .run-body[hidden] { display: none; }
 .run-head { display: flex; align-items: center; gap: var(--gap-sm); min-height: 32px; padding: 0 var(--gap-xs); }
-.run-title { display: inline-flex; align-items: baseline; gap: var(--gap-sm); font-size: var(--fs-lg); font-weight: 700; }
+.run-title { display: inline-flex; flex: none; align-items: baseline; gap: var(--gap-sm); font-size: var(--fs-lg); font-weight: 700; white-space: nowrap; }
 .run-title small { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.02em; color: var(--run); }
-.run-sum { margin-left: auto; font-family: var(--font-num); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; color: var(--run); }
+.run-sum { flex: 1 1 auto; min-width: 0; margin-left: auto; text-align: right; font-family: var(--font-num); font-size: var(--fs-sm); font-weight: 600; color: var(--run); } /* 러닝머신 기록처럼 길면 두 줄로 */
 .run-head .undo { flex: none; }
 .run-head .undo[hidden] { display: none; }
 .run-done {
@@ -705,10 +705,13 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .chip:disabled { opacity: 0.5; }
 .chip:focus-visible { outline: 2px solid var(--run); outline-offset: 2px; }
 .run-detail { display: flex; flex-wrap: wrap; gap: var(--gap) var(--gap-lg); padding: var(--gap-md) var(--gap-xs) 0; font-size: var(--fs-md); color: var(--muted); }
-.run-detail[hidden], .run-hint[hidden] { display: none; }
-.run-field { display: inline-flex; align-items: center; gap: var(--gap-xs); }
-.run-field > span { margin-right: var(--gap-xs); font-weight: 600; }
+.run-detail[hidden], .run-hint[hidden], .run-field[hidden] { display: none; }
+.run-field > .gap { margin-left: var(--gap-md); } /* 러닝머신: 속도와 경사 사이 */
+.run-field { display: inline-flex; align-items: center; gap: var(--gap-xs); white-space: nowrap; }
+.run-field > span { margin-right: var(--gap-xs); font-weight: 600; white-space: nowrap; }
 .run-field input[type="number"] { width: 60px; text-align: right; }
+.run-field #runKm, .run-field #runSpeed { width: 72px; }
+#runSpeedChips .chip { white-space: nowrap; padding-left: 4px; padding-right: 4px; }
 .run-hint { margin: 0; padding: var(--gap-sm) var(--gap-xs) 0; font-size: var(--fs-xs); color: var(--muted); }
 /* 그날 하지 않는 운동은 한 줄로 접음(근력 쉬는 날의 근력, 계획 없는 날의 달리기). 누르면 펼침 */
 .day-open {

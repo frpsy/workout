@@ -13,7 +13,7 @@ import { createRow, paintRow } from './exercise-row.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 import { readJson, writeJson } from '../local-store.js';
-import { fmtKm, fmtPace, fmtRunTime, RUN_KM_PRESETS, RUN_MIN_PRESETS } from '../run.js';
+import { fmtRunTime, kmFrom, RUN_KM_PRESETS, RUN_MIN_PRESETS, RUN_SPEED_PRESETS, runLine, zone2 } from '../run.js';
 import { planOn } from '../program.js';
 
 
@@ -101,9 +101,11 @@ export function mountToday(root, store) {
         <button type="button" class="run-done" id="runBtn" aria-pressed="false"></button>
         <div class="chips" id="runMinChips" role="group" aria-label="달린 시간 고르기">${RUN_MIN_PRESETS.map((m) => `<button type="button" class="chip" data-min="${m}" aria-pressed="false">${m}분</button>`).join('')}</div>
         <div class="chips" id="runKmChips" role="group" aria-label="달린 거리 고르기" hidden>${RUN_KM_PRESETS.map((k) => `<button type="button" class="chip" data-km="${k}" aria-pressed="false">${k}km</button>`).join('')}</div>
+        <div class="chips" id="runSpeedChips" role="group" aria-label="러닝머신 속도 고르기" hidden>${RUN_SPEED_PRESETS.map((v) => `<button type="button" class="chip" data-speed="${v}" aria-pressed="false">${v}km/h</button>`).join('')}</div>
         <div class="run-detail" id="runDetail" hidden>
           <span class="run-field"><span>시간</span><input id="runMin" type="number" inputmode="numeric" min="0" max="1439" placeholder="0" aria-label="달린 시간(분)">분<input id="runSec" type="number" inputmode="numeric" min="0" max="59" placeholder="0" aria-label="달린 시간(초)">초</span>
           <span class="run-field"><span>거리</span><input id="runKm" type="number" inputmode="decimal" min="0" max="500" step="0.01" placeholder="0" aria-label="달린 거리(km)">km</span>
+          <span class="run-field" id="runTread"><span>속도</span><input id="runSpeed" type="number" inputmode="decimal" min="0" max="25" step="0.1" placeholder="0" aria-label="러닝머신 속도(km/h)">km/h<span class="gap">경사</span><input id="runIncline" type="number" inputmode="decimal" min="0" max="15" step="0.5" placeholder="0" aria-label="러닝머신 경사(%)">%</span>
         </div>
         <p class="run-hint" id="runHint">숨이 조금 차도 대화할 수 있는 편한 속도로 달려요.</p>
       </div>
@@ -158,7 +160,15 @@ export function mountToday(root, store) {
     const v = parseFloat(el.value);
     return Number.isFinite(v) && v > 0 ? v : 0;
   };
-  const saveRunTime = () => actions.setRun(store.state.selected, { sec: Math.round(num($('#runMin', root)) * 60 + Math.min(59, num($('#runSec', root)))) });
+  // 러닝머신 속도를 넣은 날은 시간을 바꾸면 거리도 속도 × 시간으로 다시 채움
+  const curRun = () => store.state.days[store.state.selected]?.run || {};
+  const withKm = (patch) => {
+    const run = { ...curRun(), ...patch };
+    return run.speed && ('speed' in patch || 'sec' in patch) ? { ...patch, km: kmFrom(run.speed, run.sec) || run.km || 0 } : patch;
+  };
+  const saveRunTime = () => actions.setRun(store.state.selected, withKm({ sec: Math.round(num($('#runMin', root)) * 60 + Math.min(59, num($('#runSec', root)))) }));
+  $('#runSpeed', root).addEventListener('input', (ev) => actions.setRun(store.state.selected, withKm({ speed: num(ev.target) })));
+  $('#runIncline', root).addEventListener('input', (ev) => actions.setRun(store.state.selected, { incline: num(ev.target) }));
   $('#runMin', root).addEventListener('input', saveRunTime);
   $('#runSec', root).addEventListener('input', saveRunTime);
   $('#runKm', root).addEventListener('input', (ev) => actions.setRun(store.state.selected, { km: num(ev.target) }));
@@ -170,8 +180,10 @@ export function mountToday(root, store) {
     const run = store.state.days[selected]?.run || {};
     const first = !run.done;
     const patch = chip.dataset.min
-      ? { sec: run.sec === chip.dataset.min * 60 ? 0 : chip.dataset.min * 60 }
-      : { km: run.km === Number(chip.dataset.km) ? 0 : Number(chip.dataset.km) };
+      ? withKm({ sec: run.sec === chip.dataset.min * 60 ? 0 : chip.dataset.min * 60 })
+      : chip.dataset.speed
+        ? withKm({ speed: run.speed === Number(chip.dataset.speed) ? 0 : Number(chip.dataset.speed) })
+        : { km: run.km === Number(chip.dataset.km) ? 0 : Number(chip.dataset.km) };
     if (actions.setRun(selected, patch) && first) haptic();
   });
 
@@ -437,14 +449,19 @@ export function mountToday(root, store) {
     btn.disabled = !state.ready;
     btn.innerHTML = run ? `${icon('check', 20)}<span>달리기 완료</span>` : `<span>${plan.runMin ? `${plan.runMin}분 ` : ''}달리기 완료</span>`;
     $('#runUndo', root).hidden = !run;
-    $('#runSum', root).textContent = run
-      ? [run.sec ? fmtRunTime(run.sec) : '', run.km ? fmtKm(run.km) : '', fmtPace(run.sec, run.km) ? `${fmtPace(run.sec, run.km)}/km` : ''].filter(Boolean).join(' · ')
-      : plan.runMin ? `목표 ${plan.runMin}분` : '';
-    $('#runKmChips', root).hidden = !run;
+    $('#runSum', root).textContent = run ? runLine(run) : plan.runMin ? `목표 ${plan.runMin}분` : '';
+    // 러닝머신이 있으면 거리 대신 속도 프리셋(거리는 속도 × 시간으로 채움)과 속도·경사 칸
+    const tread = !config.equipment || config.equipment.includes('tread');
+    $('#runKmChips', root).hidden = !run || tread;
+    $('#runSpeedChips', root).hidden = !run || !tread;
+    $('#runTread', root).hidden = !tread;
     $('#runDetail', root).hidden = !run;
     $('#runHint', root).hidden = !!run;
+    const hr = zone2(config.age);
+    $('#runHint', root).textContent = `${hr ? `심박 ${hr.lo}~${hr.hi}회/분 · ` : ''}숨이 조금 차도 대화할 수 있는 편한 속도로 달려요.`;
     for (const c of root.querySelectorAll('#runBox .chip')) {
-      c.setAttribute('aria-pressed', String(!!run && (c.dataset.min ? run.sec === c.dataset.min * 60 : run.km === Number(c.dataset.km))));
+      const on = c.dataset.min ? run?.sec === c.dataset.min * 60 : c.dataset.speed ? run?.speed === Number(c.dataset.speed) : run?.km === Number(c.dataset.km);
+      c.setAttribute('aria-pressed', String(!!run && on));
       c.disabled = !state.ready;
     }
     // 달리기만 하는 날은 달리기를 맨 위로(오늘 할 일이 먼저 보이게)
@@ -459,6 +476,8 @@ export function mountToday(root, store) {
     fill('#runMin', run?.sec ? Math.floor(run.sec / 60) : 0);
     fill('#runSec', run?.sec ? run.sec % 60 : 0);
     fill('#runKm', run?.km || 0);
+    fill('#runSpeed', run?.speed || 0);
+    fill('#runIncline', run?.incline || 0);
     renderTodo(state, plan, run, done, rows.size);
 
     const segs = $('#segs', root);
