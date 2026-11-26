@@ -6,6 +6,7 @@ import { isDateStr } from './dates.js';
 import { MAX_LOG } from './setlog.js';
 import { normalizeRun } from './run.js';
 import { normalizeRunPlan, programById } from './program.js';
+import { libById, normalizeEquipment } from './library.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
 const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'stretch', 'rounds', 'activeEntries', 'sessionClosed', 'log', 'run']);
@@ -41,6 +42,8 @@ export function normalizeExercise(raw) {
     active: raw.active !== false,
     // 추가한 날. 이전 날짜의 연속 기록 계산에서 이 운동을 빼기 위한 값 (없으면 처음부터 있던 운동)
     ...(isDateStr(raw.since) ? { since: raw.since } : {}),
+    // 운동 도감의 동작 id(자세 요령·쉬운/어려운 동작 안내용). 직접 만든 운동은 없음
+    ...(typeof raw.lib === 'string' && libById(raw.lib) ? { lib: raw.lib } : {}),
   };
 }
 
@@ -90,10 +93,15 @@ export function normalizeConfig(raw, fallbackStart) {
   };
 }
 
-/** 운동 프로그램 id와 요일별 달리기 계획(분). 없으면 필드도 두지 않음 */
+/** 운동 프로그램 id, 요일별 달리기 계획(분), 내 기구. 없으면 필드도 두지 않음 */
 function programFields(raw) {
   const runPlan = normalizeRunPlan(raw.runPlan);
-  return { ...(programById(raw.program) ? { program: raw.program } : {}), ...(Object.keys(runPlan).length ? { runPlan } : {}) };
+  const equipment = normalizeEquipment(raw.equipment);
+  return {
+    ...(programById(raw.program) ? { program: raw.program } : {}),
+    ...(Object.keys(runPlan).length ? { runPlan } : {}),
+    ...(equipment ? { equipment } : {}),
+  };
 }
 
 /** 운동 소감(feel)·감사한 일(thanks). 둘 다 비면 null */

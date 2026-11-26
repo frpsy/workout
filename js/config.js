@@ -46,14 +46,7 @@ export const DEFAULT_PLAN = {
   passDays: 5,
 };
 
-/** 설정 화면의 빠른 추가 버튼 */
-export const PRESETS = [
-  { name: '플랭크', unit: 'sec', base: 30, step: 5 },
-  { name: '런지', unit: 'reps', base: 20, step: 2 },
-  { name: '딥스', unit: 'reps', base: 5, step: 1 },
-  { name: '덤벨', unit: 'reps', base: 10, step: 1 },
-  { name: '버피', unit: 'reps', base: 10, step: 1 },
-];
+// 설정 화면의 빠른 추가 목록은 운동 도감(js/library.js)에 있습니다.
 
 export const LIMITS = {
   maxExercises: 12,

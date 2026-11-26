@@ -10,7 +10,7 @@ test('추천 운동을 연속 추가해도 표시한 운동과 실제 추가한 
   const store = createStore(ad);
   const root = document.getElementById('settings');
   store.subscribe(mountSettings(root, store));
-  for (const name of ['플랭크', '런지', '딥스', '덤벨', '버피']) {
+  for (const name of ['플랭크', '리버스 런지', '아령 로우', '데드버그', '매달리기']) {
     const button = [...root.querySelectorAll('#presets button')].find((b) => b.textContent === '+ ' + name);
     assert.ok(button);
     button.click();
@@ -27,7 +27,7 @@ test('설정: 추천 운동을 추가하고 쉬는 요일을 골라 저장', asy
   const root = document.getElementById('settings');
   store.subscribe(mountSettings(root, store));
 
-  root.querySelector('#presets button[data-preset="0"]').click();
+  root.querySelector('#presets button[data-preset="plank"]').click();
   const sun = root.querySelector('#restDays input[value="0"]');
   sun.checked = true;
   sun.dispatchEvent(new Event('change', { bubbles: true }));
@@ -39,6 +39,8 @@ test('설정: 추천 운동을 추가하고 쉬는 요일을 골라 저장', asy
   assert.equal(cfg.exercises[3].name, '플랭크');
   assert.equal(cfg.exercises[3].since, todayStr());
   assert.equal(cfg.exercises[3].sets, 3);
+  assert.equal(cfg.exercises[3].lib, 'plank');
+  assert.equal(cfg.exercises[3].unit, 'sec');
   assert.deepEqual(cfg.restDays, [0]);
   assert.equal(root.querySelectorAll('#restDays label.daychip').length, 7, '요일 7칸');
   assert.equal(root.querySelector('#bakBox, #copyBak, #saveBak, #readBak, #bakFile'), null, '파일·복사 백업 화면은 없음');
@@ -51,7 +53,7 @@ test('설정: 이름을 비운 채 저장하면 오류 문구를 보이고 저�
   const root = document.getElementById('settings');
   store.subscribe(mountSettings(root, store));
 
-  root.querySelector('#presets button[data-preset="new"]').click();
+  root.querySelector('#addCustom').click();
   root.querySelector('#saveCfg').click();
   await tick();
   assert.equal(root.querySelector('#setErr').hidden, false);
@@ -308,4 +310,23 @@ test('설정: 운동 프로그램을 누르면 바로 저장되고, 다시 누�
   balance.click(); await tick();
   assert.equal('program' in ad.saved.config.at(-1), false);
   assert.equal(balance.getAttribute('aria-checked'), 'false');
+});
+
+test('설정: 내 기구에서 아령을 빼면 아령 동작이 추가 목록에서 사라지고, 기구가 저장됨', async () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  assert.ok(root.querySelector('#presets [data-preset="goblet-squat"]'), '기구를 고른 적 없으면 모두 보임');
+  assert.equal(root.querySelector('#presets [data-preset="pushup"]'), null, '이미 있는 동작(기본 푸시업)은 빠짐');
+  const db = root.querySelector('#equip input[value="db"]');
+  db.checked = false;
+  db.dispatchEvent(new Event('change', { bubbles: true }));
+  assert.equal(root.querySelector('#presets [data-preset="goblet-squat"]'), null);
+  assert.ok(root.querySelector('#presets [data-preset="dead-hang"]'), '철봉 동작은 남음');
+  assert.ok(root.querySelector('#presets [data-preset="glute-bridge"]'), '맨몸 동작은 늘 보임');
+  root.querySelector('#saveCfg').click();
+  await tick();
+  assert.deepEqual(ad.saved.config.at(-1).equipment, ['bar', 'tread']);
 });

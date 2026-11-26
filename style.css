@@ -1786,3 +1786,20 @@ tr.cur td { background: var(--accent-soft); }
   .splash.leaving .splash-brand { animation: none; }
   .splash-track i, .splash-load { transition: none; }
 }
+
+/* 운동 도감: 지금 할 종목 아래 자세 요령 한 줄(접힌 줄에서는 숨김) */
+.cue { margin: 2px 0 0; font-size: var(--fs-sm); line-height: 1.45; color: var(--muted); }
+.cue .alt { color: var(--accent); white-space: nowrap; }
+.row:not(.current) .cue { display: none; }
+/* 설정: 움직임 묶음별 추가 목록 */
+.libgroups { display: grid; gap: var(--gap); margin-top: var(--gap); }
+.libgroup { display: grid; gap: var(--gap-xs); }
+.libh { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
+.libgroups .presets { margin: 0; }
+.equiprow { margin-top: var(--gap); padding: 0; }
+.restdays.equip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.libbox { margin-top: var(--gap); }
+.libbox summary { color: var(--accent); }
+.libbox summary::after { content: '⌄'; margin-left: var(--gap-xs); font-size: var(--fs-lg); }
+.libbox[open] summary::after { transform: rotate(180deg); }
+.libbox + .presets { margin-top: var(--gap); }

@@ -1,6 +1,7 @@
 // 운동·목표 설정과 계정(로그인)
 
-import { DEFAULT_SETS, LIMITS, PRESETS, UNITS } from '../config.js';
+import { DEFAULT_SETS, LIMITS, UNITS } from '../config.js';
+import { EQUIPMENT, libById, libraryGroups } from '../library.js';
 import { DOW, dowName, labelMD, todayStr } from '../dates.js';
 import { fmtKo } from '../session.js';
 import { newExerciseId, validateConfig } from '../model.js';
@@ -130,7 +131,18 @@ export function mountSettings(root, store, theme = null) {
       <h2 class="sgh">운동</h2>
       <p class="sub">목표 = 세트당 개수 × 세트 수 · 매주 +0.5는 2주마다 1개</p>
       <div id="exList" class="exlist"></div>
-      <div class="presets" id="presets"></div>
+      <div class="srow col equiprow" role="group" aria-labelledby="lbEquip">
+        <span id="lbEquip">내 기구</span>
+        <div class="restdays equip" id="equip">
+          ${EQUIPMENT.map((q) => `<label class="daychip"><input type="checkbox" value="${q.id}"><span>${q.name}</span></label>`).join('')}
+        </div>
+        <span class="shint">맨몸 동작은 늘 보이고, 고른 기구로 할 수 있는 동작이 아래에 더해집니다</span>
+      </div>
+      <details class="libbox" id="libBox">
+        <summary>운동 도감에서 추가</summary>
+        <div class="libgroups" id="presets"></div>
+      </details>
+      <div class="presets"><button type="button" class="chip" id="addCustom" data-preset="new">+ 직접 추가</button></div>
       <p class="errors" id="setErr" role="alert" hidden></p>
     </section>
 
@@ -213,6 +225,7 @@ export function mountSettings(root, store, theme = null) {
     el('recRatio').value = String(draft.plan.recoveryRatio);
     el('recRatio').disabled = draft.plan.recoveryEvery === 0;
     for (const box of root.querySelectorAll('#restDays input')) box.checked = (draft.restDays || []).includes(+box.value);
+    for (const box of root.querySelectorAll('#equip input')) box.checked = !draft.equipment || draft.equipment.includes(box.value);
     for (const b of root.querySelectorAll('.program')) b.setAttribute('aria-checked', String(b.dataset.program === draft.program));
     renderList();
   }
@@ -260,12 +273,16 @@ export function mountSettings(root, store, theme = null) {
       f('active').checked = !!e.active;
     }
 
-    const ids = new Set(draft.exercises.map((e) => e.name));
+    // 운동 도감: 움직임 묶음별로 내 기구로 할 수 있고 아직 없는 동작만
     const full = draft.exercises.length >= LIMITS.maxExercises;
+    const dis = full ? ' disabled' : '';
     el('presets').innerHTML =
-      PRESETS.map((p, i) => ({ ...p, index: i })).filter((p) => !ids.has(p.name))
-        .map((p) => `<button type="button" class="chip" data-preset="${p.index}"${full ? ' disabled' : ''}>+ ${esc(p.name)}</button>`)
-        .join('') + `<button type="button" class="chip" data-preset="new"${full ? ' disabled' : ''}>+ 직접 추가</button>`;
+      libraryGroups(draft.equipment, draft.exercises)
+        .map((g) => `<div class="libgroup"><span class="libh">${esc(g.name)}</span><div class="presets">${g.items
+          .map((x) => `<button type="button" class="chip" data-preset="${x.id}"${dis}>+ ${esc(x.name)}</button>`)
+          .join('')}</div></div>`)
+        .join('');
+    el('addCustom').disabled = full;
   }
 
   // 입력 → 초안 반영 (다시 그리지 않아 포커스 유지)
@@ -323,16 +340,29 @@ export function mountSettings(root, store, theme = null) {
     }
   });
 
-  el('presets').addEventListener('click', (ev) => {
+  const addPreset = (ev) => {
     const b = ev.target.closest('button[data-preset]');
     if (!b) return;
-    const p = b.dataset.preset === 'new' ? { name: '', unit: 'reps', base: 10, step: 1, sets: DEFAULT_SETS } : PRESETS[+b.dataset.preset];
+    const p = b.dataset.preset === 'new' ? { name: '', unit: 'reps', base: 10, step: 1 } : libById(b.dataset.preset);
+    if (!p) return;
     const id = newExerciseId(new Set(draft.exercises.map((e) => e.id)));
-    draft.exercises.push({ id, name: p.name, unit: p.unit, base: p.base, step: p.step, sets: p.sets || DEFAULT_SETS, active: true, since: todayStr() });
+    draft.exercises.push({
+      id, name: p.name, unit: p.unit, base: p.base, step: p.step, ...(p.max ? { max: p.max } : {}),
+      sets: DEFAULT_SETS, active: true, since: todayStr(), ...(p.id ? { lib: p.id } : {}),
+    });
     markDirty();
     renderList();
     const input = el('exList').querySelector(`[data-id="${id}"] .exname`);
     if (input && !p.name) input.focus();
+  };
+  el('presets').addEventListener('click', addPreset);
+  el('addCustom').addEventListener('click', addPreset);
+
+  // 내 기구: 바꾸면 아래 동작 목록이 바로 바뀜(저장해야 남음)
+  el('equip').addEventListener('change', () => {
+    draft.equipment = [...root.querySelectorAll('#equip input:checked')].map((b) => b.value);
+    markDirty();
+    renderList();
   });
 
   el('startDate').addEventListener('input', (e) => {
