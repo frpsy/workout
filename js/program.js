@@ -80,6 +80,8 @@ export function weekHabit(days, today, config, exs, { wholeWeek = false } = {}) 
   let planned = 0;
   let done = 0;
   let runSec = 0;
+  let runSecSoFar = 0; // 오늘까지(지난주 같은 때와 견주기용)
+  let strengthSoFar = 0;
   let strengthDone = 0;
   let strengthPlanned = 0;
   for (let i = 0; i < 7; i++) {
@@ -88,6 +90,8 @@ export function weekHabit(days, today, config, exs, { wholeWeek = false } = {}) 
     const s = isComplete(days[date], exs, date);
     const r = ranOn(days, date);
     if (r) runSec += days[date].run.sec || 0;
+    if (r && date <= today) runSecSoFar += days[date].run.sec || 0;
+    if (s && date <= today) strengthSoFar++;
     if (plan.strength) strengthPlanned++;
     if (s && plan.strength) strengthDone++;
     if (date <= today) {
@@ -106,6 +110,8 @@ export function weekHabit(days, today, config, exs, { wholeWeek = false } = {}) 
     strengthDone,
     strengthPlanned,
     runMin: Math.round(runSec / 60),
+    runMinSoFar: Math.round(runSecSoFar / 60),
+    strengthSoFar,
     runPlanMin: weeklyRunMin(config.runPlan),
   };
 }
@@ -119,4 +125,11 @@ export function habitWeekStreak(days, today, config, exs) {
     n++;
   }
   return n;
+}
+
+/** 지난주 같은 요일까지와 견준 차이(Strava 주간 스냅샷처럼): { runMin, strength } */
+export function vsLastWeek(days, today, config, exs) {
+  const now = weekHabit(days, today, config, exs);
+  const before = weekHabit(days, addDays(today, -7), config, exs);
+  return { runMin: now.runMinSoFar - before.runMinSoFar, strength: now.strengthSoFar - before.strengthSoFar, beforeRunMin: before.runMinSoFar, beforeStrength: before.strengthSoFar };
 }

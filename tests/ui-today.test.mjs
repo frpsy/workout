@@ -558,7 +558,9 @@ test('오늘: 운동 전·후 스트레칭 버튼은 눌러 켜고 다시 눌러
   const post = root.querySelector('#stretchPost');
   const rows = root.querySelector('#rows');
   assert.equal(pre.nextElementSibling, rows, '운동 목록 위');
-  assert.equal(rows.nextElementSibling, post, '운동 목록 아래');
+  assert.equal(rows.nextElementSibling.id, 'strOpen', '근력 쉬는 날 펼치기 버튼(평소 숨김)');
+  assert.equal(rows.nextElementSibling.hidden, true);
+  assert.equal(rows.nextElementSibling.nextElementSibling, post, '운동 목록 아래');
   assert.equal(pre.getAttribute('aria-pressed'), 'false');
   pre.click();
   assert.equal(pre.getAttribute('aria-pressed'), 'true');
@@ -575,17 +577,24 @@ test('오늘: 운동 전·후 스트레칭 버튼은 눌러 켜고 다시 눌러
   store.actions.flushAll();
 });
 
-test('오늘: 달리기를 눌러 표시하면 시간·거리 칸이 열리고, 적는 대로 그날 기록에 남으며 진행률에는 영향 없음', () => {
+test('오늘: 계획 없는 날 달리기는 한 줄로 접혀 있고, 펼쳐 ‘달리기 완료’를 누르면 시간·거리 칸이 열리며 ↶로만 지움', () => {
   const { store, root } = setup(today);
+  const box = root.querySelector('#runBox');
   const btn = root.querySelector('#runBtn');
-  const detail = root.querySelector('#runDetail');
   assert.equal(root.querySelector('#stretchPost').nextElementSibling.id, 'runBox', '운동 후 스트레칭 아래');
-  assert.equal(btn.getAttribute('aria-pressed'), 'false');
-  assert.equal(detail.hidden, true);
+  assert.equal(box.classList.contains('collapsed'), true, '계획 없는 날은 접힘');
+  assert.equal(root.querySelector('#runBody').hidden, true);
+  root.querySelector('#runOpen').click();
+  assert.equal(root.querySelector('#runBody').hidden, false);
+  assert.equal(btn.textContent, '달리기 완료');
+  assert.equal(root.querySelector('#runDetail').hidden, true);
   btn.click();
-  assert.equal(btn.getAttribute('aria-pressed'), 'true');
-  assert.equal(detail.hidden, false);
   assert.deepEqual(store.state.days[store.state.today].run, { done: true });
+  assert.equal(btn.getAttribute('aria-pressed'), 'true');
+  assert.equal(root.querySelector('#runDetail').hidden, false);
+  assert.equal(root.querySelector('#runKmChips').hidden, false, '완료 뒤에 거리 프리셋');
+  btn.click();
+  assert.equal(store.state.days[store.state.today].run.done, true, '완료 버튼을 다시 눌러도 지워지지 않음');
   const type = (sel, v) => {
     const el = root.querySelector(sel);
     el.value = v;
@@ -595,13 +604,13 @@ test('오늘: 달리기를 눌러 표시하면 시간·거리 칸이 열리고, 
   type('#runSec', '30');
   type('#runKm', '3.2');
   assert.deepEqual(store.state.days[store.state.today].run, { done: true, sec: 1530, km: 3.2 });
-  assert.equal(root.querySelector('#runSum').textContent, '25분 30초 · 3.2km');
+  assert.equal(root.querySelector('#runSum').textContent, `25분 30초 · 3.2km · 7'58"/km`);
   assert.equal(root.querySelector('#progText').textContent, '0/3 종목', '진행률에 안 셈');
   type('#runKm', '');
   assert.deepEqual(store.state.days[store.state.today].run, { done: true, sec: 1530 }, '칸을 비우면 그 값만 지움');
-  btn.click();
-  assert.equal('run' in store.state.days[store.state.today], false, '다시 누르면 취소');
-  assert.equal(detail.hidden, true);
+  root.querySelector('#runUndo').click();
+  assert.equal('run' in store.state.days[store.state.today], false, '↶로 지움');
+  assert.equal(box.classList.contains('collapsed'), false, '이날 직접 연 카드는 계속 펼침');
   store.actions.flushAll();
 });
 
@@ -618,10 +627,11 @@ test('오늘: 달리기만 하는 날은 ‘오늘 할 일’에 달리기가 �
   assert.deepEqual(store.state.days[todayStr()].run, { done: true, sec: 2400 }, '한 번 누르면 계획한 40분으로 기록');
   assert.match(plan.textContent, /오늘 할 일 끝/);
   assert.equal(plan.classList.contains('all'), true);
-  root.querySelector('#runBtn').click();
+  root.querySelector('#runUndo').click();
   assert.equal('run' in store.state.days[todayStr()], false);
+  assert.equal(root.querySelector('#runBtn').textContent, '40분 달리기 완료');
   root.querySelector('#runBtn').click();
-  assert.deepEqual(store.state.days[todayStr()].run, { done: true, sec: 2400 }, '체크 줄도 계획한 시간으로 채움');
+  assert.deepEqual(store.state.days[todayStr()].run, { done: true, sec: 2400 }, '완료 버튼도 계획한 시간으로 채움');
   root.querySelector('#runMinChips [data-min="45"]').click();
   assert.deepEqual(store.state.days[todayStr()].run, { done: true, sec: 2700 }, '프리셋으로 바로 고침');
   store.actions.flushAll();
@@ -641,5 +651,34 @@ test('오늘: 어제 계획을 모두 놓쳤으면 ‘두 번 연속 쉬지 않�
 test('오늘: 프로그램이 없으면 ‘오늘 할 일’은 숨김', () => {
   const { store, root } = setup(today);
   assert.equal(root.querySelector('#todayPlan').hidden, true);
+  store.actions.flushAll();
+});
+
+test('오늘: 프로그램의 근력 쉬는 날은 근력·스트레칭·진행 줄을 접고 휴식 타이머도 숨기며, ‘그래도 하기’로 펼침', () => {
+  const dow = new Date(`${todayStr()}T12:00:00`).getDay();
+  const { store, root } = setup(today, { config: { startDate: addDays(todayStr(), -3), restDays: [dow], program: 'balance', runPlan: { [dow]: 30 } } });
+  const page = document.createElement('div');
+  page.className = 'page';
+  root.parentNode.insertBefore(page, root);
+  page.appendChild(root);
+  store.actions.select(todayStr());
+  for (const id of ['#rows', '#stretchPre', '#stretchPost']) assert.equal(root.querySelector(id).hidden, true, id);
+  assert.equal(root.querySelector('.prog').hidden, true);
+  assert.equal(page.classList.contains('str-off'), true);
+  const open = root.querySelector('#strOpen');
+  assert.equal(open.hidden, false);
+  open.click();
+  assert.equal(root.querySelector('#rows').hidden, false);
+  assert.equal(page.classList.contains('str-off'), false);
+  store.actions.flushAll();
+});
+
+test('오늘: 근력만 하는 날은 달리기를 한 줄로 접어 두되, 달린 날은 펼쳐 보여 줌', () => {
+  const { store, root } = setup(today, { config: { startDate: addDays(todayStr(), -3), restDays: [], program: 'balance', runPlan: {} } });
+  assert.equal(root.querySelector('#rows').hidden, false);
+  assert.equal(root.querySelector('#runBox').classList.contains('collapsed'), true);
+  store.actions.setRun(todayStr(), { done: true, sec: 600 });
+  assert.equal(root.querySelector('#runBox').classList.contains('collapsed'), false);
+  assert.equal(root.querySelector('#runSum').textContent, '10분');
   store.actions.flushAll();
 });

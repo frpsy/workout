@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyProgram, habitWeekStreak, normalizeRunPlan, planOn, PROGRAMS, weekHabit, weeklyRunMin } from '../js/program.js';
+import { applyProgram, habitWeekStreak, vsLastWeek, normalizeRunPlan, planOn, PROGRAMS, weekHabit, weeklyRunMin } from '../js/program.js';
 import { normalizeConfig, serializeConfig } from '../js/model.js';
 
 const exs = [{ id: 'push' }];
@@ -58,4 +58,17 @@ test('습관 연속: 계획을 80% 이상 지킨 주가 이어진 수', () => {
   assert.equal(habitWeekStreak(days, '2026-11-26', config, exs), 3);
   assert.equal(habitWeekStreak({ '2026-11-16': done() }, '2026-11-26', config, exs), 1, '이번 주를 아직 못 지켰으면 지난주부터 셈');
   assert.equal(habitWeekStreak({ '2026-11-09': done() }, '2026-11-26', config, exs), 0, '지난주를 놓치면 끊김');
+});
+
+test('지난주 같은 요일까지와 비교: 달리기 분과 근력 횟수 차이', () => {
+  const config = { startDate: '2026-11-01', restDays: [], runPlan: {} };
+  const days = {
+    '2026-11-16': { entries: {}, run: { done: true, sec: 1800 } }, // 지난주 월 30분
+    '2026-11-21': { entries: {}, run: { done: true, sec: 3600 } }, // 지난주 토(목요일 이후라 세지 않음)
+    '2026-11-23': { entries: { push: { done: true } }, run: { done: true, sec: 2700 } }, // 이번 주 월 45분 + 근력
+  };
+  const vs = vsLastWeek(days, '2026-11-26', config, exs);
+  assert.equal(vs.runMin, 15);
+  assert.equal(vs.strength, 1);
+  assert.equal(vs.beforeRunMin, 30);
 });
