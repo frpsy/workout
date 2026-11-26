@@ -10,7 +10,7 @@ import { $, esc } from './dom.js';
 import { icon } from './icon.js';
 import { EV, emit } from '../events.js';
 import { bestRunStreak, fmtKm, fmtPace, fmtRunTime, ranOn, runStreak, runSummary } from '../run.js';
-import { habitWeekStreak, weekHabit } from '../program.js';
+import { habitWeekStreak, vsLastWeek, weekHabit } from '../program.js';
 
 const MAX_PIPS = 6;
 
@@ -273,14 +273,27 @@ export function mountHistory(root, store) {
       })
       .join('');
     $('#habitRate', root).innerHTML = h.rate === null ? '' : `계획 <b>${h.done}/${h.planned}</b> · ${h.rate}%`;
-    const runPct = h.runPlanMin ? Math.min(100, Math.round((h.runMin / h.runPlanMin) * 100)) : 0;
+    // 이번 주 링(Apple 피트니스처럼): 바깥은 근력 횟수, 안쪽은 달리기 분. 계획을 채우면 링이 닫힘
+    const strPct = h.strengthPlanned ? Math.min(1, h.strengthDone / h.strengthPlanned) : 0;
+    const runPct = h.runPlanMin ? Math.min(1, h.runMin / h.runPlanMin) : h.runMin ? 1 : 0;
+    const ring = (r, pct, cls) => {
+      const c = 2 * Math.PI * r;
+      return `<circle class="rg-track ${cls}" cx="40" cy="40" r="${r}"/><circle class="rg ${cls}" cx="40" cy="40" r="${r}" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - pct)).toFixed(1)}"/>`;
+    };
+    const rings = `<svg class="rings" viewBox="0 0 80 80" width="88" height="88" role="img" aria-label="이번 주 근력 ${Math.round(strPct * 100)}%, 달리기 ${Math.round(runPct * 100)}%">${ring(34, strPct, 'str')}${ring(22, runPct, 'run')}</svg>`;
+    // 지난주 같은 때와 비교: 늘었으면 칭찬, 줄었으면 지난주 값만 담담하게(Strava 주간 스냅샷의 ‘기분이 상한다’는 비판을 피함)
+    const vs = vsLastWeek(days, today, config, ctx.exs);
+    const cmp = vs.runMin > 0 ? `지난주 이맘때보다 달리기 <b>+${vs.runMin}분</b>`
+      : vs.strength > 0 ? `지난주 이맘때보다 근력 <b>+${vs.strength}회</b>`
+      : vs.beforeRunMin || vs.beforeStrength ? `지난주 이맘때: 근력 ${vs.beforeStrength}회 · 달리기 ${vs.beforeRunMin}분` : '';
     const totalTime = total.sec >= 3600 ? `${Math.floor(total.sec / 3600)}<small>시간</small> ${Math.round((total.sec % 3600) / 60)}<small>분</small>` : `${Math.round(total.sec / 60)}<small>분</small>`;
     $('#habitBento', root).innerHTML =
-      `<div class="tile wide run"><span class="tl">달리기 · Zone 2</span><span class="tv">${h.runMin}<small>${h.runPlanMin ? ` / ${h.runPlanMin}분` : '분'}</small></span>` +
-      (h.runPlanMin ? `<span class="tbar" role="img" aria-label="이번 주 달리기 계획의 ${runPct}%"><i style="width:${runPct}%"></i></span>` : '') + '</div>' +
-      `<div class="tile str"><span class="tl">근력</span><span class="tv">${h.strengthDone}<small> / ${h.strengthPlanned}회</small></span></div>` +
+      `<div class="tile wide week">${rings}<dl class="ring-legend">` +
+      `<div class="str"><dt>근력</dt><dd>${h.strengthDone}<small> / ${h.strengthPlanned}회</small></dd></div>` +
+      `<div class="run"><dt>달리기 · Zone 2</dt><dd>${h.runMin}<small>${h.runPlanMin ? ` / ${h.runPlanMin}분` : '분'}</small></dd></div>` +
+      `</dl>${cmp ? `<p class="tsub cmp">${cmp}</p>` : ''}</div>` +
       `<div class="tile"><span class="tl">습관 연속</span><span class="tv">${streak}<small>주</small></span></div>` +
-      `<div class="tile wide"><span class="tl">달리기 누적</span><span class="tv">${totalTime}</span><span class="tsub">${total.count}회${total.km ? ` · ${fmtKm(total.km)}` : ''}</span></div>`;
+      `<div class="tile run"><span class="tl">달리기 누적</span><span class="tv">${totalTime}</span><span class="tsub">${total.count}회${total.km ? ` · ${fmtKm(total.km)}` : ''}</span></div>`;
   }
 
   /** 달리기: 최근 7일 달린 시간 막대, 연속, 이번 달·누적 합계. 한 번도 안 달렸으면 숨김 */
