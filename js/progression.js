@@ -31,13 +31,13 @@ export function weekDoneCounts(days, exId, startDate) {
  * ctx: { plan, currentWeek, counts(exId) => Map }
  */
 export const LEVEL_RULES = {
-  linear(ex, w) {
-    return w;
+  linear(ex, w, ctx, w0 = 0) {
+    return Math.max(0, w - w0);
   },
-  adaptive(ex, w, ctx) {
+  adaptive(ex, w, ctx, w0 = 0) {
     const counts = ctx.counts(ex.id);
     let level = 0;
-    for (let i = 0; i < w; i++) {
+    for (let i = Math.max(0, w0); i < w; i++) {
       if (isRecoveryWeek(i, ctx.plan)) continue;
       // 아직 끝나지 않은 주(이번 주 포함)는 해낸다고 가정해 앞으로의 목표를 보여줍니다.
       if (i >= ctx.currentWeek || (counts.get(i) || 0) >= ctx.plan.passDays) level++;
@@ -70,7 +70,9 @@ export function createTargetResolver(config, days, today) {
     ctx,
     targetForWeek(ex, w) {
       const week = Math.max(0, w);
-      return computeTarget(ex, rule(ex, week, ctx), isRecoveryWeek(week, plan), plan);
+      // 무게를 올린 종목은 그 주부터 시작 개수로 다시 늘림
+      const w0 = ex.from ? weekIndex(ex.from, startDate) : 0;
+      return computeTarget(ex, rule(ex, week, ctx, w0), isRecoveryWeek(week, plan), plan);
     },
     targetForDate(ex, date) {
       return this.targetForWeek(ex, weekIndex(date, startDate));

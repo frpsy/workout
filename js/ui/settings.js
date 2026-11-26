@@ -1,7 +1,7 @@
 // 운동·목표 설정과 계정(로그인)
 
 import { DEFAULT_SETS, LIMITS, UNITS } from '../config.js';
-import { EQUIPMENT, libById, libraryGroups } from '../library.js';
+import { EQUIPMENT, libById, libFor, libraryGroups } from '../library.js';
 import { DOW, dowName, labelMD, todayStr } from '../dates.js';
 import { fmtKo } from '../session.js';
 import { newExerciseId, validateConfig } from '../model.js';
@@ -14,6 +14,8 @@ import { mountSoundToggle } from './sound-ui.js';
 import { applyProgram, PROGRAMS, weeklyRunMin } from '../program.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
+/** 무게 칸을 보일 종목: 아령 동작, 직접 만든 종목, 이미 무게가 있는 종목 */
+const hasKg = (e) => e.kg !== undefined || !libFor(e) || libFor(e).equip === 'db';
 
 /** 설정 맨 아래 판 표시: '버전 3c80ef6 · 10월 30일 14:24' (배포 전 개발 중이면 '개발판') */
 export function versionLabel({ sha, builtAt } = {}) {
@@ -242,11 +244,12 @@ export function mountSettings(root, store, theme = null) {
             ${Object.entries(UNITS).map(([k, u]) => `<option value="${k}"${e.unit === k ? ' selected' : ''}>${u.label}</option>`).join('')}
           </select>
         </div>
-        <div class="exrow2">
+        <div class="exrow2${hasKg(e) ? ' with-kg' : ''}">
           <label>시작 <input data-k="base" type="number" inputmode="numeric" min="1" max="9999" value="${e.base}" id="bs-${e.id}"></label>
           <label>매주 + <input data-k="step" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="${e.step}" id="st-${e.id}"></label>
           <label>최대 <input data-k="max" type="number" inputmode="numeric" min="0" max="9999" value="${e.max || ''}" placeholder="없음" aria-label="세트당 목표 최대(비우면 제한 없음)" id="mx-${e.id}"></label>
           <label>세트 <input data-k="sets" type="number" inputmode="numeric" min="${LIMITS.sets[0]}" max="${LIMITS.sets[1]}" value="${e.sets}" id="se-${e.id}"></label>
+          ${hasKg(e) ? `<label>kg <input data-k="kg" type="number" inputmode="decimal" min="${LIMITS.kg[0]}" max="${LIMITS.kg[1]}" step="0.5" placeholder="맨몸" aria-label="${esc(e.name)} 아령 무게(kg, 비우면 맨몸)" id="kg-${e.id}"></label>` : ''}
         </div>
         <div class="exrow3">
           <label class="usechk"><span class="switch sm"><input type="checkbox" role="switch" data-k="active"${e.active ? ' checked' : ''} id="ac-${e.id}"><i aria-hidden="true"></i></span> 사용</label>
@@ -271,6 +274,7 @@ export function mountSettings(root, store, theme = null) {
       f('max').value = e.max || '';
       f('sets').value = e.sets;
       f('active').checked = !!e.active;
+      if (f('kg')) f('kg').value = e.kg ?? '';
     }
 
     // 운동 도감: 움직임 묶음별로 내 기구로 할 수 있고 아직 없는 동작만
@@ -299,6 +303,10 @@ export function mountSettings(root, store, theme = null) {
       const m = parseInt(ev.target.value, 10);
       if (m > 0 || ev.target.value !== '') ex.max = Number.isFinite(m) ? m : 0;
       else delete ex.max; // 비우면 제한 없음
+    } else if (k === 'kg') {
+      const v = parseFloat(ev.target.value);
+      if (ev.target.value === '') delete ex.kg; // 비우면 맨몸
+      else ex.kg = Number.isFinite(v) ? v : NaN;
     } else if (k === 'sets') ex.sets = parseInt(ev.target.value, 10);
     else if (k === 'active') {
       ex.active = ev.target.checked;
