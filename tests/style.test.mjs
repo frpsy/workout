@@ -182,3 +182,28 @@ test('정렬: 머리말·카드·팁의 바깥 모서리는 같은 좌우 여백
   assert.equal(value('.timer .tgo', 'min-width', { raw: true }), 'var(--tside)', '왼쪽 칸과 오른쪽 버튼의 폭이 같아야 숫자가 가운데');
   assert.equal(value('.timer > .sr', 'position'), 'absolute', '숨은 안내 문구가 줄 안의 칸을 차지하면 한쪽이 틀어짐');
 });
+
+test('운동 종류 색(근력 파랑·달리기 코랄)은 라이트·다크 모두 글자 대비 4.5:1 이상', () => {
+  const lum = (hex) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a, b) => {
+    const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
+    return (x + 0.05) / (y + 0.05);
+  };
+  const tok = (block, name) => new RegExp(`--${name}: (#[0-9A-Fa-f]{6})`).exec(block)?.[1];
+  const light = css.slice(css.indexOf(':root {'), css.indexOf('@media (prefers-color-scheme: dark)'));
+  const dark = css.slice(css.indexOf(':root[data-theme="dark"]'));
+  for (const [name, b] of [['라이트', light], ['다크', dark]]) {
+    const t = (n) => tok(b, n) || tok(light, n);
+    const pairs = [
+      ['run', 'surface'], ['run', 'run-soft'], ['on-run', 'run'],
+      ['accent', 'surface'], ['accent', 'str-soft'], ['fg', 'fill'],
+    ];
+    for (const [fg, bg] of pairs) {
+      const r = ratio(t(fg), t(bg));
+      assert.ok(r >= 4.5, `${name}: --${fg} / --${bg} = ${r.toFixed(2)}:1`);
+    }
+  }
+});
