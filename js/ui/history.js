@@ -9,7 +9,7 @@ import { kgOf, setsOf, volume } from '../setlog.js';
 import { $, esc } from './dom.js';
 import { icon } from './icon.js';
 import { EV, emit } from '../events.js';
-import { bestRunStreak, fmtKm, fmtPace, fmtRunTime, ranOn, runStreak, runSummary } from '../run.js';
+import { bestRunStreak, fmtKm, fmtPace, fmtRunTime, ranOn, runLine, runStreak, runSummary } from '../run.js';
 import { habitWeekStreak, vsLastWeek, weekHabit } from '../program.js';
 
 const MAX_PIPS = 6;
@@ -387,7 +387,7 @@ export function mountHistory(root, store) {
       (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? (day?.run?.done ? '근력은 쉬는 날입니다.' : '쉬는 날입니다.') : '기록이 없습니다.'}</p>`) +
       roundHtml +
       (stretchText ? `<p class="note-line"><b>스트레칭</b> ${stretchText}</p>` : '') +
-      (day?.run?.done ? `<p class="note-line run"><b>달리기</b> ${[day.run.sec ? fmtRunTime(day.run.sec) : '완료', day.run.km ? fmtKm(day.run.km) : '', fmtPace(day.run.sec, day.run.km) ? `${fmtPace(day.run.sec, day.run.km)}/km` : ''].filter(Boolean).join(' · ')}</p>` : '') +
+      (day?.run?.done ? `<p class="note-line run"><b>달리기</b> ${runLine(day.run) || '완료'}</p>` : '') +
       (note.feel ? `<p class="note-line"><b>소감</b> ${esc(note.feel)}</p>` : '') +
       (note.thanks ? `<p class="note-line"><b>감사</b> ${esc(note.thanks)}</p>` : '') +
       `<button type="button" class="btn ghost sm" data-edit="${date}">${date === state.today ? '오늘 탭에서 체크하기' : '이 날 기록 고치기'}</button>`

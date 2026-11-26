@@ -2,7 +2,7 @@
 import { mock, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addDays, todayStr } from '../js/dates.js';
-import { fullDays, setup, setupFull, today, complete, setTo } from './helpers/ui-env.mjs';
+import { fullDays, setup, setupFull, today, complete, setTo, tick } from './helpers/ui-env.mjs';
 
 test('오늘: 체크 버튼을 누르면 완료 표시와 진행 문구가 바뀜', () => {
   const { store, root } = setup(today);
@@ -592,7 +592,8 @@ test('오늘: 계획 없는 날 달리기는 한 줄로 접혀 있고, 펼쳐 �
   assert.deepEqual(store.state.days[store.state.today].run, { done: true });
   assert.equal(btn.getAttribute('aria-pressed'), 'true');
   assert.equal(root.querySelector('#runDetail').hidden, false);
-  assert.equal(root.querySelector('#runKmChips').hidden, false, '완료 뒤에 거리 프리셋');
+  assert.equal(root.querySelector('#runSpeedChips').hidden, false, '완료 뒤에 러닝머신 속도 프리셋(기구를 고른 적 없으면 러닝머신도 있다고 봄)');
+  assert.equal(root.querySelector('#runKmChips').hidden, true, '러닝머신이 있으면 거리 프리셋 대신 속도');
   btn.click();
   assert.equal(store.state.days[store.state.today].run.done, true, '완료 버튼을 다시 눌러도 지워지지 않음');
   const type = (sel, v) => {
@@ -705,5 +706,37 @@ test('오늘: 도감에 있는 종목은 자세 요령 한 줄과 더 쉬운 동
   assert.match(rows[0].querySelector('.cue .alt').textContent, /힘들면 무릎 푸시업/);
   assert.match(rows[1].querySelector('.cue .alt').textContent, /힘들면 친업/);
   assert.equal(rows[2].querySelector('.cue .alt'), null, '스쿼트는 더 쉬운 동작이 없음');
+  store.actions.flushAll();
+});
+
+test('오늘: 러닝머신 속도를 고르면 속도 × 시간으로 거리가 채워지고, 시간을 바꾸면 거리도 다시 계산', () => {
+  const { store, root } = setup(today);
+  root.querySelector('#runOpen').click();
+  root.querySelector('#runMinChips [data-min="30"]').click();
+  root.querySelector('#runSpeedChips [data-speed="7"]').click();
+  assert.deepEqual(store.state.days[store.state.today].run, { done: true, sec: 1800, km: 3.5, speed: 7 });
+  assert.equal(root.querySelector('#runSum').textContent, '30분 · 3.5km · 7km/h', '러닝머신은 페이스 대신 속도');
+  root.querySelector('#runMinChips [data-min="60"]').click();
+  assert.equal(store.state.days[store.state.today].run.km, 7);
+  const inc = root.querySelector('#runIncline');
+  inc.value = '1.5';
+  inc.dispatchEvent(new window.Event('input', { bubbles: true }));
+  assert.equal(store.state.days[store.state.today].run.incline, 1.5);
+  assert.match(root.querySelector('#runSum').textContent, /경사\u00a01.5%$/);
+  root.querySelector('#runSpeedChips [data-speed="7"]').click();
+  assert.equal('speed' in store.state.days[store.state.today].run, false, '같은 속도를 다시 누르면 속도만 지움');
+  assert.equal(store.state.days[store.state.today].run.km, 7, '거리는 그대로');
+  store.actions.flushAll();
+});
+
+test('오늘: 러닝머신이 없으면 거리 프리셋, 나이를 넣었으면 Zone 2 심박 범위를 안내', async () => {
+  const { store, root } = setup(today, { config: { startDate: '2026-11-02', equipment: ['bar'], age: 40, exercises: [{ id: 'push', name: '푸시업', unit: 'reps', base: 10, step: 1, sets: 3 }] } });
+  await tick();
+  root.querySelector('#runOpen').click();
+  assert.match(root.querySelector('#runHint').textContent, /^심박 108~126회\/분 · /);
+  root.querySelector('#runBtn').click();
+  assert.equal(root.querySelector('#runKmChips').hidden, false);
+  assert.equal(root.querySelector('#runSpeedChips').hidden, true);
+  assert.equal(root.querySelector('#runTread').hidden, true);
   store.actions.flushAll();
 });

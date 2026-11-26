@@ -330,3 +330,22 @@ test('설정: 내 기구에서 아령을 빼면 아령 동작이 추가 목록�
   await tick();
   assert.deepEqual(ad.saved.config.at(-1).equipment, ['bar', 'tread']);
 });
+
+test('설정: 나이를 넣어 저장하면 심박 안내용으로 남고, 비우면 지움', async () => {
+  const ad = adapter();
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  const age = root.querySelector('#age');
+  age.value = '42';
+  age.dispatchEvent(new Event('input', { bubbles: true }));
+  root.querySelector('#saveCfg').click();
+  await tick();
+  assert.equal(ad.saved.config.at(-1).age, 42);
+  age.value = '';
+  age.dispatchEvent(new Event('input', { bubbles: true }));
+  root.querySelector('#saveCfg').click();
+  await tick();
+  assert.equal('age' in ad.saved.config.at(-1), false);
+});

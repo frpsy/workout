@@ -106,6 +106,8 @@ function programFields(raw) {
     ...(programById(raw.program) ? { program: raw.program } : {}),
     ...(Object.keys(runPlan).length ? { runPlan } : {}),
     ...(equipment ? { equipment } : {}),
+    // 나이: Zone 2 심박 범위 안내용(선택)
+    ...(Number.isInteger(raw.age) && raw.age >= 10 && raw.age <= 100 ? { age: raw.age } : {}),
   };
 }
 

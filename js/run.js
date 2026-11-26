@@ -7,17 +7,46 @@ export const RUN_MAX_KM = 500;
 /** 오늘 화면의 빠른 입력: Zone 2 달리기에 흔한 시간·거리 */
 export const RUN_MIN_PRESETS = [20, 30, 45, 60];
 export const RUN_KM_PRESETS = [3, 5, 7, 10];
+/** 러닝머신 속도(km/h): Zone 2 조깅에 흔한 속도. 속도 × 시간으로 거리를 채움 */
+export const RUN_SPEED_PRESETS = [6, 7, 8, 9];
+export const RUN_MAX_SPEED = 25;
+export const RUN_MAX_INCLINE = 15;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const inRange = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 
-/** { done: true, sec?, km? }. 달리지 않았으면 null. 시간·거리는 넣은 날만 둠 */
+/** { done: true, sec?, km?, speed?, incline? }. 달리지 않았으면 null. 시간·거리·러닝머신 속도(km/h)·경사(%)는 넣은 날만 둠 */
 export function normalizeRun(raw) {
   if (!isObj(raw) || raw.done !== true) return null;
   const run = { done: true };
   if (inRange(raw.sec, 1, RUN_MAX_SEC)) run.sec = Math.round(raw.sec);
   if (inRange(raw.km, 0.01, RUN_MAX_KM)) run.km = Math.round(raw.km * 100) / 100;
+  if (inRange(raw.speed, 1, RUN_MAX_SPEED)) run.speed = Math.round(raw.speed * 10) / 10;
+  if (inRange(raw.incline, 0.5, RUN_MAX_INCLINE)) run.incline = Math.round(raw.incline * 2) / 2;
   return run;
+}
+
+/** 러닝머신 속도(km/h)와 시간(초)으로 거리(km, 소수 둘째 자리). 하나라도 없으면 0 */
+export const kmFrom = (speed, sec) => (speed > 0 && sec > 0 ? Math.round((speed * sec) / 36) / 100 : 0);
+
+/** 그날 달리기 한 줄: '30분 · 3.5km · 8'34"/km · 7km/h · 경사 1%' */
+export function runLine(run) {
+  if (!run) return '';
+  const pace = fmtPace(run.sec, run.km);
+  return [
+    run.sec ? fmtRunTime(run.sec) : '',
+    run.km ? fmtKm(run.km) : '',
+    pace && !run.speed ? `${pace}/km` : '', // 러닝머신은 속도로 보여 줌(페이스와 같은 정보)
+    run.speed ? `${run.speed}km/h` : '',
+    run.incline ? `경사\u00a0${run.incline}%` : '', // 줄이 바뀌어도 ‘경사’와 값이 떨어지지 않게
+  ].filter(Boolean).join(' · ');
+}
+
+/** Zone 2 심박 범위: 최대 심박(220 − 나이)의 60~70% */
+export function zone2(age) {
+  if (!(age >= 10 && age <= 100)) return null;
+  const max = 220 - age;
+  return { lo: Math.round(max * 0.6), hi: Math.round(max * 0.7) };
 }
 
 export const ranOn = (days, date) => !!(days[date] && days[date].run && days[date].run.done);
