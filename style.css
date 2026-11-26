@@ -24,6 +24,11 @@
   --warn: #8A5200;
   --warn-soft: #F6E7CC;
   --err: #B3261E;
+  /* 운동 종류 색: 근력은 accent(파랑), 달리기는 따뜻한 코랄. 경고(warn)와 섞이지 않게 따로 둠 */
+  --run: #C2410C; /* 흰 바탕 5.2:1 */
+  --run-soft: #FFEDE3;
+  --on-run: #FFFFFF; /* 달리기 색으로 칠한 칸의 글자 */
+  --str-soft: #E6EBFF; /* 근력 타일·칸의 옅은 바탕 */
   --ctrl-line: #767989; /* 입력칸·스위치 테두리: 배경과 3:1 이상(3.07~3.28) */
   --accent-fill: #3B53A4; /* 넓게 칠하는 초록(버튼·완료) */
   --knob: #FFFFFF;
@@ -93,6 +98,7 @@
     --bg: #12131A; --surface: #1D1F29; --fg: #E3E4EF; --muted: #C4C5D3; --line: #373A49;
     --accent: #B7C5FF; --accent-soft: #303E74; --on-accent: #142454;
     --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
+    --run: #FF9F70; --run-soft: #44241D; --on-run: #2A1206; --str-soft: #262E52;
     --ctrl-line: #838699; --accent-fill: #B7C5FF; --knob: #E3E4EF; --seg-on: #3D4875;
     --fill: #272936; --fill-press: #373A49; --hero: #232A46; --hero-fg: #F4F3FF; --hero-accent: #B7C5FF; --hero-warn: #FFC566; --hero-ctrl: #3A4569;
     --shadow-card: none; --shadow-press: none;
@@ -105,6 +111,7 @@
   --bg: #12131A; --surface: #1D1F29; --fg: #E3E4EF; --muted: #C4C5D3; --line: #373A49;
   --accent: #B7C5FF; --accent-soft: #303E74; --on-accent: #142454;
   --warn: #E3AE5A; --warn-soft: #3A2C12; --err: #FF8A80;
+  --run: #FF9F70; --run-soft: #44241D; --on-run: #2A1206; --str-soft: #262E52;
   --ctrl-line: #838699; --accent-fill: #B7C5FF; --knob: #E3E4EF; --seg-on: #3D4875;
   --fill: #272936; --fill-press: #373A49; --hero: #232A46; --hero-fg: #F4F3FF; --hero-accent: #B7C5FF; --hero-warn: #FFC566; --hero-ctrl: #3A4569;
   --shadow-card: none; --shadow-press: none;
@@ -495,7 +502,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .brand-state:not([hidden]) + .brand-date { margin-left: 0; }
 .head .headline { margin-bottom: 0; }
 
-/* 오늘 할 일(아토믹 해빗: 분명하게·쉽게): 머리말 맨 위에 할 일을 크게. 근력 파랑 · 달리기 주황, 하면 채움 */
+/* 오늘 할 일(아토믹 해빗: 분명하게·쉽게): 머리말 맨 위에 할 일을 크게. 근력 파랑 · 달리기 코랄, 하면 채움 */
 .todo { margin: var(--gap) 0 var(--gap-sm); }
 .todo[hidden], .todo-nudge[hidden] { display: none; }
 .todo-items { display: flex; align-items: center; gap: var(--gap-sm); min-height: 44px; }
@@ -508,7 +515,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   font: inherit; font-size: var(--fs-md); font-weight: 600; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 .todo-item.str { color: var(--accent); }
-.todo-item.run { color: var(--warn); }
+.todo-item.run { color: var(--run); }
 .todo-item span { color: var(--fg); white-space: nowrap; }
 /* 아주 좁은 폰: 항목 둘이 한 줄에 들어가도록 ‘오늘 할 일’ 글자는 접고 여백을 줄임(채움·테두리로 뜻이 보임) */
 @media (max-width: 360px) {
@@ -517,11 +524,11 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 }
 .todo-item b { margin-left: auto; font-family: var(--font-num); white-space: nowrap; }
 .todo-item .tick { opacity: 0; }
-.todo-item.on { border-color: transparent; background: var(--accent-soft); }
-.todo-item.run.on { background: var(--warn-soft); }
+.todo-item.on { border-color: transparent; background: var(--str-soft); }
+.todo-item.run.on { background: var(--run-soft); }
 .todo-item.on .tick { opacity: 1; }
 .todo-item:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-.todo-nudge { margin: var(--gap-sm) 0 0; padding: var(--gap-sm) var(--gap-md); border-radius: var(--r-field); background: var(--warn-soft); color: var(--warn); font-size: var(--fs-sm); font-weight: 600; }
+.todo-nudge { margin: var(--gap-sm) 0 0; padding: var(--gap-sm) var(--gap-md); border-left: 3px solid var(--accent); border-radius: var(--r-field); background: var(--fill); color: var(--fg); font-size: var(--fs-sm); font-weight: 500; }
 
 /* 머리말: 날짜(운동 중에는 스톱워치)와 진행 막대 */
 .headline { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); margin-bottom: 6px; }
@@ -666,23 +673,23 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .stretch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* 달리기(Zone 2): 근력(파랑)과 구분되는 따뜻한 색. 한 장의 카드 안에 체크 줄 → 시간·거리 프리셋 → 직접 입력 */
 .runbox { margin: var(--gap-lg) 0 var(--gap); padding: var(--gap-sm); border-radius: var(--r-card); background: var(--surface); border: 1px solid var(--line); }
-.runbox.planned { border-color: var(--warn); }
+.runbox.planned { border-color: var(--run); }
 .runbox .run-check { margin: 0; border: 0; }
-.runbox .run-check[aria-pressed="true"] { background: var(--warn-soft); color: var(--warn); }
+.runbox .run-check[aria-pressed="true"] { background: var(--run-soft); color: var(--run); }
 .run-title { display: inline-flex; align-items: baseline; gap: var(--gap-sm); }
-.run-title small { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.02em; color: var(--warn); }
+.run-title small { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.02em; color: var(--run); }
 .run-sum { margin-left: auto; font-family: var(--font-num); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; }
-.runbox.planned .run-sum { color: var(--warn); }
+.runbox.planned .run-sum { color: var(--run); }
 .chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap-sm); padding: var(--gap-sm) var(--gap-xs) 0; }
 .chip {
   min-height: 40px; border: 0; border-radius: var(--r-ctrl); background: var(--fill); color: var(--fg);
   font: inherit; font-family: var(--font-num); font-size: var(--fs-md); font-weight: 600;
   cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.chip[aria-pressed="true"] { background: var(--warn); color: var(--surface); }
+.chip[aria-pressed="true"] { background: var(--run); color: var(--on-run); }
 .chip:active:not(:disabled) { background: var(--fill-press); }
 .chip:disabled { opacity: 0.5; }
-.chip:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
+.chip:focus-visible { outline: 2px solid var(--run); outline-offset: 2px; }
 .run-detail { display: flex; flex-wrap: wrap; gap: var(--gap) var(--gap-lg); padding: var(--gap-md) var(--gap-sm) var(--gap-xs); font-size: var(--fs-md); color: var(--muted); }
 .run-detail[hidden], .run-hint[hidden] { display: none; }
 .run-field { display: inline-flex; align-items: center; gap: var(--gap-xs); }
@@ -1139,7 +1146,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 #plan-sec details.block { padding: 12px 0 0; border-top: 1px solid var(--line); } /* 앞으로 4주 목표: 기본은 접힌 한 줄 */
 #planBox > summary { min-height: 0; margin-bottom: 12px; }
 
-/* 이번 주 습관: 맨 위 벤토(크기가 다른 타일을 격자로 묶음). 근력은 파랑, 달리기는 주황으로 같은 뜻을 늘 같은 색으로 */
+/* 이번 주 습관: 맨 위 벤토(크기가 다른 타일을 격자로 묶음). 근력은 파랑, 달리기는 코랄으로 같은 뜻을 늘 같은 색으로 */
 #history > .habit { padding: 0 0 var(--gap-lg); }
 #history > .habit[hidden] { display: none; }
 .habit-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--gap); margin-bottom: var(--gap); }
@@ -1155,22 +1162,23 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .hw-marks { display: flex; flex-direction: column; align-items: center; gap: var(--gap-xs); min-height: 34px; }
 .hm { display: block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; box-sizing: border-box; }
 .hm.str { color: var(--accent); }
-.hm.run { color: var(--warn); }
+.hm.run { color: var(--run); }
 .hm.on { background: currentColor; }
 .hm.extra { border-style: dashed; } /* 계획에 없던 날 더 한 운동 */
 .hw-rest { font-size: var(--fs-3xs); color: var(--muted); line-height: 34px; }
 .bento { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
 .tile { display: flex; flex-direction: column; gap: var(--gap-xs); min-width: 0; padding: 14px 16px; border-radius: var(--r-card); background: var(--surface); border: 1px solid var(--line); }
 .tile.wide { grid-column: 1 / -1; }
-.tile.run { background: var(--warn-soft); border-color: transparent; }
-.tile.run .tl { color: var(--warn); }
+.tile.run { background: var(--run-soft); border-color: transparent; }
+.tile.run .tl { color: var(--run); }
+.tile.str { background: var(--str-soft); border-color: transparent; }
 .tile.str .tl { color: var(--accent); }
 .tl { font-size: var(--fs-xs); font-weight: 700; color: var(--muted); }
 .tv { font-family: var(--font-num); font-size: var(--fs-3xl); font-weight: 700; letter-spacing: var(--track-tight); line-height: 1.1; }
 .tv small { font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 500; color: var(--muted); letter-spacing: 0; }
 .tsub { font-size: var(--fs-xs); color: var(--muted); }
-.tbar { display: block; height: 6px; margin-top: var(--gap-xs); border-radius: var(--r-bar); background: color-mix(in srgb, var(--warn) 22%, transparent); overflow: hidden; }
-.tbar i { display: block; height: 100%; border-radius: inherit; background: var(--warn); }
+.tbar { display: block; height: 6px; margin-top: var(--gap-xs); border-radius: var(--r-bar); background: color-mix(in srgb, var(--run) 22%, transparent); overflow: hidden; }
+.tbar i { display: block; height: 100%; border-radius: inherit; background: var(--run); }
 
 /* 달력 */
 .cal-bar { display: flex; justify-content: flex-start; align-items: center; gap: var(--gap); margin-bottom: 8px; }
@@ -1244,8 +1252,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .cell .pips { display: flex; gap: 3px; }
 .cell .pips i { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
 .cell .pips i.on { background: var(--accent); }
-/* 달리기 한 날: 날짜 오른쪽 위의 작은 주황 점 */
-.cell.ran::after { content: ''; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+/* 달리기 한 날: 날짜 오른쪽 위의 작은 코랄 점 */
+.cell.ran::after { content: ''; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--run); }
 .cell .frac { font-size: var(--fs-3xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .cell.full .dn { color: var(--accent); font-weight: 700; }
 .cell.today { border-color: var(--muted); }
@@ -1315,6 +1323,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
   line-height: 1.5;
 }
 .note-line b { margin-right: 6px; }
+.note-line.run b { color: var(--run); background: var(--run-soft); } /* 달리기 꼬리표는 달리기 색 */
 
 /* 최근 7일 총 개수: 종목마다 이름·합계(차이) / 하루 막대 7개 */
 .vol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
@@ -1378,7 +1387,7 @@ tr.cur td { background: var(--accent-soft); }
 .sgh { margin: 10px 0 0; font-size: var(--fs-md); font-weight: 700; color: var(--accent); }
 .sgroup > .sgh + .sub { margin-top: -4px; }
 .sgroup > .sub, .sgroup > .status { margin: 0; }
-/* 운동 프로그램: 고르는 카드 세 장. 한 주 배치를 요일 칸으로 바로 보여 줌(근력 파랑 · 달리기 주황 · 쉼 비움) */
+/* 운동 프로그램: 고르는 카드 세 장. 한 주 배치를 요일 칸으로 바로 보여 줌(근력 파랑 · 달리기 코랄 · 쉼 비움) */
 .programs { display: flex; flex-direction: column; gap: var(--gap); }
 .program {
   display: flex; flex-direction: column; gap: var(--gap-md); width: 100%; padding: 14px 16px;
@@ -1395,8 +1404,8 @@ tr.cur td { background: var(--accent-soft); }
 .pd { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--gap-sm) 0; border-radius: var(--r-field); background: var(--fill); }
 .pd b { font-size: var(--fs-2xs); font-weight: 600; color: var(--muted); }
 .pd i { font-style: normal; font-family: var(--font-num); font-size: var(--fs-xs); font-weight: 700; }
-.pd.str { background: var(--accent-soft); color: var(--accent); }
-.pd.run { background: var(--warn-soft); color: var(--warn); }
+.pd.str { background: var(--str-soft); color: var(--accent); }
+.pd.run { background: var(--run-soft); color: var(--run); }
 .pd.off i { color: var(--muted); font-weight: 500; }
 .program-sum { font-size: var(--fs-xs); color: var(--muted); }
 .shint { font-size: var(--fs-xs); color: var(--muted); }
