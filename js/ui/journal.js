@@ -6,6 +6,7 @@
 import { labelMD } from '../dates.js';
 import { NOTE_MAX } from '../model.js';
 import { isDone } from '../stats.js';
+import { planOn } from '../program.js';
 import { $ } from './dom.js';
 import { icon } from './icon.js';
 
@@ -148,7 +149,13 @@ export function mountJournal(root, store) {
 
   function render(state) {
     const exs = store.activeExercises();
-    const allDone = state.selected === state.today ? store.isSessionClosed() : exs.length > 0 && exs.every((e) => isDone(state.days[state.selected], e.id));
+    const strDone = state.selected === state.today ? store.isSessionClosed() : exs.length > 0 && exs.every((e) => isDone(state.days[state.selected], e.id));
+    // 그날 할 일을 마치면 마무리 칸을 엶: 프로그램이 있으면 계획한 근력·달리기를 모두, 없으면 근력이나 달리기 중 하나
+    const ran = !!state.days[state.selected]?.run?.done;
+    const plan = planOn(state.config, state.selected);
+    const allDone = state.config.program && (plan.strength || plan.runMin)
+      ? (!plan.strength || strDone) && (!plan.runMin || ran)
+      : strDone || ran;
     const note = noteOf(state, state.selected);
     const nextRound = state.days[state.selected]?.rounds?.length || 0;
     if (state.selected === date && state.selected === state.today && nextRound > round && editing) {

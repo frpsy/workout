@@ -263,3 +263,16 @@ test('기록: 이번 주 습관은 요일마다 계획과 한 것을 보여 주�
   if (t === mon) assert.match(root.querySelector('#habitRate').textContent, /계획 2\/2 · 100%/);
   store.actions.flushAll();
 });
+
+test('기록: 달리기만 한 날 카드 머리에 달린 시간, 이번 주 습관의 요일을 누르면 그날 카드', () => {
+  const t = todayStr();
+  const mon = addDays(t, -((new Date(`${t}T12:00:00`).getDay() + 6) % 7));
+  const days = { [mon]: { v: 2, entries: {}, run: { done: true, sec: 1800 } } };
+  const { root, store } = setup(history, { days, config: { startDate: addDays(t, -20), restDays: [], program: 'balance', runPlan: { 1: 30 } } });
+  const btn = root.querySelector(`#habitWeek [data-pick="${mon}"]`);
+  assert.ok(btn, '지난날·오늘은 누를 수 있음');
+  btn.click();
+  assert.match(root.querySelector('#dayCard .log-total').textContent, /달리기 30분/);
+  assert.equal(root.querySelector('#habitWeek li.sel [data-pick]').dataset.pick, mon);
+  store.actions.flushAll();
+});

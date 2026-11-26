@@ -82,6 +82,14 @@ export function mountHistory(root, store) {
     key = '';
     if (last) render(last);
   };
+  // 이번 주 습관의 요일을 누르면 아래 카드에 그날 기록을 보여 줌
+  $('#habitWeek', root).addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-pick]');
+    if (!b) return;
+    picked = b.dataset.pick;
+    redraw();
+    $('#dayCard', root).scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  });
   $('#calInfo', root).addEventListener('click', () => {
     const open = $('#calSub', root).hidden; // 숨겨져 있으면 펼침
     $('#calSub', root).hidden = !open;
@@ -266,7 +274,7 @@ export function mountHistory(root, store) {
       .map((d) => {
         const empty = !d.plan.strength && !d.plan.runMin && !d.strength && !d.run;
         return (
-          `<li class="${d.date === today ? 'today' : ''}${d.future ? ' future' : ''}${empty ? ' off' : ''}">` +
+          `<li class="${d.date === today ? 'today' : ''}${d.date === (picked || today) ? ' sel' : ''}${d.future ? ' future' : ''}${empty ? ' off' : ''}">${d.future ? '' : `<button type="button" class="hw-btn" data-pick="${d.date}" aria-label="${labelMD(d.date)} 기록 보기"></button>`}` +
           `<span class="hw-dow">${dowName(d.date)}</span>` +
           `<span class="hw-marks">${mark('str', d.plan.strength, d.strength, '근력')}${mark('run', d.plan.runMin, d.run, '달리기')}${empty ? '<span class="hw-rest">쉼</span>' : ''}</span></li>`
         );
@@ -332,7 +340,8 @@ export function mountHistory(root, store) {
     const sessions = (day && day.sessions) || [];
     const total = (day && day.workSec) || 0;
     const live = activeSessionDate() === date; // 재는 중인 운동은 종료해야 합산되므로 ‘운동 중’으로 알림
-    const timeText = total ? `총 ${fmtKo(total)}${live ? ' · 운동 중' : ''}` : live ? '운동 중' : '시간 기록 없음';
+    const runSec = (day && day.run && day.run.done && day.run.sec) || 0;
+    const timeText = total ? `총 ${fmtKo(total)}${live ? ' · 운동 중' : ''}` : live ? '운동 중' : runSec ? `달리기 ${fmtKo(runSec)}` : day?.run?.done ? '달리기 완료' : '시간 기록 없음';
     const list = state.config.exercises
       .map((ex) => ({ ex, v: store.view(date, ex, undefined, { aggregate: true }) }))
       .filter(({ ex, v }) => ex.active !== false || v.done || v.setsDone);
@@ -372,7 +381,7 @@ export function mountHistory(root, store) {
     const times = sessions.map((x) => `${clock(x.s)} – ${clock(x.e)}`).join(', '); // 하루에 여러 번 했으면 구간이 모두 나열됨
     return (
       `<div class="day-head"><h2 class="sec">${labelMD(date)} <small>(${dowName(date)})${date === state.today ? ' · 오늘' : ''}</small></h2>` +
-      `<span class="log-total${total || live ? '' : ' none'}">${timeText}</span></div>` +
+      `<span class="log-total${total || live || day?.run?.done ? '' : ' none'}">${timeText}</span></div>` +
       (times ? `<p class="log-time">${times}</p>` : '') +
       (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? (day?.run?.done ? '근력은 쉬는 날입니다.' : '쉬는 날입니다.') : '기록이 없습니다.'}</p>`) +
       roundHtml +
