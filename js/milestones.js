@@ -2,7 +2,7 @@
 // 연속이 끊겨도 사라지지 않는 기록이라, 한 번 쉬었다고 처음부터 다시 시작하는 느낌을 덜어 줍니다.
 
 import { isComplete } from './stats.js';
-import { ranOn } from './run.js';
+import { ranOn, runTotal } from './run.js';
 
 export const DAY_MARKS = [1, 10, 30, 50, 100, 200, 365];
 export const RUN_HOUR_MARKS = [1, 10, 25, 50, 100];
@@ -16,7 +16,7 @@ export function activeDays(days, exs, today) {
 export function milestones(days, exs, today) {
   const nDays = activeDays(days, exs, today);
   let sec = 0;
-  for (const [d, day] of Object.entries(days)) if (d <= today && day?.run?.done) sec += day.run.sec || 0;
+  for (const [d, day] of Object.entries(days)) if (d <= today && day?.run?.done) sec += runTotal(day.run).sec;
   const hours = sec / 3600;
   const earned = [
     ...DAY_MARKS.filter((m) => nDays >= m).map((n) => ({ kind: 'day', n, label: n === 1 ? '첫 운동' : `운동 ${n}일` })),

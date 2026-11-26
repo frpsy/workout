@@ -10,7 +10,7 @@ import { milestones } from '../milestones.js';
 import { $, esc } from './dom.js';
 import { icon } from './icon.js';
 import { EV, emit } from '../events.js';
-import { bestRunStreak, fmtKm, fmtPace, fmtRunTime, ranOn, runLine, runStreak, runSummary } from '../run.js';
+import { bestRunStreak, fmtKm, fmtPace, fmtRunTime, ranOn, runLine, runStreak, runSummary, runTotal } from '../run.js';
 import { habitWeekStreak, vsLastWeek, weekHabit } from '../program.js';
 
 const MAX_PIPS = 6;
@@ -324,7 +324,7 @@ export function mountHistory(root, store) {
     const month = runSummary(days, monthOf(today), today);
     const from = addDays(today, -6);
     const week7 = Array.from({ length: 7 }, (_, i) => addDays(from, i));
-    const per = week7.map((d) => (ranOn(days, d) ? days[d].run.sec || 0 : -1));
+    const per = week7.map((d) => (ranOn(days, d) ? runTotal(days[d].run).sec : -1));
     const top = Math.max(1, ...per);
     const sum7 = per.reduce((a, b) => a + Math.max(0, b), 0);
     const n7 = per.filter((v) => v >= 0).length;
@@ -352,7 +352,7 @@ export function mountHistory(root, store) {
     const sessions = (day && day.sessions) || [];
     const total = (day && day.workSec) || 0;
     const live = activeSessionDate() === date; // 재는 중인 운동은 종료해야 합산되므로 ‘운동 중’으로 알림
-    const runSec = (day && day.run && day.run.done && day.run.sec) || 0;
+    const runSec = runTotal(day?.run).sec;
     const timeText = total ? `총 ${fmtKo(total)}${live ? ' · 운동 중' : ''}` : live ? '운동 중' : runSec ? `달리기 ${fmtKo(runSec)}` : day?.run?.done ? '달리기 완료' : '시간 기록 없음';
     const list = state.config.exercises
       .map((ex) => ({ ex, v: store.view(date, ex, undefined, { aggregate: true }) }))
@@ -399,7 +399,7 @@ export function mountHistory(root, store) {
       (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? (day?.run?.done ? '근력은 쉬는 날입니다.' : '쉬는 날입니다.') : '기록이 없습니다.'}</p>`) +
       roundHtml +
       (stretchText ? `<p class="note-line"><b>스트레칭</b> ${stretchText}</p>` : '') +
-      (day?.run?.done ? `<p class="note-line run"><b>달리기</b> ${runLine(day.run) || '완료'}</p>` : '') +
+      (day?.run?.done ? `<p class="note-line run"><b>달리기</b> ${runLine(day.run) || '완료'}${day.run.more ? ` · 한 번 더 ${day.run.more.map((m) => fmtRunTime(m.sec)).join(', ')} (합계 ${fmtRunTime(runTotal(day.run).sec)})` : ''}</p>` : '') +
       (note.feel ? `<p class="note-line"><b>소감</b> ${esc(note.feel)}</p>` : '') +
       (note.thanks ? `<p class="note-line"><b>감사</b> ${esc(note.thanks)}</p>` : '') +
       `<button type="button" class="btn ghost sm" data-edit="${date}">${date === state.today ? '오늘 탭에서 체크하기' : '이 날 기록 고치기'}</button>`

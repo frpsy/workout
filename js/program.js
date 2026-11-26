@@ -5,7 +5,7 @@
 
 import { addDays, mondayOf, parse } from './dates.js';
 import { isComplete } from './stats.js';
-import { ranOn } from './run.js';
+import { ranOn, runTotal } from './run.js';
 
 /** 요일 번호: 0 일 · 1 월 … 6 토. run은 그 요일에 달릴 분 */
 export const PROGRAMS = [
@@ -98,8 +98,8 @@ export function weekHabit(days, today, config, exs, { wholeWeek = false } = {}) 
     const plan = planOn(config, date);
     const s = isComplete(days[date], exs, date);
     const r = ranOn(days, date);
-    if (r) runSec += days[date].run.sec || 0;
-    if (r && date <= today) runSecSoFar += days[date].run.sec || 0;
+    if (r) runSec += runTotal(days[date].run).sec;
+    if (r && date <= today) runSecSoFar += runTotal(days[date].run).sec;
     if (s && date <= today) strengthSoFar++;
     if (plan.strength) strengthPlanned++;
     if (s && plan.strength) strengthDone++;
