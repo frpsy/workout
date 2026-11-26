@@ -831,3 +831,23 @@ test('오늘: 홈 맨 아래 이번 주 7칸, 계획이 없는 날은 쉬는 날
   assert.equal(root.querySelector('#homeRest').hidden, false, '근력·달리기 계획이 모두 없는 날');
   store.actions.flushAll();
 });
+
+test('오늘: 달린 곳을 고르고 완료하면 함께 기록, 야외면 속도 대신 거리 프리셋, 다음 날 카드에 지난 장소', async () => {
+  const y = addDays(todayStr(), -1);
+  const runPlan = { 0: 30, 1: 30, 2: 30, 3: 30, 4: 30, 5: 30, 6: 30 };
+  const { store, root } = setup(today, { days: { [y]: { entries: {}, run: { done: true, sec: 1800, place: 'gym' } } }, config: { startDate: '2026-01-05', program: 'balance', restDays: [], runPlan } });
+  await tick();
+  assert.match(root.querySelector('.hcard.run').textContent, /아파트 짐 러닝머신/);
+  root.querySelector('.hcard.run').click();
+  assert.equal(root.querySelector('#runPlaces [data-place="gym"]').getAttribute('aria-pressed'), 'true', '지난번 장소가 기본');
+  root.querySelector('#runPlaces [data-place="out"]').click();
+  root.querySelector('#runBtn').click();
+  assert.equal(store.state.days[todayStr()].run.place, 'out');
+  assert.equal(root.querySelector('#runKmChips').hidden, false, '야외는 거리 프리셋');
+  assert.equal(root.querySelector('#runSpeedChips').hidden, true);
+  root.querySelector('#runPlaces [data-place="work"]').click();
+  assert.equal(store.state.days[todayStr()].run.place, 'work', '달린 뒤에도 고칠 수 있음');
+  assert.equal(root.querySelector('#runSpeedChips').hidden, false, '회사 러닝머신은 속도');
+  assert.match(root.querySelector('#runSum').textContent, /^회사/);
+  store.actions.flushAll();
+});

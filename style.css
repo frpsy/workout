@@ -1936,3 +1936,6 @@ tr.cur td { background: var(--accent-soft); }
 .home-review .link { flex: none; }
 .run-watch { width: 100%; min-height: 48px; margin-top: var(--gap-sm); border: 1px dashed var(--run); border-radius: var(--r-ctrl); background: transparent; color: var(--run); font: inherit; font-weight: 700; cursor: pointer; }
 .run-watch[hidden] { display: none; }
+/* 달린 곳: 회사 · 아파트 짐 · 야외(작은 칩 한 줄) */
+#runPlaces { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: var(--gap-sm); }
+#runPlaces .chip { min-height: 36px; padding-left: 4px; padding-right: 4px; font-size: var(--fs-sm); white-space: nowrap; }
