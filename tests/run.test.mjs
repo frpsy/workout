@@ -86,3 +86,14 @@ test('한 번 더 달리기: more를 정규화하고, 합계·누적에 더함(�
   assert.equal(sum.km, 5.5);
   assert.equal(normalizeRun({ done: true, more: Array.from({ length: 20 }, () => ({ sec: 60 })) }).more.length, 9);
 });
+
+test('달린 곳: 회사·아파트 짐·야외만 남기고, 한 줄 요약 맨 앞, 지난번 장소', async () => {
+  const { normalizeRun, runLine, lastPlace, isTreadPlace } = await import('../js/run.js');
+  assert.equal(normalizeRun({ done: true, place: 'gym' }).place, 'gym');
+  assert.equal('place' in normalizeRun({ done: true, place: 'moon' }), false);
+  assert.equal(runLine({ done: true, sec: 1800, place: 'work' }), '회사 · 30분');
+  const days = { '2026-11-20': { run: { done: true, place: 'work' } }, '2026-11-24': { run: { done: true, place: 'gym' } }, '2026-11-26': { run: { done: true, place: 'out' } } };
+  assert.equal(lastPlace(days, '2026-11-26'), 'gym', '오늘 이전 가장 최근');
+  assert.equal(lastPlace({}, '2026-11-26'), '');
+  assert.equal(isTreadPlace('out'), false);
+});

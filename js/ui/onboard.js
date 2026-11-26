@@ -24,10 +24,10 @@ export function openOnboard(store, { fresh = false } = {}) {
   const equip = config.equipment || EQUIPMENT.map((q) => q.id);
   back.innerHTML = `
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="obTitle">
-      <h2 id="obTitle">집에서 꾸준히, 시작해 볼까요?</h2>
+      <h2 id="obTitle">꾸준히, 시작해 볼까요?</h2>
       <p class="sub">두 가지만 고르면 한 주 계획과 운동을 맞춰 드려요.</p>
       <fieldset class="ob-q">
-        <legend>집에 있는 기구 <small>맨몸 운동은 늘 들어가요</small></legend>
+        <legend>쓸 수 있는 기구 <small>맨몸 운동은 늘 들어가요</small></legend>
         <div class="restdays equip" id="obEquip">
           ${EQUIPMENT.map((q) => `<label class="daychip"><input type="checkbox" value="${q.id}"${equip.includes(q.id) ? ' checked' : ''}><span>${q.name}</span></label>`).join('')}
         </div>

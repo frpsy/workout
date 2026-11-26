@@ -14,6 +14,9 @@ export const RUN_MAX_INCLINE = 15;
 /** 같은 날 ‘한 번 더 달리기’: 더한 달리기 기록 수 상한과 빠른 입력 시간(분) */
 export const RUN_MORE_MAX = 9;
 export const RUN_MORE_PRESETS = [10, 20, 30];
+/** 달린 곳: 러닝머신이 있는 회사·아파트 헬스장, 또는 야외. 야외는 속도 대신 거리로 기록 */
+export const RUN_PLACES = { work: '회사', gym: '아파트 짐', out: '야외' };
+export const isTreadPlace = (place) => place === 'work' || place === 'gym';
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const inRange = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -32,6 +35,7 @@ export function normalizeRun(raw) {
     .slice(0, RUN_MORE_MAX)
     .map((m) => ({ sec: Math.round(m.sec), ...(inRange(m.km, 0.01, RUN_MAX_KM) ? { km: Math.round(m.km * 100) / 100 } : {}) }));
   if (more.length) run.more = more;
+  if (Object.prototype.hasOwnProperty.call(RUN_PLACES, raw.place)) run.place = raw.place;
   return run;
 }
 
@@ -52,12 +56,19 @@ export function runLine(run) {
   if (!run) return '';
   const pace = fmtPace(run.sec, run.km);
   return [
+    run.place ? RUN_PLACES[run.place] : '',
     run.sec ? fmtRunTime(run.sec) : '',
     run.km ? fmtKm(run.km) : '',
     pace && !run.speed ? `${pace}/km` : '', // 러닝머신은 속도로 보여 줌(페이스와 같은 정보)
     run.speed ? `${run.speed}km/h` : '',
     run.incline ? `경사\u00a0${run.incline}%` : '', // 줄이 바뀌어도 ‘경사’와 값이 떨어지지 않게
   ].filter(Boolean).join(' · ');
+}
+
+/** 가장 최근에 기록한 달린 곳(오늘 이전). 없으면 '' */
+export function lastPlace(days, before) {
+  const dates = Object.keys(days).filter((d) => d < before && days[d]?.run?.place).sort();
+  return dates.length ? days[dates[dates.length - 1]].run.place : '';
 }
 
 /** Zone 2 심박 범위: 최대 심박(220 − 나이)의 60~70% */

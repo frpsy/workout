@@ -13,7 +13,7 @@ import { createRow, paintRow } from './exercise-row.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 import { readJson, writeJson } from '../local-store.js';
-import { fmtRunTime, kmFrom, RUN_KM_PRESETS, RUN_MIN_PRESETS, RUN_MORE_MAX, RUN_MORE_PRESETS, RUN_SPEED_PRESETS, runLine, runTotal, zone2 } from '../run.js';
+import { fmtRunTime, isTreadPlace, kmFrom, lastPlace, RUN_PLACES, RUN_KM_PRESETS, RUN_MIN_PRESETS, RUN_MORE_MAX, RUN_MORE_PRESETS, RUN_SPEED_PRESETS, runLine, runTotal, zone2 } from '../run.js';
 import { MINI_RUN_MIN, planFor, planOn, weekHabit } from '../program.js';
 import { ONBOARD_KEY, onboardOpen, openOnboard } from './onboard.js';
 
@@ -108,6 +108,7 @@ export function mountToday(root, store) {
           <span class="run-sum" id="runSum"></span>
           <button type="button" class="undo" id="runUndo" hidden aria-label="달리기 기록 지우기">${icon('undo', 18)}</button>
         </div>
+        <div class="chips places" id="runPlaces" role="group" aria-label="달린 곳">${Object.entries(RUN_PLACES).map(([k, v]) => `<button type="button" class="chip" data-place="${k}" aria-pressed="false">${v}</button>`).join('')}</div>
         <button type="button" class="run-done" id="runBtn" aria-pressed="false"></button>
         <button type="button" class="run-watch" id="runWatch" hidden></button>
         <div class="chips" id="runMinChips" role="group" aria-label="달린 시간 고르기">${RUN_MIN_PRESETS.map((m) => `<button type="button" class="chip" data-min="${m}" aria-pressed="false">${m}분</button>`).join('')}</div>
@@ -150,12 +151,15 @@ export function mountToday(root, store) {
   }
 
   // 달리기 완료: 큰 버튼 한 번으로 기록(계획이 있으면 그 시간으로). 지우기는 옆의 ↶로만 해서 실수로 취소되지 않게
+  let pendingPlace = ''; // 달리기 전에 고른 곳(완료할 때 함께 기록)
+  const placeNow = () => pendingPlace || lastPlace(store.state.days, store.state.selected);
   $('#runBtn', root).addEventListener('click', () => {
     if (!store.state.ready) return;
     const { selected } = store.state;
     if (store.state.days[selected]?.run?.done) return;
     const planned = planFor(store.state.config, selected, store.state.days[selected]).runMin;
-    if (actions.setRun(selected, { done: true, ...(planned ? { sec: planned * 60 } : {}) })) haptic();
+    const place = placeNow();
+    if (actions.setRun(selected, { done: true, ...(planned ? { sec: planned * 60 } : {}), ...(place ? { place } : {}) })) haptic();
   });
   $('#runUndo', root).addEventListener('click', () => {
     if (store.state.ready) actions.setRun(store.state.selected, { done: false });
@@ -219,6 +223,16 @@ export function mountToday(root, store) {
   root.querySelector('#runBox').addEventListener('click', (ev) => {
     const chip = ev.target.closest('.chip');
     if (!chip || !store.state.ready) return;
+    // 달린 곳: 누르면 그곳으로(달리기 전이면 고른 곳만 기억했다가 완료할 때 함께 기록)
+    if (chip.dataset.place) {
+      const { selected, days } = store.state;
+      if (days[selected]?.run?.done) actions.setRun(selected, { place: chip.dataset.place });
+      else {
+        pendingPlace = chip.dataset.place;
+        render(store.state);
+      }
+      return;
+    }
     // 한 번 더 달리기: 누를 때마다 그 시간으로 달리기 한 번을 더함(지우기는 목록의 ✕)
     if (chip.dataset.more) {
       const { selected } = store.state;
@@ -234,7 +248,8 @@ export function mountToday(root, store) {
       : chip.dataset.speed
         ? withKm({ speed: Number(chip.dataset.speed) })
         : { km: Number(chip.dataset.km) };
-    if (actions.setRun(selected, patch) && first) haptic();
+    const place = first && placeNow();
+    if (actions.setRun(selected, place ? { ...patch, place } : patch) && first) haptic();
   });
 
   // 화면 모드: 홈(근력·달리기 카드 두 장) → 카드를 누르면 그 운동만 하는 화면. 끝나면 홈으로
@@ -286,11 +301,14 @@ export function mountToday(root, store) {
     const roundOpen = selected === today && round > 0 && !store.isSessionClosed();
     const tread = !config.equipment || config.equipment.includes('tread');
     const tot = runTotal(run);
+    // 지난번에 달린 곳을 카드에 보여 줌(어디서 달릴지 정해 두면 시작이 쉬움)
+    const lp = lastPlace(days, selected);
+    const where = lp ? `${RUN_PLACES[lp]}${isTreadPlace(lp) ? ' 러닝머신' : ''} · ` : tread ? '러닝머신 · ' : '';
     const names = store.activeExercises().map((e) => e.name).join(' · ');
     const strStat = strDone ? `${icon('check', 18)}완료` : !strPlanned && !started ? '쉬는 날' : `<b>${done}</b>/${total}`;
     const runStat = run ? `${icon('check', 18)}완료` : runPlanned ? `<b>${plan.runMin}</b>분` : '자유';
     const strSub = roundOpen ? `${round + 1}회차 하는 중 · ${done}/${total}` : strPlanned || started ? names || '운동을 설정에서 넣어 주세요' : '오늘은 쉬어도 좋아요';
-    const runSub = tot.count > 1 ? `${tot.count}회 · 합계 ${fmtRunTime(tot.sec)}${tot.km ? ` · ${Math.round(tot.km * 100) / 100}km` : ''}` : run ? runLine(run) || '달렸어요' : runPlanned ? `${tread ? '러닝머신 · ' : ''}대화할 수 있는 편한 속도` : '계획 없는 날 · 달려도 좋아요';
+    const runSub = tot.count > 1 ? `${tot.count}회 · 합계 ${fmtRunTime(tot.sec)}${tot.km ? ` · ${Math.round(tot.km * 100) / 100}km` : ''}` : run ? runLine(run) || '달렸어요' : runPlanned ? `${where}대화할 수 있는 편한 속도` : '계획 없는 날 · 달려도 좋아요';
     const pct = total ? Math.round(((strDone ? total : done) / total) * 100) : 0;
     const again = selected === today ? '<span class="hc-again">＋ 한 번 더</span>' : '';
     const card = (kind, title, stat, sub, isDone, off, extra = '') => // 끝난 카드에는 ‘＋ 한 번 더’(누르면 그 화면에서 이어서)
@@ -565,8 +583,13 @@ export function mountToday(root, store) {
     btn.innerHTML = run ? `${icon('check', 20)}<span>달리기 완료</span>` : `<span>${plan.runMin ? `${plan.runMin}분 ` : ''}달리기 완료</span>`;
     $('#runUndo', root).hidden = !run;
     $('#runSum', root).textContent = run ? runLine(run) : ''; // 목표는 화면 머리와 완료 버튼에 이미 보임
-    // 러닝머신이 있으면 거리 대신 속도 프리셋(거리는 속도 × 시간으로 채움)과 속도·경사 칸
-    const tread = !config.equipment || config.equipment.includes('tread');
+    // 러닝머신(회사·아파트 짐)이면 거리 대신 속도 프리셋(거리는 속도 × 시간으로 채움)과 속도·경사 칸. 야외면 거리 프리셋
+    const place = run?.place || placeNow();
+    for (const c of root.querySelectorAll('#runPlaces .chip')) {
+      c.setAttribute('aria-pressed', String(c.dataset.place === place));
+      c.disabled = !state.ready;
+    }
+    const tread = (!config.equipment || config.equipment.includes('tread')) && place !== 'out';
     $('#runKmChips', root).hidden = !run || tread;
     $('#runSpeedChips', root).hidden = !run || !tread;
     $('#runTread', root).hidden = !tread;
@@ -584,7 +607,7 @@ export function mountToday(root, store) {
     for (const c of root.querySelectorAll('#runMoreChips .chip')) c.disabled = !state.ready || (run?.more || []).length >= RUN_MORE_MAX;
     const hr = zone2(config.age);
     $('#runHint', root).textContent = `${hr ? `심박 ${hr.lo}~${hr.hi}회/분 · ` : ''}숨이 조금 차도 대화할 수 있는 편한 속도로 달려요.`;
-    for (const c of root.querySelectorAll('#runBox .chip:not([data-more])')) {
+    for (const c of root.querySelectorAll('#runBox .chip:not([data-more]):not([data-place])')) {
       const on = c.dataset.min ? run?.sec === c.dataset.min * 60 : c.dataset.speed ? run?.speed === Number(c.dataset.speed) : run?.km === Number(c.dataset.km);
       c.setAttribute('aria-pressed', String(!!run && on));
       c.disabled = !state.ready;
