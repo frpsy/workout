@@ -10,14 +10,17 @@ test('추천 운동을 연속 추가해도 표시한 운동과 실제 추가한 
   const store = createStore(ad);
   const root = document.getElementById('settings');
   store.subscribe(mountSettings(root, store));
-  for (const name of ['플랭크', '리버스 런지', '아령 로우', '데드버그', '매달리기']) {
+  for (const name of ['플랭크', '리버스 런지', '덤벨 컬', '데드버그', '매달리기']) {
     const button = [...root.querySelectorAll('#presets button')].find((b) => b.textContent === '+ ' + name);
     assert.ok(button);
     button.click();
     assert.equal(root.querySelector('#exList .exitem:last-child .exname').value, name);
   }
   root.querySelector('#saveCfg').click(); await tick();
-  assert.equal(new Set(ad.saved.config.at(-1).exercises.map((e) => e.name)).size, 8);
+  const saved = ad.saved.config.at(-1).exercises;
+  assert.equal(new Set(saved.map((e) => e.name)).size, 8);
+  assert.equal(saved.filter((e) => e.active).length, 3, '하루 세 종목: 이미 셋을 쓰고 있어 새 운동은 사용 안 함으로');
+  assert.match(root.querySelector('#setErr').textContent, /3종목/);
 });
 
 test('설정: 추천 운동을 추가하고 쉬는 요일을 골라 저장', async () => {
@@ -318,12 +321,12 @@ test('설정: 내 기구에서 아령을 빼면 아령 동작이 추가 목록�
   const store = createStore(ad);
   const root = document.getElementById('settings');
   store.subscribe(mountSettings(root, store));
-  assert.ok(root.querySelector('#presets [data-preset="goblet-squat"]'), '기구를 고른 적 없으면 모두 보임');
+  assert.ok(root.querySelector('#presets [data-preset="db-curl"]'), '기구를 고른 적 없으면 모두 보임');
   assert.equal(root.querySelector('#presets [data-preset="pushup"]'), null, '이미 있는 동작(기본 푸시업)은 빠짐');
   const db = root.querySelector('#equip input[value="db"]');
   db.checked = false;
   db.dispatchEvent(new Event('change', { bubbles: true }));
-  assert.equal(root.querySelector('#presets [data-preset="goblet-squat"]'), null);
+  assert.equal(root.querySelector('#presets [data-preset="db-curl"]'), null);
   assert.ok(root.querySelector('#presets [data-preset="dead-hang"]'), '철봉 동작은 남음');
   assert.ok(root.querySelector('#presets [data-preset="glute-bridge"]'), '맨몸 동작은 늘 보임');
   root.querySelector('#saveCfg').click();
@@ -372,4 +375,25 @@ test('설정: 프로그램이 있으면 캘린더 일정 파일을 내려받을 
   }
   assert.equal(name, 'repday-운동일정.ics');
   assert.match(await blob.text(), /DTSTART:\d{8}T060000/);
+});
+
+test('설정: 사용 중인 운동이 세 개면 네 번째는 켤 수 없고, 하나를 끄면 켤 수 있음', async () => {
+  const exs = ['a', 'b', 'c', 'd'].map((id, i) => ({ id, name: '운동' + id, unit: 'reps', base: 5, step: 1, sets: 3, active: i < 3 }));
+  const ad = adapter({ config: { startDate: '2026-11-02', exercises: exs } });
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  await tick();
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  const sw = (id) => root.querySelector(`#ac-${id}`);
+  const flip = (id, v) => { sw(id).checked = v; sw(id).dispatchEvent(new Event('change', { bubbles: true })); };
+  flip('d', true);
+  assert.equal(sw('d').checked, false, '네 번째는 켜지지 않음');
+  assert.equal(root.querySelector('#setErr').hidden, false);
+  flip('a', false);
+  flip('d', true);
+  assert.equal(sw('d').checked, true);
+  root.querySelector('#saveCfg').click();
+  await tick();
+  assert.deepEqual(ad.saved.config.at(-1).exercises.filter((e) => e.active).map((e) => e.id), ['b', 'c', 'd']);
 });

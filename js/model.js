@@ -88,6 +88,9 @@ export function normalizeConfig(raw, fallbackStart) {
     });
   }
   if (!exercises.length) exercises = clone(DEFAULT_EXERCISES);
+  // 하루 세 종목까지: 사용 중인 종목이 넘치면 앞에서부터 세 개만 남기고 나머지는 ‘사용 안 함’(지우지 않음)
+  let on = 0;
+  exercises = exercises.map((e) => (e.active && ++on > LIMITS.maxActive ? { ...e, active: false } : e));
   return {
     v: SCHEMA_VERSION,
     startDate: isDateStr(raw.startDate) ? raw.startDate : fallbackStart,
@@ -230,6 +233,7 @@ export function validateConfig(cfg) {
   if (!cfg.exercises.length) errors.push('운동을 하나 이상 넣어 주세요.');
   if (Array.isArray(cfg.restDays) && new Set(cfg.restDays).size >= 7) errors.push('쉬는 요일은 6일까지만 고를 수 있습니다.');
   if (!cfg.exercises.some((e) => e.active)) errors.push('사용하는 운동을 하나 이상 남겨 주세요.');
+  if (cfg.exercises.filter((e) => e.active).length > LIMITS.maxActive) errors.push(`하루에 ${LIMITS.maxActive}종목까지 쓸 수 있어요. 다른 운동의 사용을 꺼 주세요.`);
   if (cfg.exercises.length > LIMITS.maxExercises) errors.push(`운동은 ${LIMITS.maxExercises}개까지 넣을 수 있습니다.`);
   cfg.exercises.forEach((e, i) => {
     const label = e.name || `${i + 1}번째 운동`;

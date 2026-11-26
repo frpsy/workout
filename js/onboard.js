@@ -16,19 +16,14 @@ export const onboardLevel = (id) => ONBOARD_LEVELS.find((l) => l.id === id) || O
 export const START_KG = 5;
 
 /**
- * 추천 운동(도감 id): 밀기·당기기·하체·엉덩이·코어를 하나씩(당기기는 기구가 있을 때만).
- * 처음이면 가장 쉬운 단계, 해 봤으면 한 단계 위. 아령이 있으면 하체·엉덩이에 무게를 더함
+ * 추천 운동(도감 id) 세 개. 처음이면 가장 쉬운 단계, 해 봤으면 한 단계 위
  */
 export function recommend(equipment, levelId) {
   const has = (q) => (equipment || []).includes(q);
   const fresh = levelId === 'new';
-  const ids = [fresh ? 'knee-pushup' : 'pushup'];
-  if (has('bar')) ids.push(fresh ? 'dead-hang' : 'negative-pullup');
-  if (has('db')) ids.push('db-row');
-  ids.push(has('db') && !fresh ? 'goblet-squat' : fresh ? 'squat' : 'reverse-lunge');
-  ids.push(has('db') && !fresh ? 'db-rdl' : 'glute-bridge');
-  ids.push('plank');
-  return ids;
+  // 하루 세 종목: 밀기 · 당기기(철봉, 없으면 아령 컬, 둘 다 없으면 플랭크) · 하체
+  const pull = has('bar') ? (fresh ? 'dead-hang' : 'negative-pullup') : has('db') ? 'db-curl' : 'plank';
+  return [fresh ? 'knee-pushup' : 'pushup', pull, fresh ? 'squat' : 'reverse-lunge'];
 }
 
 const newId = (taken) => {
