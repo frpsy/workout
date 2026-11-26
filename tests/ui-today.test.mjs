@@ -668,6 +668,7 @@ test('오늘: 프로그램이 없어도 홈에는 근력·달리기 카드 두 �
   root.querySelector('#subBack').click();
   assert.equal(root.dataset.mode, 'home');
   assert.ok(root.querySelector('.hcard.str').classList.contains('done'));
+  assert.equal(document.activeElement, root.querySelector('.hcard.str'), '돌아오면 방금 나온 카드에 포커스');
   store.actions.flushAll();
 });
 

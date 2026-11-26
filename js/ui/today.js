@@ -184,10 +184,13 @@ export function mountToday(root, store) {
   // 화면 모드: 홈(근력·달리기 카드 두 장) → 카드를 누르면 그 운동만 하는 화면. 끝나면 홈으로
   let mode = 'home';
   function setMode(m) {
+    const from = mode;
     mode = m;
     render(store.state);
     root.closest('.today-scroll')?.scrollTo?.(0, 0);
+    // 포커스를 보이는 곳으로: 운동 화면은 제목, 홈으로 돌아오면 방금 나온 운동의 카드(숨는 버튼에 포커스가 남지 않게)
     if (m !== 'home') $('#subTitle', root).focus({ preventScroll: true });
+    else $(`.hcard[data-go="${from}"]`, root)?.focus({ preventScroll: true });
   }
   $('#hcards', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-go]');
@@ -498,6 +501,7 @@ export function mountToday(root, store) {
       : home.strDone ? `${icon('check', 18)}완료` : `${done}/${rows.size}`;
     $('#subStat', root).classList.toggle('done', mode === 'run' ? !!run : home.strDone);
     $('#strRest', root).hidden = !(config.program && !home.strPlanned);
+    $('#strRest', root).textContent = `${selected === today ? '오늘은' : '이날은'} 근력 쉬는 날이에요. 해도 괜찮지만 쉬는 것도 계획이에요.`;
     $('#strFinish', root).hidden = !home.strDone;
     $('#runFinish', root).hidden = !run;
 
