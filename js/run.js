@@ -11,6 +11,9 @@ export const RUN_KM_PRESETS = [3, 5, 7, 10];
 export const RUN_SPEED_PRESETS = [6, 7, 8, 9];
 export const RUN_MAX_SPEED = 25;
 export const RUN_MAX_INCLINE = 15;
+/** 같은 날 ‘한 번 더 달리기’: 더한 달리기 기록 수 상한과 빠른 입력 시간(분) */
+export const RUN_MORE_MAX = 9;
+export const RUN_MORE_PRESETS = [10, 20, 30];
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const inRange = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -23,7 +26,22 @@ export function normalizeRun(raw) {
   if (inRange(raw.km, 0.01, RUN_MAX_KM)) run.km = Math.round(raw.km * 100) / 100;
   if (inRange(raw.speed, 1, RUN_MAX_SPEED)) run.speed = Math.round(raw.speed * 10) / 10;
   if (inRange(raw.incline, 0.5, RUN_MAX_INCLINE)) run.incline = Math.round(raw.incline * 2) / 2;
+  // 한 번 더 달린 기록: [{ sec, km? }]. 첫 달리기(위의 값)와 따로 두고 합계는 runTotal로
+  const more = (Array.isArray(raw.more) ? raw.more : [])
+    .filter((m) => isObj(m) && inRange(m.sec, 1, RUN_MAX_SEC))
+    .slice(0, RUN_MORE_MAX)
+    .map((m) => ({ sec: Math.round(m.sec), ...(inRange(m.km, 0.01, RUN_MAX_KM) ? { km: Math.round(m.km * 100) / 100 } : {}) }));
+  if (more.length) run.more = more;
   return run;
+}
+
+/** 그날 달린 횟수·시간·거리 합계(한 번 더 달린 것 포함) */
+export function runTotal(run) {
+  if (!run || !run.done) return { count: 0, sec: 0, km: 0 };
+  const parts = [run, ...(run.more || [])];
+  const sec = parts.reduce((a, p) => a + (p.sec || 0), 0);
+  const km = Math.round(parts.reduce((a, p) => a + (p.km || 0), 0) * 100) / 100;
+  return { count: parts.length, sec, km };
 }
 
 /** 러닝머신 속도(km/h)와 시간(초)으로 거리(km, 소수 둘째 자리). 하나라도 없으면 0 */
@@ -74,13 +92,15 @@ export function runSummary(days, from = '', to = '9999-12-31') {
   const out = { count: 0, sec: 0, km: 0, paceSec: 0, paceKm: 0 };
   for (const [date, day] of Object.entries(days)) {
     if (date < from || date > to || !day || !day.run || !day.run.done) continue;
-    const { sec = 0, km = 0 } = day.run;
+    // 한 번 더 달린 기록도 시간·거리에 더함(달린 날 수는 하루 1)
     out.count++;
-    out.sec += sec;
-    out.km += km;
-    if (sec && km) {
-      out.paceSec += sec;
-      out.paceKm += km;
+    for (const { sec = 0, km = 0 } of [day.run, ...(day.run.more || [])]) {
+      out.sec += sec;
+      out.km += km;
+      if (sec && km) {
+        out.paceSec += sec;
+        out.paceKm += km;
+      }
     }
   }
   out.km = Math.round(out.km * 100) / 100;

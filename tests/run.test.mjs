@@ -73,3 +73,16 @@ test('러닝머신: 속도·경사 정규화, 속도 × 시간 = 거리, 한 줄
   assert.deepEqual(zone2(40), { lo: 108, hi: 126 });
   assert.equal(zone2(undefined), null);
 });
+
+test('한 번 더 달리기: more를 정규화하고, 합계·누적에 더함(달린 날 수는 하루 1)', async () => {
+  const { normalizeRun, runTotal, runSummary } = await import('../js/run.js');
+  const run = normalizeRun({ done: true, sec: 1800, km: 4, more: [{ sec: 600, km: 1.5 }, { sec: 0 }, 'x', { sec: 1200 }] });
+  assert.deepEqual(run.more, [{ sec: 600, km: 1.5 }, { sec: 1200 }]);
+  assert.deepEqual(runTotal(run), { count: 3, sec: 3600, km: 5.5 });
+  assert.deepEqual(runTotal(null), { count: 0, sec: 0, km: 0 });
+  const sum = runSummary({ '2026-11-26': { run } });
+  assert.equal(sum.count, 1);
+  assert.equal(sum.sec, 3600);
+  assert.equal(sum.km, 5.5);
+  assert.equal(normalizeRun({ done: true, more: Array.from({ length: 20 }, () => ({ sec: 60 })) }).more.length, 9);
+});

@@ -783,3 +783,51 @@ test('오늘: 바쁜 날에는 1세트가 계획이라 ‘세트 -2’ 같은 �
   assert.equal(root.querySelector('.row [data-f="delta"]').textContent, '');
   store.actions.flushAll();
 });
+
+test('오늘: 달린 뒤 ‘한 번 더’로 달리기를 더하면 합계가 쌓이고 홈 카드에 ‘2회 · 합계’, ✕로 지움', () => {
+  const { store, root } = setup(today);
+  root.querySelector('.hcard.run').click();
+  assert.equal(root.querySelector('#runMore').hidden, true, '달리기 전에는 숨김');
+  root.querySelector('#runMinChips [data-min="30"]').click();
+  assert.equal(root.querySelector('#runMore').hidden, false);
+  root.querySelector('#runMoreChips [data-more="20"]').click();
+  root.querySelector('#runMoreChips [data-more="10"]').click();
+  assert.deepEqual(store.state.days[store.state.today].run.more, [{ sec: 1200 }, { sec: 600 }]);
+  assert.equal(root.querySelector('#runMoreTotal').textContent, '오늘 3회 · 합계 1시간');
+  assert.equal(root.querySelectorAll('#runMoreList li').length, 2);
+  root.querySelector('#runMoreList [data-i="0"]').click();
+  assert.deepEqual(store.state.days[store.state.today].run.more, [{ sec: 600 }]);
+  root.querySelector('#runFinish').click();
+  const card = root.querySelector('.hcard.run');
+  assert.match(card.textContent, /2회 · 합계 40분/);
+  assert.match(card.textContent, /＋ 한 번 더/, '끝난 카드에 한 번 더 표시');
+  store.actions.flushAll();
+});
+
+test('오늘: 근력을 다 하고 ‘운동 한 번 더 하기’로 2회차를 시작해도 홈 카드는 ✓완료, 근력 화면은 다시 0부터', async () => {
+  const { store, root } = setup(today);
+  root.querySelector('.hcard.str').click();
+  for (const r of root.querySelectorAll('.row')) complete(r);
+  await tick();
+  const again = root.querySelector('#wAgain');
+  assert.equal(root.querySelector('#roundAction').hidden, false, '근력 화면에 한 번 더 하기');
+  again.click();
+  await tick();
+  assert.equal(root.querySelector('#subStat').textContent, '0/3', '2회차는 0부터');
+  assert.equal(root.querySelector('#strFinish').hidden, true);
+  root.querySelector('#subBack').click();
+  const card = root.querySelector('.hcard.str');
+  assert.ok(card.classList.contains('done'), '홈에서는 이미 끝낸 것으로 남음');
+  assert.match(card.textContent, /2회차 하는 중 · 0\/3/);
+  store.actions.flushAll();
+});
+
+test('오늘: 홈 맨 아래 이번 주 7칸, 계획이 없는 날은 쉬는 날 안내', async () => {
+  const dow = new Date(`${todayStr()}T12:00:00`).getDay();
+  const { store, root } = setup(today, { config: { startDate: '2026-01-05', program: 'balance', restDays: [dow], runPlan: {} } });
+  await tick();
+  assert.equal(root.querySelectorAll('#hweek li').length, 7);
+  assert.equal(root.querySelectorAll('#hweek li.today').length, 1);
+  assert.equal(root.querySelector('#homeRest').hidden, false, '근력·달리기 계획이 모두 없는 날');
+  store.actions.flushAll();
+});

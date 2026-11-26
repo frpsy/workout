@@ -1,7 +1,7 @@
 // 머리말(날짜·진행)과 오늘의 운동 체크 행
 
 import { LEVEL_ORDER, LEVELS } from '../config.js';
-import { addDays, dowName, labelMD, diffDays } from '../dates.js';
+import { addDays, dowName, labelMD, diffDays, mondayOf, parse, DOW } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { currentStreak, isComplete } from '../stats.js';
 import { $, esc, haptic } from './dom.js';
@@ -13,13 +13,14 @@ import { createRow, paintRow } from './exercise-row.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 import { readJson, writeJson } from '../local-store.js';
-import { kmFrom, RUN_KM_PRESETS, RUN_MIN_PRESETS, RUN_SPEED_PRESETS, runLine, zone2 } from '../run.js';
-import { MINI_RUN_MIN, planFor, planOn } from '../program.js';
+import { fmtRunTime, kmFrom, RUN_KM_PRESETS, RUN_MIN_PRESETS, RUN_MORE_MAX, RUN_MORE_PRESETS, RUN_SPEED_PRESETS, runLine, runTotal, zone2 } from '../run.js';
+import { MINI_RUN_MIN, planFor, planOn, weekHabit } from '../program.js';
 import { ONBOARD_KEY, onboardOpen, openOnboard } from './onboard.js';
 
 
 // 스트레칭 버튼 앞의 체크 표시(했으면 채워진 동그라미 안의 ✓)
 const PROGRAM_NOTE_KEY = 'workout-check:program-note';
+const REVIEW_KEY = 'workout-check:review'; // 월요일 ‘지난주 돌아보기’를 확인한 주(월요일 날짜)
 const STRETCH_ICON = `<span class="stretch-mark material-stack">${icon('circle', 22)}${icon('check', 15, 'tick')}</span>`;
 
 export function mountToday(root, store) {
@@ -87,10 +88,13 @@ export function mountToday(root, store) {
       </div>
     </header>
     <section class="home" id="home" aria-label="오늘 할 일">
+      <div class="home-review" id="homeReview" hidden><p id="reviewText"></p><button type="button" class="link" id="reviewOk">확인</button></div>
       <p class="home-done" id="homeDone" hidden>${icon('check', 22)}<span id="homeDoneText"></span></p>
+      <p class="home-rest" id="homeRest" hidden>오늘은 쉬는 날이에요. 가볍게 걷거나 스트레칭하면 내일이 더 가벼워요.</p>
       <div class="hcards" id="hcards"></div>
       <p class="todo-nudge" id="todoNudge" hidden></p>
       <p class="todo-mini" id="todoMini" hidden><span id="miniText"></span><button type="button" class="link" id="miniBtn"></button></p>
+      <ol class="hweek" id="hweek" aria-label="이번 주"></ol>
     </section>
     <p class="sub-note" id="strRest" hidden>오늘은 근력 쉬는 날이에요. 해도 괜찮지만 쉬는 것도 계획이에요.</p>
     <button type="button" class="stretch" id="stretchPre" data-kind="pre" aria-pressed="false">${STRETCH_ICON}<span>운동 전 스트레칭</span></button>
@@ -105,6 +109,7 @@ export function mountToday(root, store) {
           <button type="button" class="undo" id="runUndo" hidden aria-label="달리기 기록 지우기">${icon('undo', 18)}</button>
         </div>
         <button type="button" class="run-done" id="runBtn" aria-pressed="false"></button>
+        <button type="button" class="run-watch" id="runWatch" hidden></button>
         <div class="chips" id="runMinChips" role="group" aria-label="달린 시간 고르기">${RUN_MIN_PRESETS.map((m) => `<button type="button" class="chip" data-min="${m}" aria-pressed="false">${m}분</button>`).join('')}</div>
         <div class="chips" id="runKmChips" role="group" aria-label="달린 거리 고르기" hidden>${RUN_KM_PRESETS.map((k) => `<button type="button" class="chip" data-km="${k}" aria-pressed="false">${k}km</button>`).join('')}</div>
         <div class="chips" id="runSpeedChips" role="group" aria-label="러닝머신 속도 고르기" hidden>${RUN_SPEED_PRESETS.map((v) => `<button type="button" class="chip" data-speed="${v}" aria-pressed="false">${v}km/h</button>`).join('')}</div>
@@ -112,6 +117,11 @@ export function mountToday(root, store) {
           <span class="run-field"><span>시간</span><input id="runMin" type="number" inputmode="numeric" min="0" max="1439" placeholder="0" aria-label="달린 시간(분)">분<input id="runSec" type="number" inputmode="numeric" min="0" max="59" placeholder="0" aria-label="달린 시간(초)">초</span>
           <span class="run-field"><span>거리</span><input id="runKm" type="number" inputmode="decimal" min="0" max="500" step="0.01" placeholder="0" aria-label="달린 거리(km)">km</span>
           <span class="run-field" id="runTread"><span>속도</span><input id="runSpeed" type="number" inputmode="decimal" min="0" max="25" step="0.1" placeholder="0" aria-label="러닝머신 속도(km/h)">km/h<span class="gap">경사</span><input id="runIncline" type="number" inputmode="decimal" min="0" max="15" step="0.5" placeholder="0" aria-label="러닝머신 경사(%)">%</span>
+        </div>
+        <div class="run-more" id="runMore" hidden>
+          <p class="run-more-h"><span>한 번 더 달렸나요?</span><span class="run-more-total" id="runMoreTotal"></span></p>
+          <div class="chips" id="runMoreChips" role="group" aria-label="한 번 더 달린 시간 더하기">${RUN_MORE_PRESETS.map((m) => `<button type="button" class="chip" data-more="${m}">+${m}분</button>`).join('')}</div>
+          <ul class="run-more-list" id="runMoreList"></ul>
         </div>
         <p class="run-hint" id="runHint">숨이 조금 차도 대화할 수 있는 편한 속도로 달려요.</p>
       </div>
@@ -150,6 +160,43 @@ export function mountToday(root, store) {
   $('#runUndo', root).addEventListener('click', () => {
     if (store.state.ready) actions.setRun(store.state.selected, { done: false });
   });
+  // 달리기 화면에서 ‘운동 시작’으로 잰 시간: 끝나면 그 시간으로 달리기(또는 한 번 더)를 한 번에 기록
+  let watchFrom = Infinity; // 달리기 화면에서 스톱워치를 시작한 시각(ms)
+  let usedSpan = 0; // 이미 기록에 쓴 구간의 끝 시각
+  $('#wBtn', root).addEventListener('click', () => {
+    if (mode === 'run' && watchFrom === Infinity) watchFrom = Date.now() - 1000;
+  }, true);
+  const watchSpan = () => {
+    const { days, today, selected } = store.state;
+    const last = selected === today ? (days[today]?.sessions || []).at(-1) : null;
+    return last && last.s >= watchFrom && last.e > usedSpan && last.sec >= 60 ? last : null;
+  };
+  $('#runWatch', root).addEventListener('click', () => {
+    const span = watchSpan();
+    if (!span || !store.state.ready) return;
+    const { selected, days } = store.state;
+    const run = days[selected]?.run;
+    const sec = Math.round(span.sec / 60) * 60;
+    const ok = run
+      ? actions.setRun(selected, { more: [...(run.more || []), { sec }].slice(0, RUN_MORE_MAX) })
+      : actions.setRun(selected, withKm({ done: true, sec }));
+    if (ok) {
+      usedSpan = span.e;
+      watchFrom = Infinity;
+      haptic();
+    }
+  });
+  $('#runMoreList', root).addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-i]');
+    if (!b || !store.state.ready) return;
+    const { selected } = store.state;
+    const more = (store.state.days[selected]?.run?.more || []).filter((_, i) => i !== +b.dataset.i);
+    actions.setRun(selected, { more });
+  });
+  $('#reviewOk', root).addEventListener('click', () => {
+    writeJson(REVIEW_KEY, { seen: mondayOf(store.state.today) });
+    render(store.state);
+  });
   const num = (el) => {
     const v = parseFloat(el.value);
     return Number.isFinite(v) && v > 0 ? v : 0;
@@ -170,6 +217,13 @@ export function mountToday(root, store) {
   root.querySelector('#runBox').addEventListener('click', (ev) => {
     const chip = ev.target.closest('.chip');
     if (!chip || !store.state.ready) return;
+    // 한 번 더 달리기: 누를 때마다 그 시간으로 달리기 한 번을 더함(지우기는 목록의 ✕)
+    if (chip.dataset.more) {
+      const { selected } = store.state;
+      const more = store.state.days[selected]?.run?.more || [];
+      if (more.length < RUN_MORE_MAX && actions.setRun(selected, { more: [...more, { sec: chip.dataset.more * 60 }] })) haptic();
+      return;
+    }
     const { selected } = store.state;
     const run = store.state.days[selected]?.run || {};
     const first = !run.done;
@@ -221,18 +275,26 @@ export function mountToday(root, store) {
     const started = Object.values(days[selected]?.entries || {}).some((e) => e.done || e.setsDone > 0);
     const strPlanned = !program || plan.strength;
     const runPlanned = !!plan.runMin;
-    const strDone = total > 0 && done === total;
+    // 근력 완료는 회차를 합쳐 봄: ‘한 번 더 하기’로 2회차를 시작해도 홈에서는 이미 끝낸 것으로 남음
+    const res = store.resolver();
+    const exs = store.activeExercises();
+    const aggDone = exs.filter((e) => store.view(selected, e, res, { aggregate: true }).done).length;
+    const strDone = total > 0 && aggDone === total;
+    const round = days[selected]?.rounds?.length || 0;
+    const roundOpen = selected === today && round > 0 && !store.isSessionClosed();
     const tread = !config.equipment || config.equipment.includes('tread');
+    const tot = runTotal(run);
     const names = store.activeExercises().map((e) => e.name).join(' · ');
     const strStat = strDone ? `${icon('check', 18)}완료` : !strPlanned && !started ? '쉬는 날' : `<b>${done}</b>/${total}`;
     const runStat = run ? `${icon('check', 18)}완료` : runPlanned ? `<b>${plan.runMin}</b>분` : '자유';
-    const strSub = strPlanned || started ? names || '운동을 설정에서 넣어 주세요' : '오늘은 쉬어도 좋아요';
-    const runSub = run ? runLine(run) || '달렸어요' : runPlanned ? `${tread ? '러닝머신 · ' : ''}대화할 수 있는 편한 속도` : '계획 없는 날 · 달려도 좋아요';
-    const pct = total ? Math.round((done / total) * 100) : 0;
-    const card = (kind, title, stat, sub, isDone, off, extra = '') =>
+    const strSub = roundOpen ? `${round + 1}회차 하는 중 · ${done}/${total}` : strPlanned || started ? names || '운동을 설정에서 넣어 주세요' : '오늘은 쉬어도 좋아요';
+    const runSub = tot.count > 1 ? `${tot.count}회 · 합계 ${fmtRunTime(tot.sec)}${tot.km ? ` · ${Math.round(tot.km * 100) / 100}km` : ''}` : run ? runLine(run) || '달렸어요' : runPlanned ? `${tread ? '러닝머신 · ' : ''}대화할 수 있는 편한 속도` : '계획 없는 날 · 달려도 좋아요';
+    const pct = total ? Math.round(((strDone ? total : done) / total) * 100) : 0;
+    const again = selected === today ? '<span class="hc-again">＋ 한 번 더</span>' : '';
+    const card = (kind, title, stat, sub, isDone, off, extra = '') => // 끝난 카드에는 ‘＋ 한 번 더’(누르면 그 화면에서 이어서)
       `<button type="button" class="hcard ${kind}${isDone ? ' done' : ''}${off ? ' off' : ''}" data-go="${kind}" aria-label="${title} ${isDone ? '완료' : off ? '쉬는 날' : ''}, 누르면 ${title} 화면">` +
       `<span class="hc-top"><span class="hc-title">${title}</span><span class="hc-stat">${stat}</span></span>` +
-      `<span class="hc-sub">${esc(sub)}</span>${extra}<span class="hc-go" aria-hidden="true">${icon('next', 20)}</span></button>`;
+      `<span class="hc-sub">${esc(sub)}</span>${extra}${isDone ? again : ''}<span class="hc-go" aria-hidden="true">${icon('next', 20)}</span></button>`;
     const strCard = card('str', '근력', strStat, strSub, strDone, !strPlanned && !started && !strDone, strPlanned || started ? `<span class="hc-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>` : '');
     const runCard = card('run', '달리기', runStat, runSub, !!run, !runPlanned && !run);
     // 달리기만 하는 날은 달리기 카드를 위로
@@ -240,7 +302,12 @@ export function mountToday(root, store) {
     const planned = strPlanned || runPlanned;
     const allDone = planned && (!strPlanned || strDone) && (!runPlanned || !!run);
     $('#homeDone', root).hidden = !allDone;
-    $('#homeDoneText', root).textContent = selected === today ? '오늘 할 일을 모두 마쳤어요' : '그날 할 일을 모두 마쳤어요';
+    const streak = allDone && selected === today ? currentStreak(days, today, exs, new Set(config.restDays || [])) : 0;
+    $('#homeDoneText', root).textContent = `${selected === today ? '오늘 할 일을 모두 마쳤어요' : '그날 할 일을 모두 마쳤어요'}${streak > 1 ? ` · 연속 ${streak}일` : ''}`;
+    // 계획이 하나도 없는 날(프로그램의 온전한 쉬는 날): 쉬는 것도 계획이라고 알림
+    $('#homeRest', root).hidden = planned || started || !!run;
+    renderWeek(state, exs);
+    renderReview(state, exs);
     // 두 번 연속 놓치지 않기: 어제 계획이 있었는데 하나도 못 했고, 오늘 아직 아무것도 안 했을 때만(프로그램을 쓸 때)
     const y = addDays(today, -1);
     const yp = planOn(config, y);
@@ -261,6 +328,33 @@ export function mountToday(root, store) {
     $('#miniBtn', root).textContent = mini ? '되돌리기' : `${short}만 하기`;
     $('#miniBtn', root).disabled = !state.ready;
     return { strPlanned, strDone };
+  }
+
+  /** 홈 맨 아래 이번 주 7칸: 날마다 근력·달리기 점(했으면 채움, 계획이면 테두리). 사슬이 이어지는 게 보이게 */
+  function renderWeek(state, exs) {
+    const { config, today, selected, days } = state;
+    const h = weekHabit(days, today, config, exs);
+    const dot = (kind, did, plan) => `<i class="hw-dot ${kind}${did ? ' on' : plan ? ' plan' : ''}"></i>`;
+    $('#hweek', root).innerHTML = h.days.map((d) => {
+      const lbl = DOW[parse(d.date).getDay()];
+      const ran = !!days[d.date]?.run?.done;
+      const say = [d.strength && '근력', ran && '달리기'].filter(Boolean).join('·') || (d.future ? '' : '쉼');
+      return `<li class="${d.date === today ? 'today' : ''}${d.date === selected ? ' sel' : ''}${d.future ? ' future' : ''}" aria-label="${lbl}요일 ${say}"><span>${lbl}</span><span class="hw-dots">${dot('str', d.strength, d.plan.strength && config.program)}${dot('run', ran, d.plan.runMin)}</span></li>`;
+    }).join('');
+  }
+
+  /** 월~수요일 홈 맨 위: 지난주 돌아보기 한 줄(프로그램을 쓸 때, 확인하면 그 주에는 숨김) */
+  function renderReview(state, exs) {
+    const { config, today, days } = state;
+    const box = $('#homeReview', root);
+    const mon = mondayOf(today);
+    const lastSun = addDays(mon, -1);
+    const show = !!config.program && diffDays(today, mon) <= 2 && lastSun >= config.startDate && readJson(REVIEW_KEY).seen !== mon;
+    box.hidden = !show;
+    if (!show) return;
+    const h = weekHabit(days, lastSun, config, exs, { wholeWeek: true });
+    const good = h.rate !== null && h.rate >= 80;
+    $('#reviewText', root).innerHTML = `<b>지난주</b> 근력 ${h.strengthDone}/${h.strengthPlanned}회 · 달리기 ${h.runMin}/${h.runPlanMin}분${h.rate !== null ? ` · 계획의 ${h.rate}%` : ''}<br><span>${good ? '잘 지켰어요. 이번 주도 이 흐름으로 가요.' : '괜찮아요. 이번 주는 바쁜 날 버튼으로라도 이어 가요.'}</span>`;
   }
 
   /* ---------- 초 단위 운동 스톱워치 (한 번에 한 종목) ---------- */
@@ -476,9 +570,19 @@ export function mountToday(root, store) {
     $('#runTread', root).hidden = !tread;
     $('#runDetail', root).hidden = !run;
     $('#runHint', root).hidden = !!run;
+    const span = watchSpan();
+    const wb = $('#runWatch', root);
+    wb.hidden = !span || mode !== 'run';
+    if (span) wb.textContent = run ? `방금 잰 ${fmtRunTime(Math.round(span.sec / 60) * 60)}을 한 번 더로 기록` : `방금 잰 ${fmtRunTime(Math.round(span.sec / 60) * 60)}으로 달리기 기록`;
+    // 한 번 더 달리기: 달린 뒤에만, 더한 기록 목록과 오늘 합계
+    const tot = runTotal(run);
+    $('#runMore', root).hidden = !run;
+    $('#runMoreTotal', root).textContent = tot.count > 1 ? `오늘 ${tot.count}회 · 합계 ${fmtRunTime(tot.sec)}` : '';
+    $('#runMoreList', root).innerHTML = (run?.more || []).map((m, i) => `<li><span>${i + 2}회 ${fmtRunTime(m.sec)}</span><button type="button" class="icon" data-i="${i}" aria-label="${i + 2}회 달리기 지우기">✕</button></li>`).join('');
+    for (const c of root.querySelectorAll('#runMoreChips .chip')) c.disabled = !state.ready || (run?.more || []).length >= RUN_MORE_MAX;
     const hr = zone2(config.age);
     $('#runHint', root).textContent = `${hr ? `심박 ${hr.lo}~${hr.hi}회/분 · ` : ''}숨이 조금 차도 대화할 수 있는 편한 속도로 달려요.`;
-    for (const c of root.querySelectorAll('#runBox .chip')) {
+    for (const c of root.querySelectorAll('#runBox .chip:not([data-more])')) {
       const on = c.dataset.min ? run?.sec === c.dataset.min * 60 : c.dataset.speed ? run?.speed === Number(c.dataset.speed) : run?.km === Number(c.dataset.km);
       c.setAttribute('aria-pressed', String(!!run && on));
       c.disabled = !state.ready;
@@ -496,13 +600,15 @@ export function mountToday(root, store) {
     const home = renderHome(state, plan, run, done, rows.size);
     // 근력·달리기 화면 머리: 제목과 진행, 끝나면 ‘오늘 화면으로’ 버튼
     $('#subTitle', root).textContent = mode === 'run' ? '달리기' : '근력';
+    // 근력 화면은 지금 회차 기준(2회차를 시작하면 다시 0/4부터)
+    const curDone = rows.size > 0 && done === rows.size;
     $('#subStat', root).innerHTML = mode === 'run'
       ? run ? `${icon('check', 18)}완료` : plan.runMin ? `목표 ${plan.runMin}분` : ''
-      : home.strDone ? `${icon('check', 18)}완료` : `${done}/${rows.size}`;
-    $('#subStat', root).classList.toggle('done', mode === 'run' ? !!run : home.strDone);
+      : curDone ? `${icon('check', 18)}완료` : `${done}/${rows.size}`;
+    $('#subStat', root).classList.toggle('done', mode === 'run' ? !!run : curDone);
     $('#strRest', root).hidden = !(config.program && !home.strPlanned);
     $('#strRest', root).textContent = `${selected === today ? '오늘은' : '이날은'} 근력 쉬는 날이에요. 해도 괜찮지만 쉬는 것도 계획이에요.`;
-    $('#strFinish', root).hidden = !home.strDone;
+    $('#strFinish', root).hidden = !curDone;
     $('#runFinish', root).hidden = !run;
 
     const segs = $('#segs', root);
