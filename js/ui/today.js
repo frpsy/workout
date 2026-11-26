@@ -15,6 +15,7 @@ import { EV, emit } from '../events.js';
 import { readJson, writeJson } from '../local-store.js';
 import { fmtRunTime, kmFrom, RUN_KM_PRESETS, RUN_MIN_PRESETS, RUN_SPEED_PRESETS, runLine, zone2 } from '../run.js';
 import { planOn } from '../program.js';
+import { ONBOARD_KEY, onboardOpen, openOnboard } from './onboard.js';
 
 
 // 스트레칭 버튼 앞의 체크 표시(했으면 채워진 동그라미 안의 ✓)
@@ -115,10 +116,8 @@ export function mountToday(root, store) {
   mountSoundButton($('#sndQuick', root)); // 효과음 켜기/끄기: 운동 중에 설정 탭에 가지 않고 바로
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
   // 프로그램을 아직 안 골랐으면 한 줄 안내(‘나중에’는 14일 숨김, 이 브라우저에만 기억)
-  $('#programGo', root).addEventListener('click', () => {
-    emit(EV.gotoTab, 'settings');
-    document.getElementById('progBox')?.scrollIntoView({ block: 'start' });
-  });
+  // 고르기: 기구·수준 두 질문으로 프로그램과 운동을 맞추는 시작 설정을 엶
+  $('#programGo', root).addEventListener('click', () => openOnboard(store, { fresh: !Object.keys(store.state.days).length }));
   $('#programLater', root).addEventListener('click', () => {
     writeJson(PROGRAM_NOTE_KEY, { snoozeUntil: addDays(store.state.today, 14) });
     render(store.state);
@@ -499,6 +498,8 @@ export function mountToday(root, store) {
     const recNote = $('#recNote', root);
     recNote.hidden = !rec || strOff; // 회복주는 근력 목표 이야기라 근력 쉬는 날에는 숨김
     $('#weekLabel', root).querySelector('.tag')?.toggleAttribute('hidden', strOff);
+    // 처음 쓰는 사람(기록·프로그램 없음): 시작 설정을 한 번 띄움
+    if (state.ready && !config.program && !Object.keys(state.days).length && !readJson(ONBOARD_KEY).done && !onboardOpen()) openOnboard(store, { fresh: true });
     const snooze = readJson(PROGRAM_NOTE_KEY).snoozeUntil || '';
     $('#programNote', root).hidden = !state.ready || !!config.program || selected !== today || (snooze && today < snooze) || !$('#loginNote', root).hidden;
     recNote.textContent = `이번 주는 목표를 ${Math.round(config.plan.recoveryRatio * 100)}%로 줄인 회복주입니다.`;
