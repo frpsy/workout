@@ -1,7 +1,7 @@
 // 운동·목표 설정과 계정(로그인)
 
 import { DEFAULT_SETS, LIMITS, UNITS } from '../config.js';
-import { EQUIPMENT, libById, libFor, libraryGroups } from '../library.js';
+import { EQUIPMENT, libById, libFor, libraryGroups, videoForExercise, videoSearchUrl } from '../library.js';
 import { DOW, dowName, labelMD, todayStr } from '../dates.js';
 import { fmtKo } from '../session.js';
 import { newExerciseId, validateConfig } from '../model.js';
@@ -16,6 +16,13 @@ import { openOnboard } from './onboard.js';
 import { buildIcs } from '../ics.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
+/** 설정 운동 목록의 운동법 영상 링크(영상이 없으면 유튜브 검색) */
+function exVideoLink(e) {
+  const v = videoForExercise(e);
+  const href = v ? `https://youtu.be/${v.id}` : videoSearchUrl(e.name || '운동');
+  return `<a class="video sm" href="${esc(href)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(e.name)} ${v ? '운동법 영상 보기' : '운동법 영상 찾기'}">${icon('video', 18)}<span>${v ? '운동법' : '찾기'}</span></a>`;
+}
+
 /** 무게 칸을 보일 종목: 아령 동작, 직접 만든 종목, 이미 무게가 있는 종목 */
 const hasKg = (e) => e.kg !== undefined || !libFor(e) || libFor(e).equip === 'db';
 
@@ -270,6 +277,7 @@ export function mountSettings(root, store, theme = null) {
         </div>
         <div class="exrow3">
           <label class="usechk"><span class="switch sm"><input type="checkbox" role="switch" data-k="active"${e.active ? ' checked' : ''} id="ac-${e.id}"><i aria-hidden="true"></i></span> 사용</label>
+          ${exVideoLink(e)}
           <span class="spacer"></span>
           <button type="button" class="icon" data-act="up"${i === 0 ? ' disabled' : ''} aria-label="${esc(e.name)} 위로">${icon('up', 18)}</button>
           <button type="button" class="icon" data-act="down"${i === n - 1 ? ' disabled' : ''} aria-label="${esc(e.name)} 아래로">${icon('moveDown', 18)}</button>

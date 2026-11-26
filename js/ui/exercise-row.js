@@ -2,7 +2,7 @@
 // 동작은 today.js가 handlers로 넘기고, 이 파일은 DOM만 맡습니다.
 
 import { UNITS } from '../config.js';
-import { libById, libFor, videoOf } from '../library.js';
+import { libById, libFor, videoForExercise, videoSearchUrl } from '../library.js';
 import { kgStep } from '../setlog.js';
 import { esc, haptic } from './dom.js';
 import { icon } from './icon.js';
@@ -58,7 +58,10 @@ export function createRow(ex, h) {
   const u = esc(unit.label);
   const n = esc(ex.name);
   const lib = libFor(ex);
-  const video = videoOf(lib); // 운동법 영상(조회수 높은 한국어 자세 영상)
+  // 운동법 영상: 도감·예전 종목·별칭으로 찾은 한국어 자세 영상. 없으면(직접 만든 종목) 이름으로 유튜브 검색
+  const video = videoForExercise(ex);
+  const videoHref = video ? `https://youtu.be/${video.id}` : videoSearchUrl(ex.name);
+  const videoTitle = video ? `${video.ch} 운동법 영상` : '유튜브에서 운동법 찾기';
   const easier = libById(lib?.easier);
   // 자세 요령 한 줄(지금 할 종목에만 보임). 더 쉬운 동작이 있으면 함께 알려 시작 문턱을 낮춤
   const cue = lib ? `<p class="cue">${esc(lib.cue)}${lib.side ? ' · 한쪽씩' : ''}${easier ? `<span class="alt"> · 힘들면 ${esc(easier.name)}</span>` : ''}</p>` : '';
@@ -66,7 +69,7 @@ export function createRow(ex, h) {
   el.className = 'row';
   el.innerHTML = `
     <div class="info">
-      <div class="nameline"><h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>${video ? `<a class="video" data-f="video" href="https://youtu.be/${esc(video.id)}" target="_blank" rel="noopener noreferrer" title="${esc(video.ch)} 운동법 영상" aria-label="${n} 운동법 영상 보기(유튜브, ${esc(video.ch)})">${icon('video', 22)}<span>운동법</span></a>` : ''}</div>
+      <div class="nameline"><h2 class="name">${n}<span class="delta" data-f="delta"></span></h2><a class="video" data-f="video" href="${esc(videoHref)}" target="_blank" rel="noopener noreferrer" title="${esc(videoTitle)}" aria-label="${n} ${video ? `운동법 영상 보기(유튜브, ${esc(video.ch)})` : '운동법 영상 찾기(유튜브 검색)'}">${icon('video', 22)}<span>${video ? '운동법' : '운동법 찾기'}</span></a></div>
       ${cue}
       <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span>${ex.kg ? `<span class="kg">${ex.kg}kg</span>` : ''}<span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button><button type="button" class="more" data-f="more" aria-expanded="false" aria-label="${n} 개수·세트 조절 펴기">${icon('down', 18)}</button></p>
     </div>

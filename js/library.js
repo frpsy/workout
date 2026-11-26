@@ -59,35 +59,70 @@ export const LIBRARY = [
 ];
 
 /**
- * 운동법 영상: 동작마다 조회수 높은 한국어 자세 영상 하나(2026-11-26 유튜브 검색에서 고르고 열리는지 확인).
- * ch는 채널 이름. 한국어 영상이 없던 동작(어깨 당기기·한 다리 브리지)은 가장 가까운 동작의 영상을 씀
+ * 운동법 영상: 동작마다 한국어 자세 영상 하나(2026-11-26 유튜브 검색 → 조회수 순으로 보고, 그 동작을 직접 다루는
+ * 15분 이하 자세 설명 영상을 고름 → 재생 가능 확인 → Gemini 교차 검수로 루틴·다른 변형 동작 영상을 바꿈). ch는 채널 이름
  */
 export const VIDEOS = {
   'wall-pushup': { id: 'nXifOjEgUR0', ch: 'Sean Lee' },
   'knee-pushup': { id: 'vfLVQQ0CsNw', ch: '채코치의 운동생활' },
   pushup: { id: '-_DUjHxgmWk', ch: '바벨라토르 홈트레이닝' },
-  'pike-pushup': { id: 'XMQo6XZwaoc', ch: 'Master Choi' },
+  'pike-pushup': { id: 'gnJpM1Pc_Zs', ch: '바벨라토르 홈트레이닝' },
   'dead-hang': { id: 'juhis5jjF7c', ch: '보통사람을 위한 운동채널' },
-  'scap-pullup': { id: '4HLGdRyMkIU', ch: '바벨라토르 홈트레이닝' },
-  'negative-pullup': { id: '551f1r0wdc4', ch: '세계적으로 유명한 운동 정보' },
+  'scap-pullup': { id: 'z2aBRft1tAE', ch: '바벨라토르 홈트레이닝' },
+  'negative-pullup': { id: 'dm5dfExN-6Q', ch: '이준명' },
   chinup: { id: '6GWGVAO8oU4', ch: '핏블리' },
   pullup: { id: 'nWhS28U6bCY', ch: '바벨라토르 홈트레이닝' },
   squat: { id: '9Sl5tI4_J-0', ch: '메루치양식장' },
-  'reverse-lunge': { id: '7erin-2cpRo', ch: '이득근' },
-  'split-squat': { id: 'isX0pDUue8g', ch: '핏블리' },
-  'calf-raise': { id: '-azhxuWVYCM', ch: '쇠질연구소' },
+  'reverse-lunge': { id: 'v6kupXlaijo', ch: '채코치의 운동생활' },
+  'split-squat': { id: 'J7KRBcE-xhI', ch: '멸치탈출연구소' },
+  'calf-raise': { id: 'OHp56zqYn6U', ch: '보통사람을 위한 운동채널' },
   'glute-bridge': { id: '6EGYtkbj_34', ch: '자세요정' },
-  'single-bridge': { id: '6EGYtkbj_34', ch: '자세요정' },
-  plank: { id: 'v54Jtmi2BwU', ch: '힙으뜸' },
+  'single-bridge': { id: 'dhccGJRKfVU', ch: '하이닥' },
+  plank: { id: 'Zq8nRY9P_cM', ch: '바벨라토르 홈트레이닝' },
   'side-plank': { id: 'fHJA-x1bh58', ch: '채코치의 운동생활' },
   'dead-bug': { id: 'EHn2WswT5uU', ch: '움직이기' },
   'bird-dog': { id: 'k9uHaNi4lSM', ch: '알쓸물치' },
-  'hanging-knee-raise': { id: '9DY22a5Zc9I', ch: '세계적으로 유명한 운동 정보' },
+  'hanging-knee-raise': { id: 'C9yFlyCGCr4', ch: '김명섭의 헬스교실' },
   'db-curl': { id: '3t03ehGkH-Q', ch: '키다리형' },
   'hammer-curl': { id: 'n4L2Kvdtg-8', ch: '강경원' },
   'concentration-curl': { id: 'lzRl0hd0fUg', ch: '양선수의 온라인PT' },
 };
+
+/** 도감에서 빠진 예전 종목(추천 종목·예전 아령 동작)의 운동법 영상. 이름으로 찾음 */
+export const NAME_VIDEOS = {
+  딥스: { id: 'pQSfXvaQGas', ch: '바벨라토르 홈트레이닝' },
+  버피: { id: 'DZu_ntnyYyM', ch: '헬마드' },
+  '고블릿 스쿼트': { id: 'lI6Z6VIhOR4', ch: '빅씨스' },
+  '아령 로우': { id: '2i1v1UvsP_w', ch: '강경원' },
+  '아령 숄더 프레스': { id: 'Ia9DYFMkMmU', ch: '핏블리' },
+  '아령 플로어 프레스': { id: 'YV9TsDJ55hg', ch: '건지부부' },
+  '아령 루마니안 데드리프트': { id: 'xqhNbasgTtU', ch: '핏블리' },
+  '아령 리버스 런지': { id: 'v6kupXlaijo', ch: '채코치의 운동생활' },
+  '아령 리버스 플라이': { id: 'iD4r-e8mmj8', ch: '핏블리' },
+  '아령 들고 걷기': { id: 'I-kMtQ6l5es', ch: '김성길 박사 스포츠재활 킹바디' },
+};
+
+/** 이름 별칭: 띄어쓰기·표기만 다른 이름을 도감 동작으로(직접 만든 종목도 영상을 찾게) */
+const ALIASES = {
+  푸쉬업: 'pushup', 팔굽혀펴기: 'pushup', 턱걸이: 'pullup', 런지: 'reverse-lunge', 백런지: 'reverse-lunge', 브릿지: 'glute-bridge', 힙브릿지: 'glute-bridge',
+  덤벨: 'db-curl', 덤벨컬: 'db-curl', 아령컬: 'db-curl', 데드행: 'dead-hang', 철봉매달리기: 'dead-hang', 레그레이즈: 'hanging-knee-raise', 행잉레그레이즈: 'hanging-knee-raise',
+};
+const squash = (s) => String(s || '').replace(/\s+/g, '').replace(/쉬/g, '시').replace(/브릿지/g, '브리지');
+const BY_SQUASH = new Map(LIBRARY.map((x) => [squash(x.name), x]));
+const NAME_SQUASH = new Map(Object.entries(NAME_VIDEOS).map(([k, v]) => [squash(k), v]));
+
 export const videoOf = (item) => (item && VIDEOS[item.id]) || null;
+
+/** 종목의 운동법 영상: 도감 동작 → 예전 종목 이름 → 별칭. 없으면 null(화면은 유튜브 검색 링크로 대신함) */
+export function videoForExercise(ex) {
+  const lib = libFor(ex);
+  if (lib) return videoOf(lib);
+  const k = squash(ex?.name);
+  return NAME_SQUASH.get(k) || videoOf(libById(ALIASES[k]) || BY_SQUASH.get(k)) || null;
+}
+
+/** 영상이 없는 종목: 이름으로 유튜브에서 한국어 자세 영상을 찾는 주소 */
+export const videoSearchUrl = (name) => `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} 자세`)}`;
 
 const BY_ID = new Map(LIBRARY.map((x) => [x.id, x]));
 export const libById = (id) => BY_ID.get(id) || null;

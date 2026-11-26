@@ -397,3 +397,14 @@ test('설정: 사용 중인 운동이 세 개면 네 번째는 켤 수 없고, �
   await tick();
   assert.deepEqual(ad.saved.config.at(-1).exercises.filter((e) => e.active).map((e) => e.id), ['b', 'c', 'd']);
 });
+
+test('설정: 운동 목록마다 운동법 링크(영상이 없으면 검색)', () => {
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(adapter());
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  const links = [...root.querySelectorAll('#exList .exitem a.video')];
+  assert.equal(links.length, 3);
+  assert.deepEqual(links.map((a) => a.getAttribute('href')), ['https://youtu.be/-_DUjHxgmWk', 'https://youtu.be/nWhS28U6bCY', 'https://youtu.be/9Sl5tI4_J-0']);
+  assert.ok(links.every((a) => a.target === '_blank' && /noopener/.test(a.rel)));
+});
