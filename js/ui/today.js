@@ -14,7 +14,7 @@ import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 import { readJson, writeJson } from '../local-store.js';
 import { fmtRunTime, kmFrom, RUN_KM_PRESETS, RUN_MIN_PRESETS, RUN_SPEED_PRESETS, runLine, zone2 } from '../run.js';
-import { planOn } from '../program.js';
+import { MINI_RUN_MIN, planFor, planOn } from '../program.js';
 import { ONBOARD_KEY, onboardOpen, openOnboard } from './onboard.js';
 
 
@@ -42,6 +42,7 @@ export function mountToday(root, store) {
       <div class="todo" id="todayPlan" hidden>
         <div class="todo-items" id="todoItems" role="group" aria-label="오늘 할 일"></div>
         <p class="todo-nudge" id="todoNudge" hidden></p>
+        <p class="todo-mini" id="todoMini" hidden><span id="miniText"></span><button type="button" class="link" id="miniBtn"></button></p>
       </div>
       <div class="headline">
         <div class="hdate">
@@ -140,7 +141,7 @@ export function mountToday(root, store) {
     if (!store.state.ready) return;
     const { selected } = store.state;
     if (store.state.days[selected]?.run?.done) return;
-    const planned = planOn(store.state.config, selected).runMin;
+    const planned = planFor(store.state.config, selected, store.state.days[selected]).runMin;
     if (actions.setRun(selected, { done: true, ...(planned ? { sec: planned * 60 } : {}) })) haptic();
   });
   $('#runUndo', root).addEventListener('click', () => {
@@ -195,8 +196,13 @@ export function mountToday(root, store) {
     if (b.dataset.todo === 'str') return go(root.querySelector('.row.current') || $('#rows', root));
     const { selected } = store.state;
     if (store.state.days[selected]?.run?.done) return go($('#runBox', root));
-    const min = planOn(store.state.config, selected).runMin;
+    const min = planFor(store.state.config, selected, store.state.days[selected]).runMin;
     if (actions.setRun(selected, { done: true, ...(min ? { sec: min * 60 } : {}) })) haptic();
+  });
+
+  $('#miniBtn', root).addEventListener('click', () => {
+    const { selected, days } = store.state;
+    if (actions.setMini(selected, !days[selected]?.mini)) haptic();
   });
 
   $('#levels', root).addEventListener('click', (ev) => {
@@ -231,9 +237,18 @@ export function mountToday(root, store) {
     const nudge = $('#todoNudge', root);
     const started = Object.values(days[selected]?.entries || {}).some((e) => e.done || e.setsDone > 0); // 한 세트라도 했으면
     nudge.hidden = !(selected === today && items.length && yMissed && !started && !run);
-    nudge.textContent = plan.runMin
-      ? `어제는 쉬었어요. 두 번 연속 쉬지 않도록 오늘은 ${Math.min(plan.runMin, 20)}분만이라도 달려 봐요.`
-      : '어제는 쉬었어요. 두 번 연속 쉬지 않도록 오늘은 한 세트만이라도 해 봐요.';
+    const mini = !!days[selected]?.mini;
+    nudge.textContent = '어제는 쉬었어요. 두 번 연속 쉬지 않도록 오늘은 짧게라도 해 봐요.';
+    // 바쁜 날(2분 규칙): 근력은 종목마다 1세트, 달리기는 10분이면 그날 할 일을 한 것으로. 다 했으면 숨김
+    const short = [plan.strength && '1세트', plan.runMin && `${MINI_RUN_MIN}분`].filter(Boolean).join('·');
+    const miniBox = $('#todoMini', root);
+    miniBox.hidden = !(selected === today && items.length && (mini || !allDone));
+    miniBox.classList.toggle('on', mini);
+    $('#miniText', root).textContent = mini
+      ? `바쁜 날 · ${[plan.strength && '근력 1세트', plan.runMin && `달리기 ${MINI_RUN_MIN}분`].filter(Boolean).join(' · ')}`
+      : nudge.hidden ? '시간이 없는 날엔' : '';
+    $('#miniBtn', root).textContent = mini ? '되돌리기' : `${short}만 하기`;
+    $('#miniBtn', root).disabled = !state.ready;
   }
 
   /* ---------- 초 단위 운동 스톱워치 (한 번에 한 종목) ---------- */
@@ -416,7 +431,7 @@ export function mountToday(root, store) {
       if (v.done) done++;
       // 무게 올리기 제안: 오늘, 아령 종목을 상한 개수로 모두 마쳤을 때
       const canRaise = selected === state.today && r.ex.kg > 0 && r.ex.max > 0 && v.done && v.count >= r.ex.max;
-      paintRow(r, v, { current: picked ? r === pr : !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null, canRaise });
+      paintRow(r, v, { current: picked ? r === pr : !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null, canRaise, planSets: state.days[selected]?.mini ? 1 : r.ex.sets });
       if (!v.done) currentSeen = true;
     }
 
@@ -428,7 +443,7 @@ export function mountToday(root, store) {
     }
 
     const run = state.days[selected]?.run;
-    const plan = planOn(config, selected);
+    const plan = planFor(config, selected, state.days[selected]);
     // 그날 하는 운동만 펼침: 프로그램에서 근력 쉬는 날(이미 체크한 것 없음)은 근력을, 계획 없는 날은 달리기를 한 줄로 접음
     const started = Object.values(state.days[selected]?.entries || {}).some((e) => e.done || e.setsDone > 0);
     const strOff = !!config.program && !plan.strength && !started && strOpen !== selected && !(watch && rows.has(watch.id));

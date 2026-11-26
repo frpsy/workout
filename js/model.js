@@ -9,7 +9,7 @@ import { normalizeRunPlan, programById } from './program.js';
 import { libById, normalizeEquipment } from './library.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
-const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'stretch', 'rounds', 'activeEntries', 'sessionClosed', 'log', 'run']);
+const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'stretch', 'rounds', 'activeEntries', 'sessionClosed', 'log', 'run', 'mini']);
 const MAX_WORK_SEC = 86400; // 하루 총 운동시간 상한(24시간)
 export const NOTE_MAX = 200; // 운동 소감·감사한 일 글자 수 상한
 export const MAX_SESSIONS = 20; // 하루에 남기는 운동 구간(시작·종료) 수 상한
@@ -198,7 +198,7 @@ export function normalizeDay(raw) {
   })) : [];
   const activeEntries = isObj(raw.activeEntries) && rounds.length ? normalizeEntries(raw.activeEntries) : null;
   const log = normalizeLog(raw.log);
-  return { entries, ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: activeEntries || {} } : {}), ...(raw.sessionClosed === true ? { sessionClosed: true } : {}), ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}), ...(stretch ? { stretch } : {}), ...(run ? { run } : {}) };
+  return { entries, ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: activeEntries || {} } : {}), ...(raw.sessionClosed === true ? { sessionClosed: true } : {}), ...(workSec ? { workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(level ? { level } : {}), ...(note ? { note } : {}), ...(stretch ? { stretch } : {}), ...(run ? { run } : {}), ...(raw.mini === true ? { mini: true } : {}) };
 }
 
 export function serializeDay(date, day) {
@@ -209,7 +209,7 @@ export function serializeDay(date, day) {
   const sessions = normalizeSessions(day.sessions);
   const rounds = Array.isArray(day.rounds) ? day.rounds.slice(0, MAX_SESSIONS).map((v) => ({ entries: normalizeEntries(v.entries || {}) })) : [];
   const log = normalizeLog(day.log);
-  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: normalizeEntries(day.activeEntries || {}) } : {}), ...(day.sessionClosed === true ? { sessionClosed: true } : {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}), ...(stretch ? { stretch } : {}), ...(run ? { run } : {}) };
+  return { v: SCHEMA_VERSION, date, entries: clone(day.entries || {}), ...(log.length ? { log } : {}), ...(rounds.length ? { rounds, activeEntries: normalizeEntries(day.activeEntries || {}) } : {}), ...(day.sessionClosed === true ? { sessionClosed: true } : {}), ...(day.workSec ? { workSec: day.workSec } : {}), ...(sessions.length ? { sessions } : {}), ...(day.level && day.level !== 'normal' && LEVELS[day.level] ? { level: day.level } : {}), ...(note ? { note } : {}), ...(stretch ? { stretch } : {}), ...(run ? { run } : {}), ...(day.mini === true ? { mini: true } : {}) };
 }
 
 export function serializeConfig(config) {

@@ -642,7 +642,7 @@ test('오늘: 어제 계획을 모두 놓쳤으면 ‘두 번 연속 쉬지 않�
   const { store, root } = setup(today, { config: { startDate: addDays(todayStr(), -10), restDays: [], program: 'balance', runPlan: {} } });
   const nudge = root.querySelector('#todoNudge');
   assert.equal(nudge.hidden, false);
-  assert.match(nudge.textContent, /두 번 연속 쉬지 않도록 오늘은 한 세트만이라도/);
+  assert.match(nudge.textContent, /두 번 연속 쉬지 않도록 오늘은 짧게라도/);
   assert.match(root.querySelector('#todayPlan').textContent, /근력0\/3/);
   root.querySelector('.row [data-f="check"]').click();
   assert.equal(nudge.hidden, true);
@@ -738,5 +738,35 @@ test('오늘: 러닝머신이 없으면 거리 프리셋, 나이를 넣었으면
   assert.equal(root.querySelector('#runKmChips').hidden, false);
   assert.equal(root.querySelector('#runSpeedChips').hidden, true);
   assert.equal(root.querySelector('#runTread').hidden, true);
+  store.actions.flushAll();
+});
+
+test('오늘: 바쁜 날을 켜면 근력은 1세트, 달리기는 10분으로 할 일을 마치고, 되돌릴 수 있음', async () => {
+  const runPlan = { 0: 30, 1: 30, 2: 30, 3: 30, 4: 30, 5: 30, 6: 30 };
+  const { store, root } = setup(today, { config: { startDate: '2026-01-05', program: 'balance', restDays: [], runPlan, exercises: [{ id: 'push', name: '푸시업', unit: 'reps', base: 10, step: 0, sets: 3 }, { id: 'squat', name: '스쿼트', unit: 'reps', base: 10, step: 0, sets: 3 }] } });
+  await tick();
+  const mini = root.querySelector('#todoMini');
+  assert.equal(mini.hidden, false);
+  assert.equal(root.querySelector('#miniBtn').textContent, '1세트·10분만 하기');
+  root.querySelector('#miniBtn').click();
+  assert.equal(store.state.days[store.state.today].mini, true);
+  assert.match(root.querySelector('#miniText').textContent, /바쁜 날 · 근력 1세트 · 달리기 10분/);
+  assert.equal(root.querySelector('#runBtn').textContent, '10분 달리기 완료');
+  for (const row of root.querySelectorAll('.row')) row.querySelector('[data-f="check"]').click();
+  assert.equal(root.querySelectorAll('.row.done').length, 2, '한 세트씩만 눌러도 완료');
+  root.querySelector('#runBtn').click();
+  assert.equal(store.state.days[store.state.today].run.sec, 600);
+  assert.match(root.querySelector('#todoItems').textContent, /오늘 할 일 끝/);
+  root.querySelector('#miniBtn').click();
+  assert.equal('mini' in store.state.days[store.state.today], false, '되돌리기');
+  store.actions.flushAll();
+});
+
+test('오늘: 바쁜 날에는 1세트가 계획이라 ‘세트 -2’ 같은 차이를 보이지 않음', async () => {
+  const runPlan = { 0: 30, 1: 30, 2: 30, 3: 30, 4: 30, 5: 30, 6: 30 };
+  const { store, root } = setup(today, { config: { startDate: '2026-01-05', program: 'balance', restDays: [], runPlan, exercises: [{ id: 'push', name: '푸시업', unit: 'reps', base: 10, step: 0, sets: 3 }] } });
+  await tick();
+  root.querySelector('#miniBtn').click();
+  assert.equal(root.querySelector('.row [data-f="delta"]').textContent, '');
   store.actions.flushAll();
 });

@@ -6,6 +6,7 @@ import { weekIndex } from '../progression.js';
 import { achievement, bestStreak, currentStreak, doneCount, isComplete, isDone, percent, periodSummary } from '../stats.js';
 import { activeSessionDate, fmtKo, SESSION_EVENT } from '../session.js';
 import { kgOf, setsOf, volume } from '../setlog.js';
+import { milestones } from '../milestones.js';
 import { $, esc } from './dom.js';
 import { icon } from './icon.js';
 import { EV, emit } from '../events.js';
@@ -301,7 +302,18 @@ export function mountHistory(root, store) {
       `<div class="run"><dt>달리기 · Zone 2</dt><dd>${h.runMin}<small>${h.runPlanMin ? ` / ${h.runPlanMin}분` : '분'}</small></dd></div>` +
       `</dl>${cmp ? `<p class="tsub cmp">${cmp}</p>` : ''}</div>` +
       `<div class="tile"><span class="tl">습관 연속</span><span class="tv">${streak}<small>주</small></span></div>` +
-      `<div class="tile run"><span class="tl">달리기 누적</span><span class="tv">${totalTime}</span><span class="tsub">${total.count}회${total.km ? ` · ${fmtKm(total.km)}` : ''}</span></div>`;
+      `<div class="tile run"><span class="tl">달리기 누적</span><span class="tv">${totalTime}</span><span class="tsub">${total.count}회${total.km ? ` · ${fmtKm(total.km)}` : ''}</span></div>` +
+      milestoneTile(milestones(days, ctx.exs, today));
+  }
+
+  /** 이정표: 이룬 것(최근 세 개)과 가장 가까운 다음 이정표까지 남은 양 */
+  function milestoneTile(ms) {
+    if (!ms.earned.length && !ms.next) return '';
+    const got = ms.earned.slice(-3).map((m) => `<li class="ms-badge ${m.kind}">${esc(m.label)}</li>`).join('');
+    const next = ms.next
+      ? `<p class="ms-next"><span>다음: <b>${esc(ms.next.label)}</b>까지 ${esc(ms.next.left)}</span><i class="ms-bar" style="--p:${Math.round(ms.next.pct * 100)}%" aria-hidden="true"></i></p>`
+      : '<p class="ms-next">모든 이정표를 이뤘어요</p>';
+    return `<div class="tile wide ms"><span class="tl">이정표 <small>${ms.earned.length}개</small></span>${got ? `<ul class="ms-list">${got}</ul>` : ''}${next}</div>`;
   }
 
   /** 달리기: 최근 7일 달린 시간 막대, 연속, 이번 달·누적 합계. 한 번도 안 달렸으면 숨김 */

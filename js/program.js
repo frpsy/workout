@@ -70,6 +70,15 @@ export function planOn(config, date) {
   return { strength, runMin: (config.runPlan || {})[dow] || 0 };
 }
 
+/** 바쁜 날(최소 버전, 2분 규칙): 근력은 종목마다 1세트, 달리기는 10분만 해도 그날 할 일을 한 것으로 봄 */
+export const MINI_RUN_MIN = 10;
+
+/** 그날 기록까지 본 계획: 바쁜 날이면 달리기 목표를 10분으로 줄임 */
+export function planFor(config, date, day) {
+  const plan = planOn(config, date);
+  return day && day.mini && plan.runMin ? { ...plan, runMin: Math.min(plan.runMin, MINI_RUN_MIN) } : plan;
+}
+
 /**
  * 이번 주(월~일) 습관: 날마다 계획과 한 것, 오늘까지의 계획 달성률, 달리기 분(계획 대비)
  * exs: 사용 중인 운동 목록. wholeWeek면 today(일요일)까지 모두 지난날로 셈(지난주 평가용)
