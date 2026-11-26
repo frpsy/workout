@@ -495,6 +495,34 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .brand-state:not([hidden]) + .brand-date { margin-left: 0; }
 .head .headline { margin-bottom: 0; }
 
+/* 오늘 할 일(아토믹 해빗: 분명하게·쉽게): 머리말 맨 위에 할 일을 크게. 근력 파랑 · 달리기 주황, 하면 채움 */
+.todo { margin: var(--gap) 0 var(--gap-sm); }
+.todo[hidden], .todo-nudge[hidden] { display: none; }
+.todo-items { display: flex; align-items: center; gap: var(--gap-sm); min-height: 44px; }
+.todo-label { flex: none; margin-right: var(--gap-xs); font-size: var(--fs-md); font-weight: 700; }
+.todo.all .todo-label { color: var(--accent); }
+.todo-rest { font-size: var(--fs-sm); color: var(--muted); }
+.todo-item {
+  flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; gap: var(--gap-sm); min-height: 44px; padding: 0 var(--gap-md);
+  border: 1.5px solid currentColor; border-radius: var(--r-ctrl); background: transparent;
+  font: inherit; font-size: var(--fs-md); font-weight: 600; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.todo-item.str { color: var(--accent); }
+.todo-item.run { color: var(--warn); }
+.todo-item span { color: var(--fg); white-space: nowrap; }
+/* 아주 좁은 폰: 항목 둘이 한 줄에 들어가도록 ‘오늘 할 일’ 글자는 접고 여백을 줄임(채움·테두리로 뜻이 보임) */
+@media (max-width: 360px) {
+  .todo-items:has(.todo-item) .todo-label { display: none; }
+  .todo-item { padding: 0 var(--gap); gap: var(--gap-xs); }
+}
+.todo-item b { margin-left: auto; font-family: var(--font-num); white-space: nowrap; }
+.todo-item .tick { opacity: 0; }
+.todo-item.on { border-color: transparent; background: var(--accent-soft); }
+.todo-item.run.on { background: var(--warn-soft); }
+.todo-item.on .tick { opacity: 1; }
+.todo-item:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.todo-nudge { margin: var(--gap-sm) 0 0; padding: var(--gap-sm) var(--gap-md); border-radius: var(--r-field); background: var(--warn-soft); color: var(--warn); font-size: var(--fs-sm); font-weight: 600; }
+
 /* 머리말: 날짜(운동 중에는 스톱워치)와 진행 막대 */
 .headline { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); margin-bottom: 6px; }
 .hdate { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; flex: 1; min-height: 36px; }
@@ -1690,10 +1718,10 @@ tr.cur td { background: var(--accent-soft); }
   .timer.ending .time { animation: timer-tick 1s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; } /* 마지막 3초: 1초마다 숫자가 살짝 튐(크기 변화 없이 transform만) */
   .wbtn.ready { animation: ready-pulse 1.4s ease-in-out infinite; }
   /* 습관 체크의 작은 반응: 버튼·칩은 눌리는 즉시 살짝 줄고, 체크 표시는 그려지듯 나타남 */
-  .stretch, .chip, .program { transition: background-color 0.18s, border-color 0.18s, color 0.18s, transform 0.08s; }
-  .stretch:active:not(:disabled), .chip:active:not(:disabled), .program:active { transform: scale(0.97); }
-  .stretch .tick { stroke-dasharray: 14; stroke-dashoffset: 14; transition: stroke-dashoffset 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.1s; }
-  .stretch[aria-pressed="true"] .tick { stroke-dashoffset: 0; }
+  .stretch, .chip, .program, .todo-item { transition: background-color 0.18s, border-color 0.18s, color 0.18s, transform 0.08s; }
+  .stretch:active:not(:disabled), .chip:active:not(:disabled), .program:active, .todo-item:active { transform: scale(0.97); }
+  .stretch .tick, .todo-item .tick { stroke-dasharray: 14; stroke-dashoffset: 14; transition: stroke-dashoffset 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.1s; }
+  .stretch[aria-pressed="true"] .tick, .todo-item.on .tick { stroke-dashoffset: 0; }
   .hm.on { animation: pip-pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   .tbar i { transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
 }

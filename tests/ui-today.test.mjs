@@ -605,21 +605,41 @@ test('오늘: 달리기를 눌러 표시하면 시간·거리 칸이 열리고, 
   store.actions.flushAll();
 });
 
-test('오늘: 프로그램을 쓰면 주차 옆에 오늘 계획이 보이고, 달리기만 하는 날은 달리기 카드가 맨 위로', () => {
+test('오늘: 달리기만 하는 날은 ‘오늘 할 일’에 달리기가 보이고, 한 번 누르면 계획대로 기록되며 달리기 카드가 맨 위', () => {
   const dow = new Date(`${todayStr()}T12:00:00`).getDay();
-  const others = [0, 1, 2, 3, 4, 5, 6].filter((d) => d !== dow);
-  // 오늘은 근력 쉬고 40분 달리는 날
   const { store, root } = setup(today, { config: { startDate: addDays(todayStr(), -3), restDays: [dow], program: 'balance', runPlan: { [dow]: 40 } } });
-  assert.match(root.querySelector('#weekLabel').textContent, /주차 · 달리기 40분/);
-  const box = root.querySelector('#runBox');
-  assert.equal(box.nextElementSibling.id, 'stretchPre', '달리기 카드가 스트레칭·근력보다 위');
-  assert.equal(box.classList.contains('planned'), true);
+  const plan = root.querySelector('#todayPlan');
+  assert.equal(plan.hidden, false);
+  assert.match(plan.textContent, /오늘 할 일달리기40분/);
+  assert.equal(root.querySelector('[data-todo="str"]'), null, '근력 쉬는 날에는 근력 항목 없음');
+  assert.equal(root.querySelector('#runBox').nextElementSibling.id, 'stretchPre', '달리기 카드가 스트레칭·근력보다 위');
   assert.equal(root.querySelector('#runSum').textContent, '목표 40분');
+  root.querySelector('[data-todo="run"]').click();
+  assert.deepEqual(store.state.days[todayStr()].run, { done: true, sec: 2400 }, '한 번 누르면 계획한 40분으로 기록');
+  assert.match(plan.textContent, /오늘 할 일 끝/);
+  assert.equal(plan.classList.contains('all'), true);
+  root.querySelector('#runBtn').click();
+  assert.equal('run' in store.state.days[todayStr()], false);
+  root.querySelector('#runBtn').click();
+  assert.deepEqual(store.state.days[todayStr()].run, { done: true, sec: 2400 }, '체크 줄도 계획한 시간으로 채움');
   root.querySelector('#runMinChips [data-min="45"]').click();
-  assert.deepEqual(store.state.days[todayStr()].run, { done: true, sec: 2700 }, '프리셋 한 번에 달림 표시와 시간 입력');
-  assert.equal(root.querySelector('#runMinChips [data-min="45"]').getAttribute('aria-pressed'), 'true');
-  root.querySelector('#runMinChips [data-min="45"]').click();
-  assert.deepEqual(store.state.days[todayStr()].run, { done: true }, '같은 프리셋을 다시 누르면 그 값만 지움');
-  assert.equal(others.length, 6);
+  assert.deepEqual(store.state.days[todayStr()].run, { done: true, sec: 2700 }, '프리셋으로 바로 고침');
+  store.actions.flushAll();
+});
+
+test('오늘: 어제 계획을 모두 놓쳤으면 ‘두 번 연속 쉬지 않기’ 한 줄, 오늘 하나라도 하면 사라짐', () => {
+  const { store, root } = setup(today, { config: { startDate: addDays(todayStr(), -10), restDays: [], program: 'balance', runPlan: {} } });
+  const nudge = root.querySelector('#todoNudge');
+  assert.equal(nudge.hidden, false);
+  assert.match(nudge.textContent, /두 번 연속 쉬지 않도록 오늘은 한 세트만이라도/);
+  assert.match(root.querySelector('#todayPlan').textContent, /근력0\/3/);
+  root.querySelector('.row [data-f="check"]').click();
+  assert.equal(nudge.hidden, true);
+  store.actions.flushAll();
+});
+
+test('오늘: 프로그램이 없으면 ‘오늘 할 일’은 숨김', () => {
+  const { store, root } = setup(today);
+  assert.equal(root.querySelector('#todayPlan').hidden, true);
   store.actions.flushAll();
 });

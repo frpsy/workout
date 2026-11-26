@@ -1,9 +1,9 @@
 // 머리말(날짜·진행)과 오늘의 운동 체크 행
 
 import { LEVEL_ORDER, LEVELS } from '../config.js';
-import { dowName, labelMD, diffDays } from '../dates.js';
+import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
-import { currentStreak } from '../stats.js';
+import { currentStreak, isComplete } from '../stats.js';
 import { $, haptic } from './dom.js';
 import { icon } from './icon.js';
 import { mountLoginNote } from './login-note.js';
@@ -15,10 +15,9 @@ import { EV, emit } from '../events.js';
 import { fmtKm, fmtRunTime, RUN_KM_PRESETS, RUN_MIN_PRESETS } from '../run.js';
 import { planOn } from '../program.js';
 
-/** 오늘 계획 한마디: ‘근력 · 달리기 45분’, ‘달리기 30분’, ‘쉬는 날’ */
-const planText = (p) => [p.strength && '근력', p.runMin && `달리기 ${p.runMin}분`].filter(Boolean).join(' · ') || '쉬는 날';
 
 // 스트레칭 버튼 앞의 체크 표시(했으면 채워진 동그라미 안의 ✓)
+const TODO_MARK = '<svg class="todo-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path class="tick" d="M7.8 12.4l3 3 5.4-6"/></svg>';
 const STRETCH_ICON = `<span class="stretch-mark material-stack">${icon('circle', 22)}${icon('check', 15, 'tick')}</span>`;
 
 export function mountToday(root, store) {
@@ -35,6 +34,10 @@ export function mountToday(root, store) {
         <button type="button" class="snd quick" id="sndQuick" aria-pressed="true"></button>
         <span class="brand-state" id="brandState" hidden>운동 준비</span>
         <h1 class="brand-date" id="dateLabel" tabindex="-1"></h1>
+      </div>
+      <div class="todo" id="todayPlan" hidden>
+        <div class="todo-items" id="todoItems" role="group" aria-label="오늘 할 일"></div>
+        <p class="todo-nudge" id="todoNudge" hidden></p>
       </div>
       <div class="headline">
         <div class="hdate">
@@ -106,7 +109,9 @@ export function mountToday(root, store) {
     if (!store.state.ready) return;
     const { selected } = store.state;
     const on = !store.state.days[selected]?.run?.done;
-    if (actions.setRun(selected, { done: on }) && on) haptic();
+    // 계획이 있는 날은 체크만 해도 계획한 시간으로 기록(다르게 달렸으면 아래 칸에서 고침)
+    const planned = on ? planOn(store.state.config, selected).runMin : 0;
+    if (actions.setRun(selected, on ? { done: true, ...(planned ? { sec: planned * 60 } : {}) } : { done: false }) && on) haptic();
   });
   const num = (el) => {
     const v = parseFloat(el.value);
@@ -129,6 +134,19 @@ export function mountToday(root, store) {
     if (actions.setRun(selected, patch) && first) haptic();
   });
 
+  // 오늘 할 일: 근력은 지금 할 종목으로 데려가고, 달리기는 한 번 누르면 계획대로 달렸다고 기록(이미 했으면 고치는 칸으로)
+  $('#todoItems', root).addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-todo]');
+    if (!b || !store.state.ready) return;
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const go = (el) => el && el.scrollIntoView({ block: 'center', behavior: calm ? 'auto' : 'smooth' });
+    if (b.dataset.todo === 'str') return go(root.querySelector('.row.current') || $('#rows', root));
+    const { selected } = store.state;
+    if (store.state.days[selected]?.run?.done) return go($('#runBox', root));
+    const min = planOn(store.state.config, selected).runMin;
+    if (actions.setRun(selected, { done: true, ...(min ? { sec: min * 60 } : {}) })) haptic();
+  });
+
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
     if (b && !b.disabled) actions.setLevel(b.dataset.level);
@@ -136,6 +154,34 @@ export function mountToday(root, store) {
 
   const workbar = mountWorkbar(root, store);
   const renderLoginNote = mountLoginNote(root, store);
+
+  /** 오늘 할 일(프로그램을 쓸 때만): 근력 n/n · 달리기 45분을 크게, 어제 계획을 모두 놓쳤으면 ‘두 번 연속 쉬지 않기’ 한 줄 */
+  function renderTodo(state, plan, run, done, total) {
+    const { config, selected, today, days } = state;
+    const box = $('#todayPlan', root);
+    box.hidden = !config.program;
+    if (box.hidden) return;
+    const strDone = total > 0 && done === total;
+    const items = [];
+    if (plan.strength) items.push(`<button type="button" class="todo-item str${strDone ? ' on' : ''}" data-todo="str">${TODO_MARK}<span>근력</span><b>${done}/${total}</b></button>`);
+    if (plan.runMin) items.push(`<button type="button" class="todo-item run${run ? ' on' : ''}" data-todo="run" aria-label="${run ? '달리기 기록 고치기' : `달리기 ${plan.runMin}분, 누르면 계획대로 달렸다고 기록`}">${TODO_MARK}<span>달리기</span><b>${run && run.sec ? fmtRunTime(run.sec) : `${plan.runMin}분`}</b></button>`);
+    const allDone = items.length > 0 && (!plan.strength || strDone) && (!plan.runMin || !!run);
+    $('#todoItems', root).innerHTML = items.length
+      ? `<span class="todo-label">${allDone ? '오늘 할 일 끝' : selected === today ? '오늘 할 일' : '그날 할 일'}</span>${items.join('')}`
+      : '<span class="todo-label">쉬는 날</span><span class="todo-rest">푹 쉬는 것도 계획이에요</span>';
+    box.classList.toggle('all', allDone);
+    // 두 번 연속 놓치지 않기: 어제 계획이 있었는데 하나도 못 했고, 오늘 아직 아무것도 안 했을 때만
+    const y = addDays(today, -1);
+    const yp = planOn(config, y);
+    const yDay = days[y];
+    const yMissed = y >= config.startDate && (yp.strength || yp.runMin) && !isComplete(yDay, store.activeExercises(), y) && !yDay?.run?.done;
+    const nudge = $('#todoNudge', root);
+    const started = Object.values(days[selected]?.entries || {}).some((e) => e.done || e.setsDone > 0); // 한 세트라도 했으면
+    nudge.hidden = !(selected === today && items.length && yMissed && !started && !run);
+    nudge.textContent = plan.runMin
+      ? `어제는 쉬었어요. 두 번 연속 쉬지 않도록 오늘은 ${Math.min(plan.runMin, 20)}분만이라도 달려 봐요.`
+      : '어제는 쉬었어요. 두 번 연속 쉬지 않도록 오늘은 한 세트만이라도 해 봐요.';
+  }
 
   /* ---------- 초 단위 운동 스톱워치 (한 번에 한 종목) ---------- */
 
@@ -299,7 +345,7 @@ export function mountToday(root, store) {
 
     $('#weekLabel', root).innerHTML =
       w >= 0
-        ? `<span>${w + 1}주차 · ${config.program ? planText(planOn(config, selected)) : `${dayNo}일째`}</span>${rec ? '<span class="tag">회복주</span>' : ''}`
+        ? `<span>${w + 1}주차 · ${dayNo}일째</span>${rec ? '<span class="tag">회복주</span>' : ''}`
         : `<span>시작 ${-dayNo + 1}일 전</span>`;
     $('#dateLabel', root).textContent = `${labelMD(selected)} ${dowName(selected)}요일`;
 
@@ -330,6 +376,7 @@ export function mountToday(root, store) {
       ? [run.sec ? fmtRunTime(run.sec) : '', run.km ? fmtKm(run.km) : ''].filter(Boolean).join(' · ')
       : plan.runMin ? `목표 ${plan.runMin}분` : '';
     $('#runBox', root).classList.toggle('planned', !!plan.runMin && !run);
+    renderTodo(state, plan, run, done, rows.size);
     // 근력 없이 달리기만 하는 날은 달리기를 맨 위로(오늘 할 일이 먼저 보이게)
     const runFirst = !!plan.runMin && !plan.strength;
     const box = $('#runBox', root);
