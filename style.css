@@ -844,14 +844,19 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .video {
   position: relative;
   flex: none;
-  display: grid;
-  place-items: center;
-  width: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   height: 28px;
-  color: var(--muted);
-  opacity: 0.7;
+  padding: 0 10px 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-decoration: none;
   touch-action: manipulation;
-}
+} /* 운동법 영상: 아이콘과 ‘운동법’ 글자를 담은 작은 알약 */
 .video::after { content: ''; position: absolute; inset: -8px; } /* 보이는 크기는 작게, 누르는 영역은 44px */
 .video:active { color: var(--accent); }
 

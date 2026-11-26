@@ -146,7 +146,7 @@ export function mountSettings(root, store, theme = null) {
 
     <section class="sgroup">
       <h2 class="sgh">운동</h2>
-      <p class="sub">목표 = 세트당 개수 × 세트 수 · 매주 +0.5는 2주마다 1개</p>
+      <p class="sub">하루 ${LIMITS.maxActive}종목까지 · 목표 = 세트당 개수 × 세트 수 · 매주 +0.5는 2주마다 1개</p>
       <div id="exList" class="exlist"></div>
       <div class="srow col equiprow" role="group" aria-labelledby="lbEquip">
         <span id="lbEquip">내 기구</span>
@@ -326,6 +326,13 @@ export function mountSettings(root, store, theme = null) {
       else ex.kg = Number.isFinite(v) ? v : NaN;
     } else if (k === 'sets') ex.sets = parseInt(ev.target.value, 10);
     else if (k === 'active') {
+      // 하루 세 종목까지: 이미 세 개를 쓰고 있으면 켜지 않고 알림
+      if (ev.target.checked && draft.exercises.filter((e) => e.active && e !== ex).length >= LIMITS.maxActive) {
+        ev.target.checked = false;
+        el('setErr').textContent = `하루에 ${LIMITS.maxActive}종목까지 쓸 수 있어요. 다른 운동의 사용을 끄고 켜 주세요.`;
+        el('setErr').hidden = false;
+        return;
+      }
       ex.active = ev.target.checked;
       item.classList.toggle('off', !ex.active);
     }
@@ -371,12 +378,18 @@ export function mountSettings(root, store, theme = null) {
     const p = b.dataset.preset === 'new' ? { name: '', unit: 'reps', base: 10, step: 1 } : libById(b.dataset.preset);
     if (!p) return;
     const id = newExerciseId(new Set(draft.exercises.map((e) => e.id)));
+    // 이미 세 종목을 쓰고 있으면 ‘사용 안 함’으로 넣음(바꾸고 싶은 운동의 사용을 끄고 켜면 됨)
+    const fullActive = draft.exercises.filter((e) => e.active).length >= LIMITS.maxActive;
     draft.exercises.push({
       id, name: p.name, unit: p.unit, base: p.base, step: p.step, ...(p.max ? { max: p.max } : {}),
-      sets: DEFAULT_SETS, active: true, since: todayStr(), ...(p.id ? { lib: p.id } : {}),
+      sets: DEFAULT_SETS, active: !fullActive, since: todayStr(), ...(p.id ? { lib: p.id } : {}),
     });
     markDirty();
     renderList();
+    if (fullActive) {
+      el('setErr').textContent = `하루 ${LIMITS.maxActive}종목을 이미 쓰고 있어 ‘사용 안 함’으로 넣었어요. 바꿀 운동의 사용을 끄고 켜 주세요.`;
+      el('setErr').hidden = false;
+    }
     const input = el('exList').querySelector(`[data-id="${id}"] .exname`);
     if (input && !p.name) input.focus();
   };

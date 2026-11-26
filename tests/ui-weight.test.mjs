@@ -8,7 +8,7 @@ import { kgOf, kgStep, syncSets } from '../js/setlog.js';
 import { adapter, setup, today, complete, tick, createStore, mountSettings } from './helpers/ui-env.mjs';
 
 const START = '2026-11-02';
-const base = (ex) => ({ startDate: START, exercises: [{ id: 'g', name: '고블릿 스쿼트', unit: 'reps', base: 10, step: 1, max: 15, sets: 3, lib: 'goblet-squat', ...ex }] });
+const base = (ex) => ({ startDate: START, exercises: [{ id: 'g', name: '덤벨 컬', unit: 'reps', base: 10, step: 1, max: 15, sets: 3, lib: 'db-curl', ...ex }] });
 
 test('무게: 0.5kg 단위로 맞추고, 범위 밖이면 버림, from 날짜를 지킴', () => {
   const c = normalizeConfig(base({ kg: 7.3, from: '2026-11-16' }), START);
@@ -49,7 +49,7 @@ test('이중 점진: from이 든 주부터 목표가 시작 개수로 돌아가 
 test('오늘: 아령 종목은 무게 꼬리표, 상한 개수로 마치면 무게 올리기 제안 → 누르면 무게+1, 목표는 시작 개수', async () => {
   const t = todayStr();
   const start = addDays(t, -28);
-  const config = { startDate: start, plan: { mode: 'linear', recoveryEvery: 0 }, exercises: [{ id: 'g', name: '고블릿 스쿼트', unit: 'reps', base: 10, step: 2, max: 15, sets: 1, kg: 8, lib: 'goblet-squat' }] };
+  const config = { startDate: start, plan: { mode: 'linear', recoveryEvery: 0 }, exercises: [{ id: 'g', name: '덤벨 컬', unit: 'reps', base: 10, step: 2, max: 15, sets: 1, kg: 8, lib: 'db-curl' }] };
   const { store, root } = setup(today, { config });
   await tick();
   const row = root.querySelector('.row');
@@ -70,7 +70,7 @@ test('오늘: 아령 종목은 무게 꼬리표, 상한 개수로 마치면 무�
 });
 
 test('설정: 아령 동작·직접 만든 종목에만 무게 칸, 비우면 맨몸으로 저장', async () => {
-  const ad = adapter({ config: { startDate: START, exercises: [{ id: 'push', name: '푸시업', unit: 'reps', base: 10, step: 1, sets: 3 }, { id: 'g', name: '고블릿 스쿼트', unit: 'reps', base: 10, step: 1, sets: 3, lib: 'goblet-squat', kg: 8 }] } });
+  const ad = adapter({ config: { startDate: START, exercises: [{ id: 'push', name: '푸시업', unit: 'reps', base: 10, step: 1, sets: 3 }, { id: 'g', name: '덤벨 컬', unit: 'reps', base: 10, step: 1, sets: 3, lib: 'db-curl', kg: 8 }] } });
   document.body.innerHTML = '<div id="settings"></div>';
   const store = createStore(ad);
   await tick();

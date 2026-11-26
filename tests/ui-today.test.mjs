@@ -13,19 +13,19 @@ test('오늘: 체크 버튼을 누르면 완료 표시와 진행 문구가 바�
   store.actions.flushAll();
 });
 
-test('오늘: 푸시업·풀업·스쿼트 줄에 각자의 유튜브 영상으로 같이하기 링크가 있고 새 창으로 열림', () => {
+test('오늘: 푸시업·풀업·스쿼트 줄에 각자의 운동법 영상(한국어 자세 영상) 링크가 있고 새 창으로 열림', () => {
   const { store, root } = setup(today);
   const links = [...root.querySelectorAll('.row a.video')];
   assert.deepEqual(
     links.map((a) => [a.closest('.row').querySelector('.name').textContent, a.getAttribute('href')]),
-    [['푸시업', 'https://youtu.be/R09TwHx_pzY'], ['풀업', 'https://youtu.be/0aI_6D5oS7I'], ['스쿼트', 'https://youtu.be/tDhPStGIuDU']],
+    [['푸시업', 'https://youtu.be/-_DUjHxgmWk'], ['풀업', 'https://youtu.be/nWhS28U6bCY'], ['스쿼트', 'https://youtu.be/9Sl5tI4_J-0']],
   );
   for (const a of links) {
     assert.equal(a.getAttribute('target'), '_blank');
     assert.match(a.getAttribute('rel'), /noopener/);
-    assert.match(a.textContent, /영상으로 같이하기/, '화면에는 아이콘만, 글자는 화면 읽기용');
-    assert.ok(a.getAttribute('title'), '길게 누르면 영상 제목');
-    assert.equal(a.closest('.nameline').querySelector('.name').textContent.length > 0, true);
+    assert.equal(a.textContent, '운동법', '아이콘 옆에 짧게 ‘운동법’');
+    assert.match(a.getAttribute('aria-label'), /운동법 영상 보기/);
+    assert.match(a.getAttribute('title'), /운동법 영상$/, '길게 누르면 채널 이름');
   }
   store.actions.flushAll();
 });

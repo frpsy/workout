@@ -25,13 +25,7 @@ export const DEFAULT_EXERCISES = [
   { id: 'squat', name: '스쿼트', unit: 'reps', base: 30, step: 5, max: 50, sets: DEFAULT_SETS, active: true },
 ];
 
-/** 같이 따라 할 수 있는 영상: 기본 운동 id → 유튜브 영상. 해당 종목 줄에 '영상으로 같이하기' 버튼이 생깁니다 */
-export const EXERCISE_VIDEOS = {
-  push: { id: 'R09TwHx_pzY', title: '정말 현실적인 푸쉬업 루틴. 푸쉬업 100개!' },
-  pull: { id: '0aI_6D5oS7I', title: '턱걸이/풀업 5X5 (pullup 5X5) 데스런.' },
-  squat: { id: 'tDhPStGIuDU', title: '스쿼트 35X3 (squat35X3) 데스런.' },
-};
-export const videoUrl = (v) => `https://youtu.be/${v.id}`;
+// 운동법 영상은 운동 도감(js/library.js의 VIDEOS)에 있습니다.
 
 /**
  * 목표 증가 방식
@@ -50,6 +44,7 @@ export const DEFAULT_PLAN = {
 
 export const LIMITS = {
   maxExercises: 12,
+  maxActive: 3, // 하루에 하는 종목 수 상한(사용 중인 종목). 나머지는 ‘사용 안 함’으로 두고 바꿔 가며 씀
   nameLength: 20,
   base: [1, 9999],
   step: [0, 500],

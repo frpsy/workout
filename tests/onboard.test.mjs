@@ -7,10 +7,10 @@ const T = '2026-11-26';
 const cfg = () => normalizeConfig({ startDate: '2026-10-01' }, '2026-10-01');
 
 test('추천: 처음이면 가장 쉬운 단계, 기구에 따라 당기기·무게를 더함', () => {
-  assert.deepEqual(recommend([], 'new'), ['knee-pushup', 'squat', 'glute-bridge', 'plank']);
-  assert.deepEqual(recommend(['bar'], 'new'), ['knee-pushup', 'dead-hang', 'squat', 'glute-bridge', 'plank']);
-  assert.deepEqual(recommend(['bar', 'db', 'tread'], 'some'), ['pushup', 'negative-pullup', 'db-row', 'goblet-squat', 'db-rdl', 'plank']);
-  assert.deepEqual(recommend([], 'run'), ['pushup', 'reverse-lunge', 'glute-bridge', 'plank']);
+  assert.deepEqual(recommend([], 'new'), ['knee-pushup', 'plank', 'squat']);
+  assert.deepEqual(recommend(['bar'], 'new'), ['knee-pushup', 'dead-hang', 'squat']);
+  assert.deepEqual(recommend(['bar', 'db', 'tread'], 'some'), ['pushup', 'negative-pullup', 'reverse-lunge']);
+  assert.deepEqual(recommend(['db'], 'run'), ['pushup', 'db-curl', 'reverse-lunge'], '철봉이 없으면 아령 컬');
 });
 
 test('처음 사용: 프로그램·기구·시작일을 정하고 운동 목록을 추천대로 바꿈(처음이면 2세트, 아령은 5kg)', () => {
@@ -19,9 +19,10 @@ test('처음 사용: 프로그램·기구·시작일을 정하고 운동 목록�
   assert.equal(c.program, 'starter');
   assert.deepEqual(c.equipment, ['bar', 'db']);
   assert.equal(c.startDate, T);
-  assert.deepEqual(c.exercises.map((e) => e.lib), ['knee-pushup', 'dead-hang', 'db-row', 'squat', 'glute-bridge', 'plank']);
+  assert.deepEqual(c.exercises.map((e) => e.lib), ['knee-pushup', 'dead-hang', 'squat'], '하루 세 종목');
   assert.ok(c.exercises.every((e) => e.sets === 2 && e.active && !e.since));
-  assert.equal(c.exercises.find((e) => e.lib === 'db-row').kg, 5);
+  const curl = normalizeConfig(applyOnboarding(cfg(), { equipment: ['db'], level: 'new', replace: true, today: T, hasHistory: false }), T);
+  assert.equal(curl.exercises.find((e) => e.lib === 'db-curl').kg, 5, '아령 컬은 5kg부터');
   assert.equal(c.exercises.find((e) => e.lib === 'dead-hang').unit, 'sec');
 });
 
@@ -35,7 +36,7 @@ test('기록이 있으면: 시작일 그대로, 같은 동작은 그 종목을 �
   assert.equal(c.exercises.find((e) => e.id === 'pull').active, false, '풀업은 추천(네거티브 풀업)과 달라 사용 안 함');
   assert.equal(c.exercises.find((e) => e.id === 'squat').active, false);
   assert.equal(c.exercises.find((e) => e.lib === 'negative-pullup').since, T);
-  assert.deepEqual(c.exercises.filter((e) => e.active).map((e) => libName(e)), ['pushup', 'negative-pullup', 'reverse-lunge', 'glute-bridge', 'plank']);
+  assert.deepEqual(c.exercises.filter((e) => e.active).map((e) => libName(e)), ['pushup', 'negative-pullup', 'reverse-lunge']);
 });
 
 test('운동 목록을 바꾸지 않으면 프로그램·기구만 정함', () => {

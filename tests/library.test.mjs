@@ -16,7 +16,7 @@ test('도감: id가 겹치지 않고, 쉬운·어려운 동작 연결이 모두 
 
 test('도감: 움직임 묶음마다 맨몸만으로 할 수 있는 동작이 있음', () => {
   for (const p of PATTERNS) {
-    if (p.id === 'pull') continue; // 당기기는 철봉·아령이 있어야 함
+    if (p.id === 'pull' || p.id === 'arms') continue; // 당기기는 철봉, 팔은 아령이 있어야 함
     assert.ok(LIBRARY.some((x) => x.pattern === p.id && x.equip === 'body'), p.id);
   }
 });
@@ -31,8 +31,8 @@ test('libFor: lib 필드 → 기본 운동 id → 같은 이름 순으로 찾음
 test('내 기구: 알려진 것만 남기고, 값이 없으면 모두 쓸 수 있다고 봄', () => {
   assert.deepEqual(normalizeEquipment(['db', 'zzz', 'bar', 'db']), ['bar', 'db']);
   assert.equal(normalizeEquipment(undefined), null);
-  assert.equal(usable(libById('goblet-squat'), null), true);
-  assert.equal(usable(libById('goblet-squat'), ['bar']), false);
+  assert.equal(usable(libById('db-curl'), null), true);
+  assert.equal(usable(libById('db-curl'), ['bar']), false);
   assert.equal(usable(libById('plank'), []), true);
   assert.deepEqual(EQUIPMENT_IDS, ['bar', 'db', 'tread']);
 });
@@ -51,4 +51,18 @@ test('설정 정규화: 도감 id와 내 기구를 지키고, 모르는 값은 �
   assert.equal('lib' in c.exercises[1], false);
   assert.deepEqual(c.equipment, ['db']);
   assert.equal('equipment' in normalizeConfig({ startDate: '2026-11-02' }, '2026-11-02'), false);
+});
+
+test('도감: 아령은 컬 종류만, 동작마다 운동법 영상(유튜브 id 11자)', async () => {
+  const { VIDEOS, videoOf } = await import('../js/library.js');
+  assert.deepEqual(LIBRARY.filter((x) => x.equip === 'db').map((x) => x.id), ['db-curl', 'hammer-curl', 'concentration-curl']);
+  for (const x of LIBRARY) assert.match(videoOf(x)?.id || '', /^[\w-]{11}$/, `${x.id} 영상`);
+  assert.equal(Object.keys(VIDEOS).every((k) => libById(k)), true, '영상은 도감 동작에만');
+});
+
+test('설정 정규화: 사용 중인 종목이 넷 이상이면 앞의 셋만 남기고 나머지는 사용 안 함', () => {
+  const exs = ['a', 'b', 'c', 'd', 'e'].map((id) => ({ id, name: id, unit: 'reps', base: 5, step: 1, sets: 3, active: true }));
+  const c = normalizeConfig({ startDate: '2026-11-02', exercises: exs }, '2026-11-02');
+  assert.deepEqual(c.exercises.map((e) => e.active), [true, true, true, false, false]);
+  assert.equal(c.exercises.length, 5, '지우지 않음');
 });
