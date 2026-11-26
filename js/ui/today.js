@@ -4,7 +4,7 @@ import { LEVEL_ORDER, LEVELS } from '../config.js';
 import { addDays, dowName, labelMD, diffDays } from '../dates.js';
 import { isRecoveryWeek, weekIndex } from '../progression.js';
 import { currentStreak, isComplete } from '../stats.js';
-import { $, haptic } from './dom.js';
+import { $, esc, haptic } from './dom.js';
 import { icon } from './icon.js';
 import { mountLoginNote } from './login-note.js';
 import { mountSoundButton, soundFor } from './sound-ui.js';
@@ -13,15 +13,13 @@ import { createRow, paintRow } from './exercise-row.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 import { readJson, writeJson } from '../local-store.js';
-import { fmtRunTime, kmFrom, RUN_KM_PRESETS, RUN_MIN_PRESETS, RUN_SPEED_PRESETS, runLine, zone2 } from '../run.js';
+import { kmFrom, RUN_KM_PRESETS, RUN_MIN_PRESETS, RUN_SPEED_PRESETS, runLine, zone2 } from '../run.js';
 import { MINI_RUN_MIN, planFor, planOn } from '../program.js';
 import { ONBOARD_KEY, onboardOpen, openOnboard } from './onboard.js';
 
 
 // 스트레칭 버튼 앞의 체크 표시(했으면 채워진 동그라미 안의 ✓)
-const TODO_MARK = '<svg class="todo-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path class="tick" d="M7.8 12.4l3 3 5.4-6"/></svg>';
 const PROGRAM_NOTE_KEY = 'workout-check:program-note';
-const PLUS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
 const STRETCH_ICON = `<span class="stretch-mark material-stack">${icon('circle', 22)}${icon('check', 15, 'tick')}</span>`;
 
 export function mountToday(root, store) {
@@ -39,10 +37,10 @@ export function mountToday(root, store) {
         <span class="brand-state" id="brandState" hidden>운동 준비</span>
         <h1 class="brand-date" id="dateLabel" tabindex="-1"></h1>
       </div>
-      <div class="todo" id="todayPlan" hidden>
-        <div class="todo-items" id="todoItems" role="group" aria-label="오늘 할 일"></div>
-        <p class="todo-nudge" id="todoNudge" hidden></p>
-        <p class="todo-mini" id="todoMini" hidden><span id="miniText"></span><button type="button" class="link" id="miniBtn"></button></p>
+      <div class="subhead" id="subhead">
+        <button type="button" class="sub-back" id="subBack">${icon('back', 22)}<span>오늘</span></button>
+        <h2 class="sub-title" id="subTitle" tabindex="-1"></h2>
+        <span class="sub-stat" id="subStat"></span>
       </div>
       <div class="headline">
         <div class="hdate">
@@ -88,12 +86,18 @@ export function mountToday(root, store) {
         <button type="button" class="link" id="backBtn">오늘로 돌아가기</button>
       </div>
     </header>
+    <section class="home" id="home" aria-label="오늘 할 일">
+      <p class="home-done" id="homeDone" hidden>${icon('check', 22)}<span id="homeDoneText"></span></p>
+      <div class="hcards" id="hcards"></div>
+      <p class="todo-nudge" id="todoNudge" hidden></p>
+      <p class="todo-mini" id="todoMini" hidden><span id="miniText"></span><button type="button" class="link" id="miniBtn"></button></p>
+    </section>
+    <p class="sub-note" id="strRest" hidden>오늘은 근력 쉬는 날이에요. 해도 괜찮지만 쉬는 것도 계획이에요.</p>
     <button type="button" class="stretch" id="stretchPre" data-kind="pre" aria-pressed="false">${STRETCH_ICON}<span>운동 전 스트레칭</span></button>
     <section aria-label="운동 체크" class="rows" id="rows"></section>
-    <button type="button" class="day-open" id="strOpen" hidden>${PLUS}<span>근력은 쉬는 날이에요 · 그래도 하기</span></button>
     <button type="button" class="stretch" id="stretchPost" data-kind="post" aria-pressed="false">${STRETCH_ICON}<span>운동 후 스트레칭</span></button>
+    <button type="button" class="finish" id="strFinish" hidden>${icon('check', 20)}<span>근력 끝 · 오늘 화면으로</span></button>
     <section class="runbox" id="runBox" aria-label="달리기">
-      <button type="button" class="day-open" id="runOpen" hidden>${PLUS}<span>달리기 기록하기</span></button>
       <div class="run-body" id="runBody">
         <div class="run-head">
           <span class="run-title">달리기<small>Zone 2</small></span>
@@ -112,6 +116,7 @@ export function mountToday(root, store) {
         <p class="run-hint" id="runHint">숨이 조금 차도 대화할 수 있는 편한 속도로 달려요.</p>
       </div>
     </section>
+    <button type="button" class="finish run" id="runFinish" hidden>${icon('check', 20)}<span>달리기 끝 · 오늘 화면으로</span></button>
     <span class="sr" id="nextNote" role="status"></span>`;
 
   mountSoundButton($('#sndQuick', root)); // 효과음 켜기/끄기: 운동 중에 설정 탭에 가지 않고 바로
@@ -135,8 +140,6 @@ export function mountToday(root, store) {
   }
 
   // 달리기 완료: 큰 버튼 한 번으로 기록(계획이 있으면 그 시간으로). 지우기는 옆의 ↶로만 해서 실수로 취소되지 않게
-  let runOpen = null; // 계획이 없는 날 ‘달리기 기록하기’로 연 날짜
-  let strOpen = null; // 근력 쉬는 날 ‘그래도 하기’로 연 날짜
   $('#runBtn', root).addEventListener('click', () => {
     if (!store.state.ready) return;
     const { selected } = store.state;
@@ -146,15 +149,6 @@ export function mountToday(root, store) {
   });
   $('#runUndo', root).addEventListener('click', () => {
     if (store.state.ready) actions.setRun(store.state.selected, { done: false });
-  });
-  $('#runOpen', root).addEventListener('click', () => {
-    runOpen = store.state.selected;
-    render(store.state);
-    $('#runBtn', root).focus();
-  });
-  $('#strOpen', root).addEventListener('click', () => {
-    strOpen = store.state.selected;
-    render(store.state);
   });
   const num = (el) => {
     const v = parseFloat(el.value);
@@ -172,7 +166,7 @@ export function mountToday(root, store) {
   $('#runMin', root).addEventListener('input', saveRunTime);
   $('#runSec', root).addEventListener('input', saveRunTime);
   $('#runKm', root).addEventListener('input', (ev) => actions.setRun(store.state.selected, { km: num(ev.target) }));
-  // 프리셋: 한 번 누르면 달렸다고 표시하면서 그 값을 넣음(이미 그 값이면 그 값만 지움)
+  // 프리셋: 누르면 달렸다고 표시하면서 그 값을 넣음. 다시 눌러도 지우지 않음(실수로 값이 사라지지 않게, 지우기는 ↶)
   root.querySelector('#runBox').addEventListener('click', (ev) => {
     const chip = ev.target.closest('.chip');
     if (!chip || !store.state.ready) return;
@@ -180,25 +174,29 @@ export function mountToday(root, store) {
     const run = store.state.days[selected]?.run || {};
     const first = !run.done;
     const patch = chip.dataset.min
-      ? withKm({ sec: run.sec === chip.dataset.min * 60 ? 0 : chip.dataset.min * 60 })
+      ? withKm({ sec: chip.dataset.min * 60 })
       : chip.dataset.speed
-        ? withKm({ speed: run.speed === Number(chip.dataset.speed) ? 0 : Number(chip.dataset.speed) })
-        : { km: run.km === Number(chip.dataset.km) ? 0 : Number(chip.dataset.km) };
+        ? withKm({ speed: Number(chip.dataset.speed) })
+        : { km: Number(chip.dataset.km) };
     if (actions.setRun(selected, patch) && first) haptic();
   });
 
-  // 오늘 할 일: 근력은 지금 할 종목으로 데려가고, 달리기는 한 번 누르면 계획대로 달렸다고 기록(이미 했으면 고치는 칸으로)
-  $('#todoItems', root).addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-todo]');
-    if (!b || !store.state.ready) return;
-    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const go = (el) => el && el.scrollIntoView({ block: 'center', behavior: calm ? 'auto' : 'smooth' });
-    if (b.dataset.todo === 'str') return go(root.querySelector('.row.current') || $('#rows', root));
-    const { selected } = store.state;
-    if (store.state.days[selected]?.run?.done) return go($('#runBox', root));
-    const min = planFor(store.state.config, selected, store.state.days[selected]).runMin;
-    if (actions.setRun(selected, { done: true, ...(min ? { sec: min * 60 } : {}) })) haptic();
+  // 화면 모드: 홈(근력·달리기 카드 두 장) → 카드를 누르면 그 운동만 하는 화면. 끝나면 홈으로
+  let mode = 'home';
+  function setMode(m) {
+    const from = mode;
+    mode = m;
+    render(store.state);
+    root.closest('.today-scroll')?.scrollTo?.(0, 0);
+    // 포커스를 보이는 곳으로: 운동 화면은 제목, 홈으로 돌아오면 방금 나온 운동의 카드(숨는 버튼에 포커스가 남지 않게)
+    if (m !== 'home') $('#subTitle', root).focus({ preventScroll: true });
+    else $(`.hcard[data-go="${from}"]`, root)?.focus({ preventScroll: true });
+  }
+  $('#hcards', root).addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-go]');
+    if (b) setMode(b.dataset.go);
   });
+  for (const id of ['#subBack', '#strFinish', '#runFinish']) $(id, root).addEventListener('click', () => setMode('home'));
 
   $('#miniBtn', root).addEventListener('click', () => {
     const { selected, days } = store.state;
@@ -213,42 +211,56 @@ export function mountToday(root, store) {
   const workbar = mountWorkbar(root, store);
   const renderLoginNote = mountLoginNote(root, store);
 
-  /** 오늘 할 일(프로그램을 쓸 때만): 근력 n/n · 달리기 45분을 크게, 어제 계획을 모두 놓쳤으면 ‘두 번 연속 쉬지 않기’ 한 줄 */
-  function renderTodo(state, plan, run, done, total) {
+  /**
+   * 홈: 근력·달리기 카드 두 장. 그날 하는지(계획), 얼마나 했는지, 끝났는지(✓)만 크게.
+   * 계획한 것을 모두 마치면 위에 ‘오늘 할 일을 모두 마쳤어요’. 어제를 놓쳤으면 ‘두 번 연속 쉬지 않기’, 바쁜 날 한 줄
+   */
+  function renderHome(state, plan, run, done, total) {
     const { config, selected, today, days } = state;
-    const box = $('#todayPlan', root);
-    box.hidden = !config.program;
-    if (box.hidden) return;
+    const program = !!config.program;
+    const started = Object.values(days[selected]?.entries || {}).some((e) => e.done || e.setsDone > 0);
+    const strPlanned = !program || plan.strength;
+    const runPlanned = !!plan.runMin;
     const strDone = total > 0 && done === total;
-    const items = [];
-    if (plan.strength) items.push(`<button type="button" class="todo-item str${strDone ? ' on' : ''}" data-todo="str">${TODO_MARK}<span>근력</span><b>${done}/${total}</b></button>`);
-    if (plan.runMin) items.push(`<button type="button" class="todo-item run${run ? ' on' : ''}" data-todo="run" aria-label="${run ? '달리기 기록 고치기' : `달리기 ${plan.runMin}분, 누르면 계획대로 달렸다고 기록`}">${TODO_MARK}<span>달리기</span><b>${run && run.sec ? fmtRunTime(run.sec) : `${plan.runMin}분`}</b></button>`);
-    const allDone = items.length > 0 && (!plan.strength || strDone) && (!plan.runMin || !!run);
-    $('#todoItems', root).innerHTML = items.length
-      ? `<span class="todo-label">${allDone ? '오늘 할 일 끝' : selected === today ? '오늘 할 일' : '그날 할 일'}</span>${items.join('')}`
-      : '<span class="todo-label">쉬는 날</span><span class="todo-rest">푹 쉬는 것도 계획이에요</span>';
-    box.classList.toggle('all', allDone);
-    box.classList.toggle('rest', !items.length);
-    // 두 번 연속 놓치지 않기: 어제 계획이 있었는데 하나도 못 했고, 오늘 아직 아무것도 안 했을 때만
+    const tread = !config.equipment || config.equipment.includes('tread');
+    const names = store.activeExercises().map((e) => e.name).join(' · ');
+    const strStat = strDone ? `${icon('check', 18)}완료` : !strPlanned && !started ? '쉬는 날' : `<b>${done}</b>/${total}`;
+    const runStat = run ? `${icon('check', 18)}완료` : runPlanned ? `<b>${plan.runMin}</b>분` : '자유';
+    const strSub = strPlanned || started ? names || '운동을 설정에서 넣어 주세요' : '오늘은 쉬어도 좋아요';
+    const runSub = run ? runLine(run) || '달렸어요' : runPlanned ? `${tread ? '러닝머신 · ' : ''}대화할 수 있는 편한 속도` : '계획 없는 날 · 달려도 좋아요';
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const card = (kind, title, stat, sub, isDone, off, extra = '') =>
+      `<button type="button" class="hcard ${kind}${isDone ? ' done' : ''}${off ? ' off' : ''}" data-go="${kind}" aria-label="${title} ${isDone ? '완료' : off ? '쉬는 날' : ''}, 누르면 ${title} 화면">` +
+      `<span class="hc-top"><span class="hc-title">${title}</span><span class="hc-stat">${stat}</span></span>` +
+      `<span class="hc-sub">${esc(sub)}</span>${extra}<span class="hc-go" aria-hidden="true">${icon('next', 20)}</span></button>`;
+    const strCard = card('str', '근력', strStat, strSub, strDone, !strPlanned && !started && !strDone, strPlanned || started ? `<span class="hc-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>` : '');
+    const runCard = card('run', '달리기', runStat, runSub, !!run, !runPlanned && !run);
+    // 달리기만 하는 날은 달리기 카드를 위로
+    $('#hcards', root).innerHTML = runPlanned && !strPlanned ? runCard + strCard : strCard + runCard;
+    const planned = strPlanned || runPlanned;
+    const allDone = planned && (!strPlanned || strDone) && (!runPlanned || !!run);
+    $('#homeDone', root).hidden = !allDone;
+    $('#homeDoneText', root).textContent = selected === today ? '오늘 할 일을 모두 마쳤어요' : '그날 할 일을 모두 마쳤어요';
+    // 두 번 연속 놓치지 않기: 어제 계획이 있었는데 하나도 못 했고, 오늘 아직 아무것도 안 했을 때만(프로그램을 쓸 때)
     const y = addDays(today, -1);
     const yp = planOn(config, y);
     const yDay = days[y];
-    const yMissed = y >= config.startDate && (yp.strength || yp.runMin) && !isComplete(yDay, store.activeExercises(), y) && !yDay?.run?.done;
+    const yMissed = program && y >= config.startDate && (yp.strength || yp.runMin) && !isComplete(yDay, store.activeExercises(), y) && !yDay?.run?.done;
     const nudge = $('#todoNudge', root);
-    const started = Object.values(days[selected]?.entries || {}).some((e) => e.done || e.setsDone > 0); // 한 세트라도 했으면
-    nudge.hidden = !(selected === today && items.length && yMissed && !started && !run);
-    const mini = !!days[selected]?.mini;
+    nudge.hidden = !(selected === today && planned && yMissed && !started && !run);
     nudge.textContent = '어제는 쉬었어요. 두 번 연속 쉬지 않도록 오늘은 짧게라도 해 봐요.';
     // 바쁜 날(2분 규칙): 근력은 종목마다 1세트, 달리기는 10분이면 그날 할 일을 한 것으로. 다 했으면 숨김
-    const short = [plan.strength && '1세트', plan.runMin && `${MINI_RUN_MIN}분`].filter(Boolean).join('·');
+    const mini = !!days[selected]?.mini;
+    const short = [strPlanned && '1세트', runPlanned && `${MINI_RUN_MIN}분`].filter(Boolean).join('·');
     const miniBox = $('#todoMini', root);
-    miniBox.hidden = !(selected === today && items.length && (mini || !allDone));
+    miniBox.hidden = !(selected === today && planned && (mini || !allDone));
     miniBox.classList.toggle('on', mini);
     $('#miniText', root).textContent = mini
-      ? `바쁜 날 · ${[plan.strength && '근력 1세트', plan.runMin && `달리기 ${MINI_RUN_MIN}분`].filter(Boolean).join(' · ')}`
-      : nudge.hidden ? '시간이 없는 날엔' : '';
+      ? `바쁜 날 · ${[strPlanned && '근력 1세트', runPlanned && `달리기 ${MINI_RUN_MIN}분`].filter(Boolean).join(' · ')}`
+      : '시간이 없는 날엔';
     $('#miniBtn', root).textContent = mini ? '되돌리기' : `${short}만 하기`;
     $('#miniBtn', root).disabled = !state.ready;
+    return { strPlanned, strDone };
   }
 
   /* ---------- 초 단위 운동 스톱워치 (한 번에 한 종목) ---------- */
@@ -444,18 +456,11 @@ export function mountToday(root, store) {
 
     const run = state.days[selected]?.run;
     const plan = planFor(config, selected, state.days[selected]);
-    // 그날 하는 운동만 펼침: 프로그램에서 근력 쉬는 날(이미 체크한 것 없음)은 근력을, 계획 없는 날은 달리기를 한 줄로 접음
-    const started = Object.values(state.days[selected]?.entries || {}).some((e) => e.done || e.setsDone > 0);
-    const strOff = !!config.program && !plan.strength && !started && strOpen !== selected && !(watch && rows.has(watch.id));
-    const runOff = !run && !plan.runMin && runOpen !== selected;
-    for (const id of ['#stretchPre', '#rows', '#stretchPost']) $(id, root).hidden = strOff;
-    $('.prog', root).hidden = strOff;
-    $('#strOpen', root).hidden = !strOff;
-    root.closest('.page')?.classList.toggle('str-off', strOff); // 근력을 접으면 휴식 타이머도 숨김
-    $('#runOpen', root).hidden = !runOff;
-    $('#runBody', root).hidden = runOff;
+    // 화면 모드를 페이지에 표시: CSS가 홈·근력·달리기 화면에 맞는 것만 보여 줌(휴식 타이머·마무리 칸 포함)
+    root.dataset.mode = mode;
+    const page = root.closest('.page');
+    if (page) page.dataset.mode = mode;
     const box = $('#runBox', root);
-    box.classList.toggle('collapsed', runOff);
     box.classList.toggle('planned', !!plan.runMin && !run);
     box.classList.toggle('done', !!run);
     const btn = $('#runBtn', root);
@@ -463,7 +468,7 @@ export function mountToday(root, store) {
     btn.disabled = !state.ready;
     btn.innerHTML = run ? `${icon('check', 20)}<span>달리기 완료</span>` : `<span>${plan.runMin ? `${plan.runMin}분 ` : ''}달리기 완료</span>`;
     $('#runUndo', root).hidden = !run;
-    $('#runSum', root).textContent = run ? runLine(run) : plan.runMin ? `목표 ${plan.runMin}분` : '';
+    $('#runSum', root).textContent = run ? runLine(run) : ''; // 목표는 화면 머리와 완료 버튼에 이미 보임
     // 러닝머신이 있으면 거리 대신 속도 프리셋(거리는 속도 × 시간으로 채움)과 속도·경사 칸
     const tread = !config.equipment || config.equipment.includes('tread');
     $('#runKmChips', root).hidden = !run || tread;
@@ -478,10 +483,6 @@ export function mountToday(root, store) {
       c.setAttribute('aria-pressed', String(!!run && on));
       c.disabled = !state.ready;
     }
-    // 달리기만 하는 날은 달리기를 맨 위로(오늘 할 일이 먼저 보이게)
-    const runFirst = !!plan.runMin && !plan.strength;
-    const anchor = runFirst ? $('#stretchPre', root) : $('#stretchPost', root).nextSibling;
-    if (runFirst ? box.nextElementSibling !== anchor : box.previousElementSibling?.id !== 'stretchPost') anchor.parentNode.insertBefore(box, anchor);
     // 적는 중인 칸은 건드리지 않음(입력하는 대로 저장되며 다시 그려지므로)
     const fill = (id, v) => {
       const el = $(id, root);
@@ -492,7 +493,17 @@ export function mountToday(root, store) {
     fill('#runKm', run?.km || 0);
     fill('#runSpeed', run?.speed || 0);
     fill('#runIncline', run?.incline || 0);
-    renderTodo(state, plan, run, done, rows.size);
+    const home = renderHome(state, plan, run, done, rows.size);
+    // 근력·달리기 화면 머리: 제목과 진행, 끝나면 ‘오늘 화면으로’ 버튼
+    $('#subTitle', root).textContent = mode === 'run' ? '달리기' : '근력';
+    $('#subStat', root).innerHTML = mode === 'run'
+      ? run ? `${icon('check', 18)}완료` : plan.runMin ? `목표 ${plan.runMin}분` : ''
+      : home.strDone ? `${icon('check', 18)}완료` : `${done}/${rows.size}`;
+    $('#subStat', root).classList.toggle('done', mode === 'run' ? !!run : home.strDone);
+    $('#strRest', root).hidden = !(config.program && !home.strPlanned);
+    $('#strRest', root).textContent = `${selected === today ? '오늘은' : '이날은'} 근력 쉬는 날이에요. 해도 괜찮지만 쉬는 것도 계획이에요.`;
+    $('#strFinish', root).hidden = !home.strDone;
+    $('#runFinish', root).hidden = !run;
 
     const segs = $('#segs', root);
     const total = rows.size;
@@ -511,8 +522,7 @@ export function mountToday(root, store) {
     pt.classList.toggle('all', all);
 
     const recNote = $('#recNote', root);
-    recNote.hidden = !rec || strOff; // 회복주는 근력 목표 이야기라 근력 쉬는 날에는 숨김
-    $('#weekLabel', root).querySelector('.tag')?.toggleAttribute('hidden', strOff);
+    recNote.hidden = !rec;
     // 처음 쓰는 사람(기록·프로그램 없음): 시작 설정을 한 번 띄움
     if (state.ready && !config.program && !Object.keys(state.days).length && !readJson(ONBOARD_KEY).done && !onboardOpen()) openOnboard(store, { fresh: true });
     const snooze = readJson(PROGRAM_NOTE_KEY).snoozeUntil || '';
