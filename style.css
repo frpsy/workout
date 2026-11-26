@@ -512,7 +512,7 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .todo-item span { color: var(--fg); white-space: nowrap; }
 /* 아주 좁은 폰: 항목 둘이 한 줄에 들어가도록 ‘오늘 할 일’ 글자는 접고 여백을 줄임(채움·테두리로 뜻이 보임) */
 @media (max-width: 360px) {
-  .todo-items:has(.todo-item) .todo-label { display: none; }
+  .todo:not(.rest) .todo-label { display: none; }
   .todo-item { padding: 0 var(--gap); gap: var(--gap-xs); }
 }
 .todo-item b { margin-left: auto; font-family: var(--font-num); white-space: nowrap; }

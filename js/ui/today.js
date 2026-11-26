@@ -170,6 +170,7 @@ export function mountToday(root, store) {
       ? `<span class="todo-label">${allDone ? '오늘 할 일 끝' : selected === today ? '오늘 할 일' : '그날 할 일'}</span>${items.join('')}`
       : '<span class="todo-label">쉬는 날</span><span class="todo-rest">푹 쉬는 것도 계획이에요</span>';
     box.classList.toggle('all', allDone);
+    box.classList.toggle('rest', !items.length);
     // 두 번 연속 놓치지 않기: 어제 계획이 있었는데 하나도 못 했고, 오늘 아직 아무것도 안 했을 때만
     const y = addDays(today, -1);
     const yp = planOn(config, y);
