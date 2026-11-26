@@ -164,12 +164,14 @@ export function mountToday(root, store) {
   let watchFrom = Infinity; // 달리기 화면에서 스톱워치를 시작한 시각(ms)
   let usedSpan = 0; // 이미 기록에 쓴 구간의 끝 시각
   $('#wBtn', root).addEventListener('click', () => {
-    if (mode === 'run' && watchFrom === Infinity) watchFrom = Date.now() - 1000;
+    if (mode !== 'run') watchFrom = Infinity; // 근력 화면에서 잰 시간은 달리기로 쓰지 않음
+    else if (watchFrom === Infinity) watchFrom = Date.now() - 1000;
   }, true);
   const watchSpan = () => {
     const { days, today, selected } = store.state;
     const last = selected === today ? (days[today]?.sessions || []).at(-1) : null;
-    return last && last.s >= watchFrom && last.e > usedSpan && last.sec >= 60 ? last : null;
+    const full = (days[today]?.run?.more || []).length >= RUN_MORE_MAX; // 한 번 더가 꽉 차면 더할 곳이 없음
+    return last && !full && last.s >= watchFrom && last.e > usedSpan && last.sec >= 60 ? last : null;
   };
   $('#runWatch', root).addEventListener('click', () => {
     const span = watchSpan();
@@ -178,7 +180,7 @@ export function mountToday(root, store) {
     const run = days[selected]?.run;
     const sec = Math.round(span.sec / 60) * 60;
     const ok = run
-      ? actions.setRun(selected, { more: [...(run.more || []), { sec }].slice(0, RUN_MORE_MAX) })
+      ? actions.setRun(selected, { more: [...(run.more || []), { sec }] })
       : actions.setRun(selected, withKm({ done: true, sec }));
     if (ok) {
       usedSpan = span.e;
