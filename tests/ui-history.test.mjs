@@ -221,3 +221,28 @@ test('기록: 스트레칭을 한 날은 그날 카드에 운동 전·후로 보
   assert.match(day(), /스트레칭 운동 전 · 후/);
   store.actions.flushAll();
 });
+
+test('기록: 전투 달리기를 한 날은 달력에 점, 그날 카드에 시간·거리, 아래에 이번 주·연속·누적 통계', () => {
+  const t = todayStr();
+  const days = {
+    [addDays(t, -1)]: { v: 2, entries: {}, run: { done: true, sec: 1200, km: 3 } },
+    [addDays(t, -2)]: { v: 2, entries: {}, run: { done: true, sec: 600 } },
+  };
+  const { root, store } = setup(history, { days });
+  assert.equal(root.querySelector('#historyRun').hidden, false);
+  assert.equal(root.querySelector('#emptyHistory').hidden, true, '달리기만 해도 기록으로 셈');
+  assert.match(root.querySelector('#runTotals').textContent, /연속2일/);
+  assert.match(root.querySelector('#runTotals').textContent, /누적 시간30분/);
+  assert.match(root.querySelector('#runVol').textContent, /최근 7일2회 · 30분/);
+  assert.match(root.querySelector('#runAll').textContent, /누적 2회 · 30분 · 3km \(평균 페이스 6'40"\/km\)/);
+  pickDate(root, addDays(t, -1));
+  assert.equal(root.querySelector(`#cal [data-date="${addDays(t, -1)}"]`).classList.contains('ran'), true, '달력에 표시');
+  assert.match(root.querySelector('#dayCard').textContent, /전투 달리기 20분 · 3km · 6'40"\/km/);
+  store.actions.flushAll();
+});
+
+test('기록: 한 번도 달리지 않았으면 전투 달리기 묶음은 숨김', () => {
+  const { root, store } = setup(history, { days: fullDays(2) });
+  assert.equal(root.querySelector('#historyRun').hidden, true);
+  store.actions.flushAll();
+});

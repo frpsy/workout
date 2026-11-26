@@ -28,6 +28,7 @@ const ASSETS = [
   './js/main.js',
   './js/model.js',
   './js/progression.js',
+  './js/run.js',
   './js/screen-awake.js',
   './js/session.js',
   './js/setlog.js',

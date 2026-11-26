@@ -3,6 +3,7 @@
 import { LEVELS, LIMITS } from './config.js';
 import { entryView, hasChecks, markDone, markProgress, markSets, markUndone, mergeRounds, plannedTarget } from './day.js';
 import { isDateStr, todayStr } from './dates.js';
+import { normalizeRun } from './run.js';
 import { MAX_SESSIONS, NOTE_MAX, normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
 import { createTargetResolver } from './progression.js';
 import { setSetCount, syncSets } from './setlog.js';
@@ -347,6 +348,16 @@ export function createStore(adapter) {
       else delete stretch[kind];
       if (stretch.pre || stretch.post) day.stretch = stretch;
       else delete day.stretch;
+      commitDay(date);
+      return true;
+    },
+
+    /** 전투 달리기: done이 false면 지우고, 아니면 달렸다고 표시하며 시간(sec)·거리(km)를 고침(0이면 그 값만 지움). 운동 완료·연속에는 영향 없음 */
+    setRun(date, patch) {
+      if (!state.ready || !isDateStr(date) || date > state.today || !patch) return false;
+      const day = ensureDay(date);
+      if (patch.done === false) delete day.run;
+      else day.run = normalizeRun({ ...(day.run || {}), ...patch, done: true });
       commitDay(date);
       return true;
     },

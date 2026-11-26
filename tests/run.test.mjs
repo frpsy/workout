@@ -1,0 +1,62 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { bestRunStreak, fmtKm, fmtPace, fmtRunTime, normalizeRun, runStreak, runSummary, runWeekStreak } from '../js/run.js';
+import { normalizeDay, serializeDay } from '../js/model.js';
+
+const ran = (sec, km) => ({ entries: {}, run: { done: true, ...(sec ? { sec } : {}), ...(km ? { km } : {}) } });
+
+test('달리기 기록 정규화: 달린 날만 남기고 시간·거리는 범위 안의 값만', () => {
+  assert.equal(normalizeRun(null), null);
+  assert.equal(normalizeRun({ sec: 600 }), null, 'done이 없으면 달리지 않은 날');
+  assert.deepEqual(normalizeRun({ done: true }), { done: true });
+  assert.deepEqual(normalizeRun({ done: true, sec: 1530.4, km: 3.004 }), { done: true, sec: 1530, km: 3 });
+  assert.deepEqual(normalizeRun({ done: true, sec: 0, km: -1 }), { done: true });
+  assert.deepEqual(normalizeRun({ done: true, sec: 1e9, km: 'x' }), { done: true });
+});
+
+test('달리기 기록은 하루 기록에 저장되고 다시 읽힘', () => {
+  assert.deepEqual(normalizeDay({ entries: {}, run: { done: true, sec: 900, km: 2.5 } }).run, { done: true, sec: 900, km: 2.5 });
+  assert.equal('run' in normalizeDay({ entries: {}, run: {} }), false);
+  assert.deepEqual(serializeDay('2026-11-26', { entries: {}, run: { done: true, sec: 60 } }).run, { done: true, sec: 60 });
+  assert.equal('run' in serializeDay('2026-11-26', { entries: {} }), false);
+});
+
+test('시간·거리·페이스 표기', () => {
+  assert.equal(fmtRunTime(1530), '25분 30초');
+  assert.equal(fmtRunTime(3725), '1시간 2분 5초');
+  assert.equal(fmtRunTime(1200), '20분');
+  assert.equal(fmtRunTime(0), '0초');
+  assert.equal(fmtKm(3), '3km');
+  assert.equal(fmtKm(2.456), '2.46km');
+  assert.equal(fmtPace(1650, 3), `9'10"`);
+  assert.equal(fmtPace(0, 3), '');
+});
+
+test('기간 합계: 달린 날 수, 시간·거리 합계, 페이스는 둘 다 넣은 날만', () => {
+  const days = {
+    '2026-11-20': ran(1200, 3),
+    '2026-11-23': ran(600),
+    '2026-11-24': ran(0, 2),
+    '2026-11-25': { entries: {} },
+  };
+  assert.deepEqual(runSummary(days), { count: 3, sec: 1800, km: 5, paceSec: 1200, paceKm: 3 });
+  assert.equal(runSummary(days, '2026-11-23', '2026-11-29').count, 2);
+});
+
+test('연속 달린 날·최고 연속·연속 주', () => {
+  const days = {
+    '2026-11-10': ran(),
+    '2026-11-11': ran(),
+    '2026-11-12': ran(),
+    '2026-11-17': ran(),
+    '2026-11-24': ran(),
+    '2026-11-25': ran(),
+  };
+  assert.equal(runStreak(days, '2026-11-26'), 2, '오늘 아직이면 어제까지');
+  assert.equal(runStreak(days, '2026-11-25'), 2);
+  assert.equal(runStreak(days, '2026-11-27'), 0);
+  assert.equal(bestRunStreak(days), 3);
+  assert.equal(runWeekStreak(days, '2026-11-26'), 3, '11/10·11/17·11/24 주');
+  assert.equal(runWeekStreak({ '2026-11-17': ran() }, '2026-11-26'), 1, '이번 주 아직이면 지난주까지');
+  assert.equal(runWeekStreak({ '2026-11-10': ran() }, '2026-11-26'), 0);
+});

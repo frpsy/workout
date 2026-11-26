@@ -636,6 +636,15 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .stretch:active:not(:disabled) { background: var(--fill-press); }
 .stretch:disabled { opacity: 0.5; cursor: default; }
 .stretch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 전투 달리기: 스트레칭과 같은 한 줄 버튼. 달린 날은 오른쪽에 시간·거리, 아래에 적는 칸 */
+.runbox { margin: var(--gap) 0; }
+.runbox .run-check { margin: 0; }
+.run-sum { margin-left: auto; font-family: var(--font-num); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; }
+.run-detail { display: flex; flex-wrap: wrap; gap: var(--gap) var(--gap-lg); padding: var(--gap) var(--gap-md) 0; font-size: var(--fs-md); color: var(--muted); }
+.run-detail[hidden] { display: none; }
+.run-field { display: inline-flex; align-items: center; gap: var(--gap-xs); }
+.run-field > span { margin-right: var(--gap-xs); font-weight: 600; }
+.run-field input[type="number"] { width: 64px; text-align: right; }
 /* 끌어서 순서 바꾸기(ui/row-drag.js): 길게 누를 때 글자 선택·메뉴가 뜨지 않게. 집은 줄은 떠 보이고, 다른 줄은 부드럽게 비켜남 */
 .rows .info { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .rows.sorting .row { transition: transform 0.15s ease; }
@@ -1158,6 +1167,8 @@ details summary::-webkit-details-marker { display: none; } /* iOS Safari의 삼�
 .cell .pips { display: flex; gap: 3px; }
 .cell .pips i { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
 .cell .pips i.on { background: var(--accent); }
+/* 전투 달리기 한 날: 날짜 오른쪽 위의 작은 주황 점 */
+.cell.ran::after { content: ''; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
 .cell .frac { font-size: var(--fs-3xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .cell.full .dn { color: var(--accent); font-weight: 700; }
 .cell.today { border-color: var(--muted); }

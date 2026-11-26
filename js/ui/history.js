@@ -9,6 +9,7 @@ import { setsOf, volume } from '../setlog.js';
 import { $, esc } from './dom.js';
 import { icon } from './icon.js';
 import { EV, emit } from '../events.js';
+import { bestRunStreak, fmtKm, fmtPace, fmtRunTime, ranOn, runStreak, runSummary, runWeekStreak } from '../run.js';
 
 const MAX_PIPS = 6;
 
@@ -50,6 +51,13 @@ export function mountHistory(root, store) {
       <dl class="totals" id="summary"></dl>
       <p class="tallytext" id="tallyText"></p>
       <p class="tallytext" id="workText"></p>
+    </section>
+    <section class="hflat" id="historyRun" hidden>
+      <h2 class="sec">전투 달리기</h2>
+      <dl class="totals" id="runTotals"></dl>
+      <ul class="vol" id="runVol"></ul>
+      <p class="tallytext" id="runMonth"></p>
+      <p class="tallytext" id="runAll"></p>
     </section>
     <section class="hflat" id="historyVolume" hidden>
       <h2 class="sec">최근 7일 총 개수</h2>
@@ -126,12 +134,13 @@ export function mountHistory(root, store) {
         const day = days[d];
         const n = doneCount(day, ids);
         const full = isComplete(day, exs, d);
-        const cls = ['cell', full && 'full', d === today && 'today', d === selected && 'sel', d < config.startDate && 'pre', rest.has(parse(d).getDay()) && 'rest', offGrid && d >= config.startDate && diffDays(d, config.startDate) % 7 === 0 && 'wkstart'].filter(Boolean).join(' ');
+        const ran = ranOn(days, d);
+        const cls = ['cell', full && 'full', ran && 'ran', d === today && 'today', d === selected && 'sel', d < config.startDate && 'pre', rest.has(parse(d).getDay()) && 'rest', offGrid && d >= config.startDate && diffDays(d, config.startDate) % 7 === 0 && 'wkstart'].filter(Boolean).join(' ');
         const pips =
           ids.length <= MAX_PIPS
             ? '<span class="pips">' + ids.map((id) => `<i class="${isDone(day, id) ? 'on' : ''}"></i>`).join('') + '</span>'
             : `<span class="frac">${n}/${ids.length}</span>`;
-        h += `<button type="button" class="${cls}" data-date="${d}"${d > today ? ' disabled' : ''}${d === selected ? ' aria-current="date"' : ''} aria-label="${labelMD(d)}, ${n}종목 완료${cls.includes('wkstart') ? `, ${weekIndex(d, config.startDate) + 1}주차 시작` : ''}${cls.includes('rest') ? ', 쉬는 날' : ''}"><span class="dn">${parse(d).getDate()}</span>${pips}</button>`;
+        h += `<button type="button" class="${cls}" data-date="${d}"${d > today ? ' disabled' : ''}${d === selected ? ' aria-current="date"' : ''} aria-label="${labelMD(d)}, ${n}종목 완료${cls.includes('wkstart') ? `, ${weekIndex(d, config.startDate) + 1}주차 시작` : ''}${cls.includes('rest') ? ', 쉬는 날' : ''}${ran ? ', 전투 달리기' : ''}"><span class="dn">${parse(d).getDate()}</span>${pips}</button>`;
       }
       h += '</div>';
     }
@@ -210,6 +219,8 @@ export function mountHistory(root, store) {
     $('#historyVolume', root).hidden = !vols.length;
     $('#vol', root).innerHTML = vols.join('');
 
+    renderRun(days, today);
+
     /* 연속·달성률 (모든 운동을 마친 날 기준) */
     const opts = { rest, startDate: config.startDate };
     const cur = currentStreak(days, today, exs, rest);
@@ -240,6 +251,42 @@ export function mountHistory(root, store) {
         );
       })
       .join('');
+  }
+
+  /** 전투 달리기: 이번 주 횟수·연속·누적 시간, 최근 7일 달린 시간 막대, 이번 달·누적 합계. 한 번도 안 달렸으면 숨김 */
+  function renderRun(days, today) {
+    const all = runSummary(days, '', today);
+    $('#historyRun', root).hidden = !all.count;
+    if (!all.count) return;
+    const week = runSummary(days, mondayOf(today), today);
+    const month = runSummary(days, monthOf(today), today);
+    const streak = runStreak(days, today);
+    const weeks = runWeekStreak(days, today);
+    $('#runTotals', root).innerHTML =
+      `<div><dt>이번 주</dt><dd>${week.count}<small>회</small></dd></div>` +
+      `<div><dt>연속</dt><dd>${streak}<small>일</small></dd><dd class="best">${weeks > 1 ? `${weeks}주 연속 달림` : `최고 ${bestRunStreak(days)}일`}</dd></div>` +
+      `<div><dt>누적 시간</dt><dd>${all.sec >= 3600 ? Math.floor(all.sec / 3600) : Math.round(all.sec / 60)}<small>${all.sec >= 3600 ? '시간' : '분'}</small></dd></div>`;
+    const from = addDays(today, -6);
+    const week7 = Array.from({ length: 7 }, (_, i) => addDays(from, i));
+    const per = week7.map((d) => (ranOn(days, d) ? days[d].run.sec || 0 : -1));
+    const top = Math.max(1, ...per);
+    const sum7 = per.reduce((a, b) => a + Math.max(0, b), 0);
+    const n7 = per.filter((v) => v >= 0).length;
+    const bars = per
+      .map((v, i) => {
+        const h = v > 0 ? Math.max(8, Math.round((v / top) * 100)) : v === 0 ? 8 : 0; // 시간 없이 체크만 한 날도 낮은 막대로
+        return `<i class="${week7[i] === today ? 'today' : ''}${v < 0 ? ' zero' : ''}" style="height:${h}%" title="${labelMD(week7[i])} ${v < 0 ? '안 달림' : v ? fmtRunTime(v) : '달림'}"></i>`;
+      })
+      .join('');
+    $('#runVol', root).innerHTML =
+      `<li><span class="vol-name">최근 7일</span><span class="vol-sum"><b>${n7}</b>회${sum7 ? ` · ${fmtRunTime(sum7)}` : ''}</span>` +
+      `<span class="vol-bars" role="img" aria-label="최근 7일 전투 달리기 ${n7}회">${bars}</span></li>`;
+    const line = (label, x) => {
+      const pace = fmtPace(x.paceSec, x.paceKm);
+      return `${label} <b>${x.count}</b>회` + (x.sec ? ` · ${fmtRunTime(x.sec)}` : '') + (x.km ? ` · ${fmtKm(x.km)}` : '') + (pace ? ` <span class="nowrap">(평균 페이스 ${pace}/km)</span>` : '');
+    };
+    $('#runMonth', root).innerHTML = line(`${parse(today).getMonth() + 1}월`, month);
+    $('#runAll', root).innerHTML = line('누적', all);
   }
 
   /** 고른 날 기록 카드: 총 시간, 운동 시작–종료 시각, 종목별 한 것, 소감·감사 */
@@ -293,6 +340,7 @@ export function mountHistory(root, store) {
       (has ? rowsHtml(list) : `<p class="sub">${total || sessions.length ? '체크한 종목이 없습니다.' : rest ? '쉬는 날입니다.' : '기록이 없습니다.'}</p>`) +
       roundHtml +
       (stretchText ? `<p class="note-line"><b>스트레칭</b> ${stretchText}</p>` : '') +
+      (day?.run?.done ? `<p class="note-line"><b>전투 달리기</b> ${[day.run.sec ? fmtRunTime(day.run.sec) : '완료', day.run.km ? fmtKm(day.run.km) : '', fmtPace(day.run.sec, day.run.km) ? `${fmtPace(day.run.sec, day.run.km)}/km` : ''].filter(Boolean).join(' · ')}</p>` : '') +
       (note.feel ? `<p class="note-line"><b>소감</b> ${esc(note.feel)}</p>` : '') +
       (note.thanks ? `<p class="note-line"><b>감사</b> ${esc(note.thanks)}</p>` : '') +
       `<button type="button" class="btn ghost sm" data-edit="${date}">${date === state.today ? '오늘 탭에서 체크하기' : '이 날 기록 고치기'}</button>`
@@ -334,7 +382,7 @@ export function mountHistory(root, store) {
     const exs = store.activeExercises();
     const ctx = { exs, ids: exs.map((e) => e.id), rest: new Set(state.config.restDays || []) };
     const hasRecord = Object.entries(state.days).some(([date, day]) => date <= state.today && (
-      day.workSec > 0 || day.sessions?.length || day.note?.feel || day.note?.thanks ||
+      day.workSec > 0 || day.sessions?.length || day.run?.done || day.note?.feel || day.note?.thanks ||
       Object.values(day.entries || {}).some((entry) => entry.done || entry.setsDone > 0)
     ));
     $('#emptyHistory', root).hidden = hasRecord || !!activeSessionDate();
