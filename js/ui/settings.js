@@ -12,6 +12,7 @@ import { $, esc } from './dom.js';
 import { icon } from './icon.js';
 import { mountSoundToggle } from './sound-ui.js';
 import { applyProgram, PROGRAMS, weeklyRunMin } from '../program.js';
+import { openOnboard } from './onboard.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 /** 무게 칸을 보일 종목: 아령 동작, 직접 만든 종목, 이미 무게가 있는 종목 */
@@ -58,6 +59,7 @@ export function mountSettings(root, store, theme = null) {
       <div class="programs" id="programs" role="radiogroup" aria-label="운동 프로그램">
         ${PROGRAMS.map(programCard).join('')}
       </div>
+      <button type="button" class="btn ghost sm ob-open" id="obOpen">두 가지 질문으로 맞춤 구성 받기</button>
       <p class="shint">프로그램을 고르면 근력하는 요일과 달리기 목표가 바로 바뀝니다. 근력과 Zone 2 달리기를 한 주에 고르게 나눴습니다. 근력은 이틀 연속 하지 않고, 긴 달리기 다음 날은 짧게 달리며, 한 주에 하루는 온전히 쉽니다. 몸이 아픈 날은 계획보다 쉬는 것을 먼저 챙겨 주세요.</p>
     </section>
 
@@ -384,6 +386,7 @@ export function mountSettings(root, store, theme = null) {
     else delete draft.age; // 비우거나 범위 밖이면 심박 안내 없음
     markDirty();
   });
+  el('obOpen').addEventListener('click', () => openOnboard(store, { fresh: !Object.keys(store.state.days).length }));
   el('startDate').addEventListener('input', (e) => {
     draft.startDate = e.target.value;
     markDirty();

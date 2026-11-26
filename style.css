@@ -90,6 +90,7 @@
   --shadow-knob: 0 1px 3px rgba(0, 0, 0, 0.25); /* 스위치 손잡이 */
   --shadow-drag: 0 8px 24px rgba(0, 0, 0, 0.18); /* 끌어서 옮기는 종목 줄 */
   --shadow-card: none; /* 카드: 그림자 없이 얇은 테두리만(미니멀) */
+  --scrim: rgba(0, 0, 0, 0.42); /* 시트 뒤를 가리는 어두운 막 */
   --shadow-press: none; /* 주 버튼도 평평하게 */
 }
 /* 어두운 테마: 기기 설정을 따르고, data-theme(claude.ai 아티팩트 뷰어)이 있으면 그것을 따름. 두 블록은 같아야 함(tests/style.test.mjs) */
@@ -1818,4 +1819,43 @@ tr.cur td { background: var(--accent-soft); }
 .exrow2.with-kg input { padding-left: 6px; padding-right: 6px; text-align: center; }
 @media (max-width: 360px) {
   .exrow2.with-kg { grid-template-columns: repeat(3, minmax(0, 1fr)); } /* 좁은 폰: 시작·매주·최대 / 세트·kg 두 줄 */
+}
+
+/* 시작 설정 시트: 아래에서 올라오는 한 장(기구·수준 두 질문 → 추천 계획 미리보기) */
+.sheet-back {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: var(--scrim);
+}
+.sheet {
+  width: 100%; max-width: 560px; max-height: 92dvh; overflow-y: auto;
+  padding: var(--gap-lg) max(var(--gutter), env(safe-area-inset-left, 0px)) calc(var(--gap-lg) + env(safe-area-inset-bottom, 0px));
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: var(--bg);
+  box-shadow: var(--shadow-drag);
+}
+.sheet h2 { margin: 0; font-size: var(--fs-xl); }
+.ob-q { margin: var(--gap-lg) 0 0; padding: 0; border: 0; }
+.ob-q legend { padding: 0; margin-bottom: var(--gap); font-weight: 700; }
+.ob-q legend small { margin-left: var(--gap-xs); font-weight: 400; font-size: var(--fs-xs); color: var(--muted); }
+.ob-levels { display: grid; gap: var(--gap); }
+.ob-level { position: relative; display: flex; }
+.ob-level input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.ob-level > span { flex: 1; display: grid; gap: 2px; padding: var(--gap-md); border: 1px solid var(--line); border-radius: var(--r-ctrl); background: var(--surface); }
+.ob-level small, .ob-replace small { font-size: var(--fs-xs); color: var(--muted); }
+.ob-level input:checked + span { border-color: var(--accent); background: var(--str-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.ob-level input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ob-plan { margin-top: var(--gap-lg); padding: var(--gap-md); border-radius: var(--r-ctrl); background: var(--fill); }
+.ob-plan p { margin: 0; }
+.ob-plan .sub { margin-top: var(--gap-xs); line-height: 1.5; }
+.ob-sets { white-space: nowrap; font-weight: 600; }
+.ob-replace { display: flex; gap: var(--gap); align-items: flex-start; margin-top: var(--gap-md); font-size: var(--fs-sm); }
+.ob-replace > span { display: grid; gap: 2px; }
+.ob-replace input { margin-top: 3px; }
+.sheet .btnrow { margin-top: var(--gap-lg); }
+.sheet .btnrow .btn { flex: 1; }
+.ob-open { margin-top: var(--gap); }
+@media (prefers-reduced-motion: no-preference) {
+  .sheet { animation: sheet-up 0.22s ease-out; }
+  @keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } }
 }
