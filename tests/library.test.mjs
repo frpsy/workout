@@ -66,3 +66,17 @@ test('설정 정규화: 사용 중인 종목이 넷 이상이면 앞의 셋만 �
   assert.deepEqual(c.exercises.map((e) => e.active), [true, true, true, false, false]);
   assert.equal(c.exercises.length, 5, '지우지 않음');
 });
+
+test('운동법 영상: 도감 → 예전 종목 이름 → 별칭(띄어쓰기·표기 차이)으로 찾고, 없으면 null', async () => {
+  const { videoForExercise, videoSearchUrl, NAME_VIDEOS } = await import('../js/library.js');
+  assert.equal(videoForExercise({ id: 'push', name: '푸시업' }).id, '-_DUjHxgmWk', '기본 운동');
+  assert.equal(videoForExercise({ id: 'x1', name: '딥스' }).id, 'pQSfXvaQGas', '예전 추천 종목');
+  assert.equal(videoForExercise({ id: 'x2', name: '아령 로우' }).ch, '강경원', '도감에서 빠진 예전 아령 동작');
+  assert.equal(videoForExercise({ id: 'x3', name: '푸쉬업' }).id, '-_DUjHxgmWk', '푸쉬업 → 푸시업');
+  assert.equal(videoForExercise({ id: 'x4', name: '턱걸이' }).id, 'nWhS28U6bCY');
+  assert.equal(videoForExercise({ id: 'x5', name: '글루트 브릿지' }).id, '6EGYtkbj_34', '브릿지 → 브리지');
+  assert.equal(videoForExercise({ id: 'x6', name: '덤벨' }).ch, '키다리형', '예전 ‘덤벨’ 종목은 덤벨 컬');
+  assert.equal(videoForExercise({ id: 'x7', name: '나만의 운동' }), null);
+  assert.equal(videoSearchUrl('나만의 운동'), 'https://www.youtube.com/results?search_query=%EB%82%98%EB%A7%8C%EC%9D%98%20%EC%9A%B4%EB%8F%99%20%EC%9E%90%EC%84%B8');
+  for (const v of Object.values(NAME_VIDEOS)) assert.match(v.id, /^[\w-]{11}$/);
+});

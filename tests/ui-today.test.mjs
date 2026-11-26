@@ -851,3 +851,13 @@ test('오늘: 달린 곳을 고르고 완료하면 함께 기록, 야외면 속�
   assert.match(root.querySelector('#runSum').textContent, /^회사/);
   store.actions.flushAll();
 });
+
+test('오늘: 영상이 없는 직접 만든 운동에도 ‘운동법 찾기’(유튜브 검색) 링크', () => {
+  const { store, root } = setup(today, { config: { startDate: '2026-11-02', exercises: [{ id: 'm', name: '나만의 운동', unit: 'reps', base: 10, step: 1, sets: 3 }, { id: 'd', name: '딥스', unit: 'reps', base: 5, step: 1, sets: 3 }] } });
+  const [mine, dips] = [...root.querySelectorAll('.row a.video')];
+  assert.equal(mine.textContent, '운동법 찾기');
+  assert.match(mine.getAttribute('href'), /^https:\/\/www\.youtube\.com\/results\?search_query=/);
+  assert.equal(dips.textContent, '운동법');
+  assert.equal(dips.getAttribute('href'), 'https://youtu.be/pQSfXvaQGas');
+  store.actions.flushAll();
+});

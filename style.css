@@ -1944,3 +1944,6 @@ tr.cur td { background: var(--accent-soft); }
 /* 달린 곳: 회사 · 아파트 짐 · 야외(작은 칩 한 줄) */
 #runPlaces { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: var(--gap-sm); }
 #runPlaces .chip { min-height: 36px; padding-left: 4px; padding-right: 4px; font-size: var(--fs-sm); white-space: nowrap; }
+/* 설정 운동 목록의 운동법 링크: 사용 스위치 옆 작은 알약 */
+.video.sm { height: 32px; background: var(--fill); }
+.exrow3 .video.sm { margin-left: var(--gap-sm); }
