@@ -73,9 +73,9 @@
   --gap-md: 10px;
   --gap-lg: 12px;
   --gutter: 16px; /* 화면 좌우 여백(저장 줄이 끝까지 닿도록 같은 값을 씀) */
-  /* 아래 탭 막대: 버튼 58px + 테두리 1px + 아래 여백. 아이폰 홈 표시줄 영역(34px)은 12px 덜 써서 22px만 둠(표시줄과 글자가 겹치지 않는 선), 없는 기기는 8px */
-  --tabbar-pad: max(calc(env(safe-area-inset-bottom, 0px) - 12px), 8px);
-  --tabbar-h: calc(59px + var(--tabbar-pad));
+  /* 아래 탭 막대: 화면 아래에 떠 있는 알약(높이 60px) + 아래 띄움. 아이폰 홈 표시줄 영역(34px)은 12px 덜 써서 22px 띄우고(표시줄과 겹치지 않는 선), 없는 기기는 12px */
+  --tabbar-pad: max(calc(env(safe-area-inset-bottom, 0px) - 12px), 12px);
+  --tabbar-h: calc(60px + var(--tabbar-pad));
 
   /* 모서리 */
   --r-ctrl: 20px; /* 버튼 */
@@ -92,6 +92,7 @@
   --shadow-card: none; /* 카드: 그림자 없이 얇은 테두리만(미니멀) */
   --scrim: rgba(0, 0, 0, 0.42); /* 시트 뒤를 가리는 어두운 막 */
   --shadow-press: none; /* 주 버튼도 평평하게 */
+  --shadow-tabbar: 0 6px 24px rgba(16, 20, 40, 0.14), 0 1px 3px rgba(16, 20, 40, 0.08); /* 떠 있는 탭 막대 */
 }
 /* 어두운 테마: 기기 설정을 따르고, data-theme(claude.ai 아티팩트 뷰어)이 있으면 그것을 따름. 두 블록은 같아야 함(tests/style.test.mjs) */
 @media (prefers-color-scheme: dark) {
@@ -1527,7 +1528,7 @@ tr.cur td { background: var(--accent-soft); }
 /* 저장하지 않은 변경이 있으면 저장 줄을 탭 막대 바로 위에 붙임 */
 .savebar.dirty {
   position: sticky;
-  bottom: calc(var(--tabbar-h) + 1px);
+  bottom: calc(var(--tabbar-h) + 8px);
   z-index: 2;
   margin: 0 calc(-1 * var(--gutter));
   padding: 10px var(--gutter);
@@ -1537,48 +1538,59 @@ tr.cur td { background: var(--accent-soft); }
 .savebar .btn { flex: 1; }
 .dirty-note { flex-basis: 100%; font-size: var(--fs-sm); color: var(--muted); }
 
-/* ── 아래 탭 막대 (오늘 / 기록 / 설정) ─────────────────── */
+/* ── 아래 탭 막대 (오늘 / 기록 / 설정): 화면 아래에 떠 있는 반투명 알약 ── */
 .tabbar {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  bottom: var(--tabbar-pad);
   z-index: 10;
+  max-width: 400px;
+  height: 60px;
+  margin: 0 auto;
   display: flex;
-  justify-content: center;
-  background: var(--fill);
-  border-top: 1px solid var(--line);
-  padding-bottom: var(--tabbar-pad);
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: var(--shadow-tabbar);
   touch-action: none; /* 탭 막대를 잡고 끌어도 화면이 움직이지 않게 */
 }
 .tabbar button {
   z-index: 1;
   flex: 1;
-  max-width: 186px;
-  height: 58px;
+  min-width: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 1px;
   padding: 0;
   border: 0;
+  border-radius: var(--r-pill);
   background: transparent;
   color: var(--muted);
   font-size: var(--fs-xs);
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: var(--track);
   cursor: pointer;
   touch-action: manipulation;
+  transition: color 0.2s ease;
 }
 .tabbar button[aria-current="page"] { color: var(--accent); font-weight: 700; }
-.tabbar button svg { flex: none; }
-/* 선택한 아이콘 뒤의 표시가 탭 스와이프를 따라 움직임 */
+.tab-ico { flex: none; stroke-width: 1.8; transition: stroke-width 0.2s ease; }
+.tabbar button[aria-current="page"] .tab-ico { stroke-width: 2.3; }
+.tabbar button:active .tab-ico { transform: scale(0.92); }
+/* 고른 탭 뒤의 알약이 탭 스와이프를 따라 움직임(폭은 버튼 하나와 같음) */
 .tab-ind {
   position: absolute;
-  top: 5px;
+  top: 4px;
   left: 0;
-  width: 64px;
-  height: 30px;
+  width: calc((100% - 8px) / 3);
+  height: calc(100% - 8px);
   border-radius: var(--r-pill);
   background: var(--accent-soft);
   pointer-events: none;
