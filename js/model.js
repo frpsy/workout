@@ -17,6 +17,7 @@ export const MAX_SESSIONS = 20; // 하루에 남기는 운동 구간(시작·종
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const inRange = (v, [lo, hi]) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 const clone = (v) => JSON.parse(JSON.stringify(v));
+export const roundKg = (v) => Math.round(v * 2) / 2;
 
 export function defaultConfig(startDate) {
   return { v: SCHEMA_VERSION, startDate, exercises: clone(DEFAULT_EXERCISES), plan: { ...DEFAULT_PLAN }, restDays: [] };
@@ -44,6 +45,10 @@ export function normalizeExercise(raw) {
     ...(isDateStr(raw.since) ? { since: raw.since } : {}),
     // 운동 도감의 동작 id(자세 요령·쉬운/어려운 동작 안내용). 직접 만든 운동은 없음
     ...(typeof raw.lib === 'string' && libById(raw.lib) ? { lib: raw.lib } : {}),
+    // 아령 무게(kg). 없으면 맨몸 운동
+    ...(inRange(raw.kg, LIMITS.kg) ? { kg: roundKg(raw.kg) } : {}),
+    // 무게를 올린 날: 이 날이 든 주부터 목표 개수를 다시 시작 개수부터 늘림(이중 점진)
+    ...(isDateStr(raw.from) ? { from: raw.from } : {}),
   };
 }
 
@@ -144,7 +149,7 @@ export function normalizeLog(raw) {
     if (!isObj(v) || typeof v.ex !== 'string' || !ID_RE.test(v.ex) || RESERVED.has(v.ex)) continue;
     if (!inRange(v.n, LIMITS.count) || !inRange(v.t, [1, 4e12])) continue;
     const r = inRange(v.r, [0, MAX_SESSIONS]) ? Math.round(v.r) : 0;
-    out.push({ ex: v.ex, n: Math.round(v.n), t: Math.round(v.t), r });
+    out.push({ ex: v.ex, n: Math.round(v.n), t: Math.round(v.t), r, ...(inRange(v.kg, LIMITS.kg) ? { kg: roundKg(v.kg) } : {}) });
   }
   return out.slice(-MAX_LOG);
 }
@@ -228,6 +233,7 @@ export function validateConfig(cfg) {
     const label = e.name || `${i + 1}번째 운동`;
     if (!e.name.trim()) errors.push(`${i + 1}번째 운동 이름을 입력해 주세요.`);
     if (!inRange(e.base, LIMITS.base)) errors.push(`${label}: 시작 목표는 1 이상이어야 합니다.`);
+    if (e.kg !== undefined && !inRange(e.kg, LIMITS.kg)) errors.push(`${label}: 무게는 ${LIMITS.kg[0]}~${LIMITS.kg[1]}kg 사이여야 합니다(비우면 맨몸).`);
     if (!inRange(e.sets, LIMITS.sets)) errors.push(`${label}: 세트는 ${LIMITS.sets[0]}~${LIMITS.sets[1]} 사이여야 합니다.`);
     if (!inRange(e.step, LIMITS.step)) errors.push(`${label}: 주당 증가는 0 이상이어야 합니다.`);
     if (e.max !== undefined && (!inRange(e.max, LIMITS.max) || (e.max > 0 && e.max < e.base))) errors.push(`${label}: 최대는 시작 목표 이상이어야 합니다(비우면 제한 없음).`);

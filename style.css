@@ -1803,3 +1803,16 @@ tr.cur td { background: var(--accent-soft); }
 .libbox summary::after { content: '⌄'; margin-left: var(--gap-xs); font-size: var(--fs-lg); }
 .libbox[open] summary::after { transform: rotate(180deg); }
 .libbox + .presets { margin-top: var(--gap); }
+
+/* 아령 무게: 목표 옆 무게 꼬리표, 상한을 해냈을 때 무게 올리기 제안, 설정의 무게 칸 */
+.goal .kg { align-self: center; padding: 1px 8px; border-radius: var(--r-pill); background: var(--fill); font-family: var(--font-num); font-size: var(--fs-xs); font-weight: 700; color: var(--fg); }
+.row.current .goal .kg { background: var(--surface); }
+.row:not(.current) .goal .kg { display: none; } /* 접힌 줄은 이름이 잘리지 않게 무게를 숨김(펼치면 보임) */
+.kgup { grid-column: 1 / -1; min-height: 44px; padding: 0 var(--gap); border: 1px dashed var(--accent); border-radius: var(--r-ctrl); background: transparent; color: var(--accent); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+.kgup b { font-family: var(--font-num); }
+.kgup[hidden] { display: none; }
+.exrow2.with-kg { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--gap-sm); }
+.exrow2.with-kg input { padding-left: 6px; padding-right: 6px; text-align: center; }
+@media (max-width: 360px) {
+  .exrow2.with-kg { grid-template-columns: repeat(3, minmax(0, 1fr)); } /* 좁은 폰: 시작·매주·최대 / 세트·kg 두 줄 */
+}

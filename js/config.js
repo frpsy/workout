@@ -55,6 +55,7 @@ export const LIMITS = {
   step: [0, 500],
   max: [0, 9999], // 0 = 상한 없음
   sets: [1, 10],
+  kg: [0.5, 300], // 아령 무게(0.5kg 단위)
   count: [0, 99999],
   recoveryEvery: [0, 12],
   recoveryRatio: [0.3, 1],

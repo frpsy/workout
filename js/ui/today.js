@@ -297,6 +297,10 @@ export function mountToday(root, store) {
         // 세트 수를 바꿔 종목이 완료되거나 다시 진행 중이 되면 체크와 똑같이 소리·완료 처리
         setsBy: (d) => changeProgress(view, () => actions.setSets(ex.id, view().sets + d)),
         setsTo: (n) => changeProgress(view, () => actions.setSets(ex.id, n)),
+        raise() {
+          haptic();
+          actions.raiseWeight(ex.id);
+        },
         // 지금 할 종목이 아닌 남은 종목을 누르면 그 종목을 지금 할 종목으로(크게 펼침)
         pick() {
           if (view().done || r.el.classList.contains('current')) return false;
@@ -370,7 +374,7 @@ export function mountToday(root, store) {
 
   function render(state) {
     const exs = store.activeExercises();
-    const key = exs.map((e) => `${e.id}:${e.name}:${e.unit}`).join('|');
+    const key = exs.map((e) => `${e.id}:${e.name}:${e.unit}:${e.kg || ''}:${e.max || ''}:${e.lib || ''}`).join('|'); // 무게·상한·도감이 바뀌면 줄을 새로 그림
     if (key !== rowsKey) {
       const sameSet = (k) => k.split('|').sort().join('|');
       // 순서만 바뀌었으면 줄을 새로 만들지 않고 옮김: 재던 시간·펼친 상태·입력 중인 값이 그대로 남음
@@ -399,7 +403,9 @@ export function mountToday(root, store) {
     for (const r of rows.values()) {
       const v = store.view(selected, r.ex, res);
       if (v.done) done++;
-      paintRow(r, v, { current: picked ? r === pr : !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null });
+      // 무게 올리기 제안: 오늘, 아령 종목을 상한 개수로 모두 마쳤을 때
+      const canRaise = selected === state.today && r.ex.kg > 0 && r.ex.max > 0 && v.done && v.count >= r.ex.max;
+      paintRow(r, v, { current: picked ? r === pr : !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null, canRaise });
       if (!v.done) currentSeen = true;
     }
 

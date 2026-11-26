@@ -6,7 +6,7 @@ import { isDateStr, todayStr } from './dates.js';
 import { normalizeRun } from './run.js';
 import { MAX_SESSIONS, NOTE_MAX, normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
 import { createTargetResolver } from './progression.js';
-import { setSetCount, syncSets } from './setlog.js';
+import { kgStep, setSetCount, syncSets } from './setlog.js';
 
 const SAVE_DELAY = 350;
 
@@ -228,7 +228,7 @@ export function createStore(adapter) {
     if (r === null || !ex) return;
     const v = view(date, ex);
     const day = ensureDay(date);
-    const log = syncSets(day.log, id, r, v.done ? v.sets : v.setsDone, v.count, Date.now());
+    const log = syncSets(day.log, id, r, v.done ? v.sets : v.setsDone, v.count, Date.now(), ex.kg || 0);
     if (log.length) day.log = log;
     else delete day.log;
   }
@@ -415,6 +415,15 @@ export function createStore(adapter) {
         state.selected = t;
       }
       emit();
+    },
+
+    /** 아령 무게 올리기(상한 개수에 닿았을 때): 무게를 한 눈금 올리고, 이번 주부터 목표 개수를 시작 개수로 되돌림 */
+    raiseWeight(id) {
+      const ex = findExercise(id);
+      if (!ex || !(ex.kg > 0)) return false;
+      const exs = state.config.exercises.map((e) => (e.id === id ? { ...e, kg: e.kg + kgStep(e.kg), from: state.today } : e));
+      actions.saveConfig({ ...state.config, exercises: exs }).catch(() => {});
+      return true;
     },
 
     /** 사용 중인 종목을 ids 순서로 다시 놓음(끌어서 옮기기). 쓰지 않는 종목은 제자리. 바뀐 게 없거나 목록이 맞지 않으면 false */

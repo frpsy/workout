@@ -3,6 +3,7 @@
 
 import { EXERCISE_VIDEOS, UNITS, videoUrl } from '../config.js';
 import { libById, libFor } from '../library.js';
+import { kgStep } from '../setlog.js';
 import { esc, haptic } from './dom.js';
 import { icon } from './icon.js';
 
@@ -67,7 +68,7 @@ export function createRow(ex, h) {
     <div class="info">
       <div class="nameline"><h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>${video ? `<a class="video" data-f="video" href="${esc(videoUrl(video))}" target="_blank" rel="noopener noreferrer" title="${esc(video.title)}" aria-label="${n} 유튜브 영상으로 같이하기">${icon('video', 22)}<span class="sr">영상으로 같이하기</span></a>` : ''}</div>
       ${cue}
-      <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button><button type="button" class="more" data-f="more" aria-expanded="false" aria-label="${n} 개수·세트 조절 펴기">${icon('down', 18)}</button></p>
+      <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span>${ex.kg ? `<span class="kg">${ex.kg}kg</span>` : ''}<span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button><button type="button" class="more" data-f="more" aria-expanded="false" aria-label="${n} 개수·세트 조절 펴기">${icon('down', 18)}</button></p>
     </div>
     <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span><span class="cap" data-f="cap" aria-hidden="true"></span></button>
     <div class="ctrl">
@@ -83,12 +84,16 @@ export function createRow(ex, h) {
         <input data-f="setsIn" type="number" inputmode="numeric" min="1" max="10" aria-label="${n} 실제 세트 수">
         <button type="button" data-f="setsPlus" aria-label="${n} 세트 늘리기">+</button>
       </div>
-    </div>`;
+    </div>
+    ${ex.kg ? `<button type="button" class="kgup" data-f="kgup" hidden>상한 개수를 해냈어요 · 다음엔 <b>${ex.kg + kgStep(ex.kg)}kg</b>으로</button>` : ''}`;
   const q = (f) => el.querySelector(`[data-f="${f}"]`);
   const r = { el, ex, unit };
   for (const f of FIELDS) r[f] = q(f);
   // 초 단위 운동: 시작을 누르고 종료를 누르면 잰 초를 이 세트의 실제 기록으로 넣음
   if (r.watch) r.watch.addEventListener('click', () => h.watch());
+  // 이중 점진: 상한 개수를 해낸 아령 종목은 무게를 한 눈금 올리고 개수는 다시 시작 개수부터
+  r.kgup = q('kgup');
+  if (r.kgup) r.kgup.addEventListener('click', () => h.raise && h.raise());
   // 큰 버튼: 누를 때마다 다음 한 세트만 완료(마지막 세트에서 종목 완료). 모두 마친 뒤에는 눌러도 바뀌지 않음
   let lastTapAt = -Infinity;
   r.check.addEventListener('click', (ev) => {
@@ -127,7 +132,8 @@ export function createRow(ex, h) {
 }
 
 /** 종목 상태(v)를 줄에 그림. current: 지금 할 종목, ready: 기록을 불러왔는지, countValue: 개수 칸에 넣을 값(초 재는 중이면 잰 초) */
-export function paintRow(r, v, { current = false, ready = true, countValue = null } = {}) {
+export function paintRow(r, v, { current = false, ready = true, countValue = null, canRaise = false } = {}) {
+  if (r.kgup) r.kgup.hidden = !canRaise;
   r.target.textContent = v.target;
   r.target.closest('.goal').title = `목표 ${v.target}${r.unit.label} × ${v.sets}세트`;
   // 세트가 여러 개면 세트 수만큼 진행 표시(누르는 버튼이 아님), 하나면 완료 버튼만

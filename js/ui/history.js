@@ -5,7 +5,7 @@ import { addDays, diffDays, dowName, fmt, labelMD, mondayOf, pad, parse, shortMD
 import { weekIndex } from '../progression.js';
 import { achievement, bestStreak, currentStreak, doneCount, isComplete, isDone, percent, periodSummary } from '../stats.js';
 import { activeSessionDate, fmtKo, SESSION_EVENT } from '../session.js';
-import { setsOf, volume } from '../setlog.js';
+import { kgOf, setsOf, volume } from '../setlog.js';
 import { $, esc } from './dom.js';
 import { icon } from './icon.js';
 import { EV, emit } from '../events.js';
@@ -358,7 +358,8 @@ export function mountHistory(root, store) {
           const val = uneven
             ? `${each.join('·')}${unit}${v.done ? '' : `/${v.sets}세트`}`
             : v.done ? `${reps}${v.setsKnown ? `×${v.sets}` : ''}` : v.setsDone ? `${reps}×${v.setsDone}/${v.sets}` : '–';
-          return `<li class="${v.done ? 'done' : v.setsDone ? 'part' : ''}"><span>${esc(ex.name)}</span><b>${val}</b></li>`;
+          const kg = kgOf(day, ex.id);
+          return `<li class="${v.done ? 'done' : v.setsDone ? 'part' : ''}"><span>${esc(ex.name)}</span><b>${val}${kg ? ` · ${kg}kg` : ''}</b></li>`;
         })
         .join('') +
       '</ul>';
