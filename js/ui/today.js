@@ -12,6 +12,7 @@ import { mountWorkbar } from './workbar.js';
 import { createRow, paintRow } from './exercise-row.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
+import { fmtKm, fmtRunTime } from '../run.js';
 
 // 스트레칭 버튼 앞의 체크 표시(했으면 채워진 동그라미 안의 ✓)
 const STRETCH_ICON = `<span class="stretch-mark material-stack">${icon('circle', 22)}${icon('check', 15, 'tick')}</span>`;
@@ -71,13 +72,20 @@ export function mountToday(root, store) {
     <button type="button" class="stretch" id="stretchPre" data-kind="pre" aria-pressed="false">${STRETCH_ICON}<span>운동 전 스트레칭</span></button>
     <section aria-label="운동 체크" class="rows" id="rows"></section>
     <button type="button" class="stretch" id="stretchPost" data-kind="post" aria-pressed="false">${STRETCH_ICON}<span>운동 후 스트레칭</span></button>
+    <section class="runbox" id="runBox" aria-label="전투 달리기">
+      <button type="button" class="stretch run-check" id="runBtn" aria-pressed="false">${STRETCH_ICON}<span>전투 달리기</span><span class="run-sum" id="runSum"></span></button>
+      <div class="run-detail" id="runDetail" hidden>
+        <span class="run-field"><span>시간</span><input id="runMin" type="number" inputmode="numeric" min="0" max="1439" placeholder="0" aria-label="달린 시간(분)">분<input id="runSec" type="number" inputmode="numeric" min="0" max="59" placeholder="0" aria-label="달린 시간(초)">초</span>
+        <span class="run-field"><span>거리</span><input id="runKm" type="number" inputmode="decimal" min="0" max="500" step="0.01" placeholder="0" aria-label="달린 거리(km)">km</span>
+      </div>
+    </section>
     <span class="sr" id="nextNote" role="status"></span>`;
 
   mountSoundButton($('#sndQuick', root)); // 효과음 켜기/끄기: 운동 중에 설정 탭에 가지 않고 바로
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
 
   // 스트레칭 버튼: 눌러 했다고 표시하고, 다시 누르면 취소(그날 기록에 남음)
-  for (const b of root.querySelectorAll('.stretch')) {
+  for (const b of root.querySelectorAll('.stretch[data-kind]')) {
     b.addEventListener('click', () => {
       if (!store.state.ready) return;
       const { selected } = store.state;
@@ -85,6 +93,22 @@ export function mountToday(root, store) {
       if (actions.setStretch(selected, b.dataset.kind, on) && on) haptic();
     });
   }
+
+  // 전투 달리기: 눌러 달렸다고 표시(다시 누르면 취소), 표시한 날은 달린 시간(분·초)·거리(km)를 적는 칸이 열림
+  $('#runBtn', root).addEventListener('click', () => {
+    if (!store.state.ready) return;
+    const { selected } = store.state;
+    const on = !store.state.days[selected]?.run?.done;
+    if (actions.setRun(selected, { done: on }) && on) haptic();
+  });
+  const num = (el) => {
+    const v = parseFloat(el.value);
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  };
+  const saveRunTime = () => actions.setRun(store.state.selected, { sec: Math.round(num($('#runMin', root)) * 60 + Math.min(59, num($('#runSec', root)))) });
+  $('#runMin', root).addEventListener('input', saveRunTime);
+  $('#runSec', root).addEventListener('input', saveRunTime);
+  $('#runKm', root).addEventListener('input', (ev) => actions.setRun(store.state.selected, { km: num(ev.target) }));
 
   $('#levels', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-level]');
@@ -273,11 +297,25 @@ export function mountToday(root, store) {
     }
 
     const stretch = state.days[selected]?.stretch || {};
-    for (const b of root.querySelectorAll('.stretch')) {
+    for (const b of root.querySelectorAll('.stretch[data-kind]')) {
       const on = !!stretch[b.dataset.kind];
       b.setAttribute('aria-pressed', String(on));
       b.disabled = !state.ready;
     }
+
+    const run = state.days[selected]?.run;
+    $('#runBtn', root).setAttribute('aria-pressed', String(!!run));
+    $('#runBtn', root).disabled = !state.ready;
+    $('#runSum', root).textContent = run ? [run.sec ? fmtRunTime(run.sec) : '', run.km ? fmtKm(run.km) : ''].filter(Boolean).join(' · ') : '';
+    $('#runDetail', root).hidden = !run;
+    // 적는 중인 칸은 건드리지 않음(입력하는 대로 저장되며 다시 그려지므로)
+    const fill = (id, v) => {
+      const el = $(id, root);
+      if (document.activeElement !== el) el.value = v ? String(v) : '';
+    };
+    fill('#runMin', run?.sec ? Math.floor(run.sec / 60) : 0);
+    fill('#runSec', run?.sec ? run.sec % 60 : 0);
+    fill('#runKm', run?.km || 0);
 
     const segs = $('#segs', root);
     const total = rows.size;

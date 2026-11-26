@@ -574,3 +574,33 @@ test('오늘: 운동 전·후 스트레칭 버튼은 눌러 켜고 다시 눌러
   assert.equal('stretch' in store.state.days[store.state.today], false, '둘 다 끄면 필드도 없앰');
   store.actions.flushAll();
 });
+
+test('오늘: 전투 달리기를 눌러 표시하면 시간·거리 칸이 열리고, 적는 대로 그날 기록에 남으며 진행률에는 영향 없음', () => {
+  const { store, root } = setup(today);
+  const btn = root.querySelector('#runBtn');
+  const detail = root.querySelector('#runDetail');
+  assert.equal(root.querySelector('#stretchPost').nextElementSibling.id, 'runBox', '운동 후 스트레칭 아래');
+  assert.equal(btn.getAttribute('aria-pressed'), 'false');
+  assert.equal(detail.hidden, true);
+  btn.click();
+  assert.equal(btn.getAttribute('aria-pressed'), 'true');
+  assert.equal(detail.hidden, false);
+  assert.deepEqual(store.state.days[store.state.today].run, { done: true });
+  const type = (sel, v) => {
+    const el = root.querySelector(sel);
+    el.value = v;
+    el.dispatchEvent(new window.Event('input', { bubbles: true }));
+  };
+  type('#runMin', '25');
+  type('#runSec', '30');
+  type('#runKm', '3.2');
+  assert.deepEqual(store.state.days[store.state.today].run, { done: true, sec: 1530, km: 3.2 });
+  assert.equal(root.querySelector('#runSum').textContent, '25분 30초 · 3.2km');
+  assert.equal(root.querySelector('#progText').textContent, '0/3 종목', '진행률에 안 셈');
+  type('#runKm', '');
+  assert.deepEqual(store.state.days[store.state.today].run, { done: true, sec: 1530 }, '칸을 비우면 그 값만 지움');
+  btn.click();
+  assert.equal('run' in store.state.days[store.state.today], false, '다시 누르면 취소');
+  assert.equal(detail.hidden, true);
+  store.actions.flushAll();
+});
