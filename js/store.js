@@ -352,7 +352,7 @@ export function createStore(adapter) {
       return true;
     },
 
-    /** 전투 달리기: done이 false면 지우고, 아니면 달렸다고 표시하며 시간(sec)·거리(km)를 고침(0이면 그 값만 지움). 운동 완료·연속에는 영향 없음 */
+    /** 달리기: done이 false면 지우고, 아니면 달렸다고 표시하며 시간(sec)·거리(km)를 고침(0이면 그 값만 지움). 운동 완료·연속에는 영향 없음 */
     setRun(date, patch) {
       if (!state.ready || !isDateStr(date) || date > state.today || !patch) return false;
       const day = ensureDay(date);

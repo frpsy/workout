@@ -5,6 +5,7 @@ import { DEFAULT_EXERCISES, DEFAULT_PLAN, DEFAULT_SETS, LEVELS, LIMITS, SCHEMA_V
 import { isDateStr } from './dates.js';
 import { MAX_LOG } from './setlog.js';
 import { normalizeRun } from './run.js';
+import { normalizeRunPlan, programById } from './program.js';
 
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
 const RESERVED = new Set(['date', 'v', 'entries', 'pm', 'workSec', 'sessions', 'level', 'note', 'stretch', 'rounds', 'activeEntries', 'sessionClosed', 'log', 'run']);
@@ -85,7 +86,14 @@ export function normalizeConfig(raw, fallbackStart) {
     exercises,
     plan: normalizePlan(raw.plan),
     restDays: normalizeRestDays(raw.restDays),
+    ...programFields(raw),
   };
+}
+
+/** 운동 프로그램 id와 요일별 달리기 계획(분). 없으면 필드도 두지 않음 */
+function programFields(raw) {
+  const runPlan = normalizeRunPlan(raw.runPlan);
+  return { ...(programById(raw.program) ? { program: raw.program } : {}), ...(Object.keys(runPlan).length ? { runPlan } : {}) };
 }
 
 /** 운동 소감(feel)·감사한 일(thanks). 둘 다 비면 null */
@@ -190,7 +198,7 @@ export function serializeDay(date, day) {
 }
 
 export function serializeConfig(config) {
-  return clone({ v: SCHEMA_VERSION, startDate: config.startDate, exercises: config.exercises, plan: config.plan, restDays: config.restDays || [] });
+  return clone({ v: SCHEMA_VERSION, startDate: config.startDate, exercises: config.exercises, plan: config.plan, restDays: config.restDays || [], ...programFields(config) });
 }
 
 export function newExerciseId(existingIds) {

@@ -51,7 +51,7 @@ test('기록: 기본은 이번 주 한 줄만 보이고, 달성·연속·종목�
   assert.match(sub.textContent, /날짜를 누르면 그날 기록이 아래에 보입니다/);
   root.querySelector('#calInfo').click();
   assert.equal(sub.hidden, true);
-  assert.match(root.querySelector('#tallyText').textContent, /모두 마친 날 5일/);
+  assert.equal(root.querySelector('#tallyText'), null, '모두 마친 날 수는 연속·달성률과 겹쳐 없앰');
   assert.match(root.querySelector('#periodText').textContent, /^이번 주 \d+\/\d+일 모두 마침|^이번 주 해야 했던 날 없음/);
   assert.deepEqual([...root.querySelectorAll('#summary dt')].map((e) => e.textContent), ['현재 연속', '최고 연속', '30일 달성률']);
   assert.match(root.querySelector('#summary').textContent, /현재 연속5일/);
@@ -222,7 +222,7 @@ test('기록: 스트레칭을 한 날은 그날 카드에 운동 전·후로 보
   store.actions.flushAll();
 });
 
-test('기록: 전투 달리기를 한 날은 달력에 점, 그날 카드에 시간·거리, 아래에 이번 주·연속·누적 통계', () => {
+test('기록: 달리기를 한 날은 달력에 점, 그날 카드에 시간·거리, 아래에 연속·누적 통계', () => {
   const t = todayStr();
   const days = {
     [addDays(t, -1)]: { v: 2, entries: {}, run: { done: true, sec: 1200, km: 3 } },
@@ -231,18 +231,35 @@ test('기록: 전투 달리기를 한 날은 달력에 점, 그날 카드에 시
   const { root, store } = setup(history, { days });
   assert.equal(root.querySelector('#historyRun').hidden, false);
   assert.equal(root.querySelector('#emptyHistory').hidden, true, '달리기만 해도 기록으로 셈');
-  assert.match(root.querySelector('#runTotals').textContent, /연속2일/);
-  assert.match(root.querySelector('#runTotals').textContent, /누적 시간30분/);
+  assert.match(root.querySelector('#runStreak').textContent, /연속 2일 · 최고 2일/);
+  assert.match(root.querySelector('#habitBento').textContent, /달리기 누적30분2회 · 3km/);
   assert.match(root.querySelector('#runVol').textContent, /최근 7일2회 · 30분/);
   assert.match(root.querySelector('#runAll').textContent, /누적 2회 · 30분 · 3km \(평균 페이스 6'40"\/km\)/);
   pickDate(root, addDays(t, -1));
   assert.equal(root.querySelector(`#cal [data-date="${addDays(t, -1)}"]`).classList.contains('ran'), true, '달력에 표시');
-  assert.match(root.querySelector('#dayCard').textContent, /전투 달리기 20분 · 3km · 6'40"\/km/);
+  assert.match(root.querySelector('#dayCard').textContent, /달리기 20분 · 3km · 6'40"\/km/);
   store.actions.flushAll();
 });
 
-test('기록: 한 번도 달리지 않았으면 전투 달리기 묶음은 숨김', () => {
+test('기록: 한 번도 달리지 않았으면 달리기 묶음은 숨김', () => {
   const { root, store } = setup(history, { days: fullDays(2) });
   assert.equal(root.querySelector('#historyRun').hidden, true);
+  store.actions.flushAll();
+});
+
+test('기록: 이번 주 습관은 요일마다 계획과 한 것을 보여 주고, 계획 달성률과 달리기 분을 셈', () => {
+  const t = todayStr();
+  const mon = addDays(t, -((new Date(`${t}T12:00:00`).getDay() + 6) % 7));
+  const full = { push: { done: true }, pull: { done: true }, squat: { done: true } };
+  const days = { [mon]: { v: 2, entries: full, run: { done: true, sec: 1800 } } };
+  // 매일 근력(쉬는 요일 없음) + 월요일 30분 달리기 계획
+  const config = { startDate: addDays(t, -30), restDays: [], program: 'balance', runPlan: { 1: 30 } };
+  const { root, store } = setup(history, { days, config });
+  assert.equal(root.querySelector('#habitBox').hidden, false);
+  const items = root.querySelectorAll('#habitWeek li');
+  assert.equal(items.length, 7);
+  assert.equal(items[0].querySelectorAll('.hm.on').length, 2, '월요일: 근력·달리기 모두 함');
+  assert.match(root.querySelector('#habitBento').textContent, /달리기 · Zone 230 \/ 30분/);
+  if (t === mon) assert.match(root.querySelector('#habitRate').textContent, /계획 2\/2 · 100%/);
   store.actions.flushAll();
 });

@@ -27,6 +27,7 @@ const ASSETS = [
   './js/local-store.js',
   './js/main.js',
   './js/model.js',
+  './js/program.js',
   './js/progression.js',
   './js/run.js',
   './js/screen-awake.js',
