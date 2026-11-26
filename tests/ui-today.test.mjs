@@ -682,3 +682,18 @@ test('오늘: 근력만 하는 날은 달리기를 한 줄로 접어 두되, 달
   assert.equal(root.querySelector('#runSum').textContent, '10분');
   store.actions.flushAll();
 });
+
+test('오늘: 프로그램을 안 골랐으면 한 줄 안내, ‘나중에’는 14일 숨김, 고르면 사라짐', () => {
+  localStorage.removeItem('workout-check:program-note');
+  const { store, root } = setup(today);
+  const note = root.querySelector('#programNote');
+  assert.equal(note.hidden, false);
+  root.querySelector('#programLater').click();
+  assert.equal(note.hidden, true);
+  assert.equal(JSON.parse(localStorage.getItem('workout-check:program-note')).snoozeUntil, addDays(todayStr(), 14));
+  localStorage.removeItem('workout-check:program-note');
+  store.actions.flushAll();
+  const withProgram = setup(today, { config: { startDate: addDays(todayStr(), -3), restDays: [], program: 'balance', runPlan: {} } });
+  assert.equal(withProgram.root.querySelector('#programNote').hidden, true);
+  withProgram.store.actions.flushAll();
+});

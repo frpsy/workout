@@ -288,3 +288,30 @@ test('마무리: 쓰다가 접거나(Enter 포함) 칸이 사라지면 쓰는 �
   assert.notEqual(document.activeElement, q('#jFeel'));
   store.actions.flushAll();
 });
+
+test('마무리: 달리기만 하는 날은 달리기를 마치면, 프로그램이 없으면 달리기만 해도 마무리 칸이 보임', () => {
+  const dow = new Date(`${todayStr()}T12:00:00`).getDay();
+  for (const config of [{ startDate: addDays(todayStr(), -3), restDays: [dow], program: 'balance', runPlan: { [dow]: 30 } }, null]) {
+    document.body.innerHTML = '<div id="journal"></div>';
+    const store = createStore(adapter(config ? { config } : {}));
+    const root = document.getElementById('journal');
+    store.subscribe(mountJournal(root, store));
+    assert.equal(root.querySelector('#jBox').hidden, true);
+    store.actions.setRun(todayStr(), { done: true, sec: 1800 });
+    assert.equal(root.querySelector('#jBox').hidden, false, config ? '프로그램: 달리기 날' : '프로그램 없음');
+    store.actions.flushAll();
+  }
+});
+
+test('마무리: 근력·달리기를 모두 하는 날은 둘 다 마쳐야 보임', () => {
+  const dow = new Date(`${todayStr()}T12:00:00`).getDay();
+  document.body.innerHTML = '<div id="journal"></div>';
+  const store = createStore(adapter({ config: { startDate: addDays(todayStr(), -3), restDays: [], program: 'balance', runPlan: { [dow]: 30 } } }));
+  const root = document.getElementById('journal');
+  store.subscribe(mountJournal(root, store));
+  store.actions.setRun(todayStr(), { done: true });
+  assert.equal(root.querySelector('#jBox').hidden, true, '근력이 남음');
+  for (const id of ['push', 'pull', 'squat']) store.actions.toggle(id);
+  assert.equal(root.querySelector('#jBox').hidden, false);
+  store.actions.flushAll();
+});

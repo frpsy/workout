@@ -12,12 +12,15 @@ import { mountWorkbar } from './workbar.js';
 import { createRow, paintRow } from './exercise-row.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
+import { readJson, writeJson } from '../local-store.js';
 import { fmtKm, fmtPace, fmtRunTime, RUN_KM_PRESETS, RUN_MIN_PRESETS } from '../run.js';
 import { planOn } from '../program.js';
 
 
 // 스트레칭 버튼 앞의 체크 표시(했으면 채워진 동그라미 안의 ✓)
 const TODO_MARK = '<svg class="todo-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path class="tick" d="M7.8 12.4l3 3 5.4-6"/></svg>';
+const PROGRAM_NOTE_KEY = 'workout-check:program-note';
+const PLUS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
 const STRETCH_ICON = `<span class="stretch-mark material-stack">${icon('circle', 22)}${icon('check', 15, 'tick')}</span>`;
 
 export function mountToday(root, store) {
@@ -71,6 +74,13 @@ export function mountToday(root, store) {
           <button type="button" class="link" id="loginLater">나중에</button>
         </span>
       </div>
+      <div class="back program-note" id="programNote" hidden>
+        <span>프로그램을 고르면 할 일이 정리돼요</span>
+        <span>
+          <button type="button" class="link" id="programGo">고르기</button>
+          <button type="button" class="link" id="programLater">나중에</button>
+        </span>
+      </div>
       <div class="back" id="back" hidden>
         <span id="backText"></span>
         <button type="button" class="link" id="backBtn">오늘로 돌아가기</button>
@@ -78,10 +88,10 @@ export function mountToday(root, store) {
     </header>
     <button type="button" class="stretch" id="stretchPre" data-kind="pre" aria-pressed="false">${STRETCH_ICON}<span>운동 전 스트레칭</span></button>
     <section aria-label="운동 체크" class="rows" id="rows"></section>
-    <button type="button" class="day-open" id="strOpen" hidden>${icon('up', 16)}<span>근력은 쉬는 날이에요 · 그래도 하기</span></button>
+    <button type="button" class="day-open" id="strOpen" hidden>${PLUS}<span>근력은 쉬는 날이에요 · 그래도 하기</span></button>
     <button type="button" class="stretch" id="stretchPost" data-kind="post" aria-pressed="false">${STRETCH_ICON}<span>운동 후 스트레칭</span></button>
     <section class="runbox" id="runBox" aria-label="달리기">
-      <button type="button" class="day-open" id="runOpen" hidden>${icon('up', 16)}<span>달리기 기록하기</span></button>
+      <button type="button" class="day-open" id="runOpen" hidden>${PLUS}<span>달리기 기록하기</span></button>
       <div class="run-body" id="runBody">
         <div class="run-head">
           <span class="run-title">달리기<small>Zone 2</small></span>
@@ -102,6 +112,15 @@ export function mountToday(root, store) {
 
   mountSoundButton($('#sndQuick', root)); // 효과음 켜기/끄기: 운동 중에 설정 탭에 가지 않고 바로
   $('#backBtn', root).addEventListener('click', () => actions.goToday());
+  // 프로그램을 아직 안 골랐으면 한 줄 안내(‘나중에’는 14일 숨김, 이 브라우저에만 기억)
+  $('#programGo', root).addEventListener('click', () => {
+    emit(EV.gotoTab, 'settings');
+    document.getElementById('progBox')?.scrollIntoView({ block: 'start' });
+  });
+  $('#programLater', root).addEventListener('click', () => {
+    writeJson(PROGRAM_NOTE_KEY, { snoozeUntil: addDays(store.state.today, 14) });
+    render(store.state);
+  });
 
   // 스트레칭 버튼: 눌러 했다고 표시하고, 다시 누르면 취소(그날 기록에 남음)
   for (const b of root.querySelectorAll('.stretch[data-kind]')) {
@@ -454,6 +473,9 @@ export function mountToday(root, store) {
 
     const recNote = $('#recNote', root);
     recNote.hidden = !rec || strOff; // 회복주는 근력 목표 이야기라 근력 쉬는 날에는 숨김
+    $('#weekLabel', root).querySelector('.tag')?.toggleAttribute('hidden', strOff);
+    const snooze = readJson(PROGRAM_NOTE_KEY).snoozeUntil || '';
+    $('#programNote', root).hidden = !state.ready || !!config.program || selected !== today || (snooze && today < snooze) || !$('#loginNote', root).hidden;
     recNote.textContent = `이번 주는 목표를 ${Math.round(config.plan.recoveryRatio * 100)}%로 줄인 회복주입니다.`;
 
     const off = selected !== today;
