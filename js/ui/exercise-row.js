@@ -2,6 +2,7 @@
 // 동작은 today.js가 handlers로 넘기고, 이 파일은 DOM만 맡습니다.
 
 import { EXERCISE_VIDEOS, UNITS, videoUrl } from '../config.js';
+import { libById, libFor } from '../library.js';
 import { esc, haptic } from './dom.js';
 import { icon } from './icon.js';
 
@@ -56,11 +57,16 @@ export function createRow(ex, h) {
   const u = esc(unit.label);
   const n = esc(ex.name);
   const video = EXERCISE_VIDEOS[ex.id];
+  const lib = libFor(ex);
+  const easier = libById(lib?.easier);
+  // 자세 요령 한 줄(지금 할 종목에만 보임). 더 쉬운 동작이 있으면 함께 알려 시작 문턱을 낮춤
+  const cue = lib ? `<p class="cue">${esc(lib.cue)}${lib.side ? ' · 한쪽씩' : ''}${easier ? `<span class="alt"> · 힘들면 ${esc(easier.name)}</span>` : ''}</p>` : '';
   const el = document.createElement('article');
   el.className = 'row';
   el.innerHTML = `
     <div class="info">
       <div class="nameline"><h2 class="name">${n}<span class="delta" data-f="delta"></span></h2>${video ? `<a class="video" data-f="video" href="${esc(videoUrl(video))}" target="_blank" rel="noopener noreferrer" title="${esc(video.title)}" aria-label="${n} 유튜브 영상으로 같이하기">${icon('video', 22)}<span class="sr">영상으로 같이하기</span></a>` : ''}</div>
+      ${cue}
       <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span><span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button><button type="button" class="more" data-f="more" aria-expanded="false" aria-label="${n} 개수·세트 조절 펴기">${icon('down', 18)}</button></p>
     </div>
     <button type="button" class="check" data-f="check" aria-pressed="false" aria-label="${n} 완료">${CHECK_SVG}<span class="frac" data-f="frac" aria-hidden="true"></span><span class="cap" data-f="cap" aria-hidden="true"></span></button>

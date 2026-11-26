@@ -697,3 +697,13 @@ test('오늘: 프로그램을 안 골랐으면 한 줄 안내, ‘나중에’�
   assert.equal(withProgram.root.querySelector('#programNote').hidden, true);
   withProgram.store.actions.flushAll();
 });
+
+test('오늘: 도감에 있는 종목은 자세 요령 한 줄과 더 쉬운 동작을 보여 줌', () => {
+  const { store, root } = setup(today);
+  const rows = [...root.querySelectorAll('.row')];
+  assert.match(rows[0].querySelector('.cue').textContent, /팔꿈치는 몸통에서 45도/);
+  assert.match(rows[0].querySelector('.cue .alt').textContent, /힘들면 무릎 푸시업/);
+  assert.match(rows[1].querySelector('.cue .alt').textContent, /힘들면 친업/);
+  assert.equal(rows[2].querySelector('.cue .alt'), null, '스쿼트는 더 쉬운 동작이 없음');
+  store.actions.flushAll();
+});

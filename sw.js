@@ -24,6 +24,7 @@ const ASSETS = [
   './js/day.js',
   './js/events.js',
   './js/firebase-config.js',
+  './js/library.js',
   './js/local-store.js',
   './js/main.js',
   './js/model.js',

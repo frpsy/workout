@@ -77,9 +77,9 @@ export function mountTabs(nav, pager, { win = window, doc = document } = {}) {
       else page.setAttribute('inert', '');
       page.setAttribute('aria-hidden', String(tab !== name));
     });
-    // 기록·설정 탭은 안의 접힌 항목을 펼쳐 둠 (탭 하나가 곧 그 내용이므로)
+    // 기록·설정 탭은 안의 접힌 항목을 펼쳐 둠 (탭 하나가 곧 그 내용이므로). 운동 도감은 예외
     const page = pages[TABS.indexOf(name)];
-    if (name !== 'today' && page) page.querySelectorAll('details').forEach((d) => (d.open = true));
+    if (name !== 'today' && page) page.querySelectorAll('details:not(.libbox)').forEach((d) => (d.open = true)); // 운동 도감은 길어서 접어 둠
   }
 
   /** 넘김이 끝났을 때 주소에 남김 */
