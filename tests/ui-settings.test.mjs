@@ -349,3 +349,27 @@ test('설정: 나이를 넣어 저장하면 심박 안내용으로 남고, 비�
   await tick();
   assert.equal('age' in ad.saved.config.at(-1), false);
 });
+
+test('설정: 프로그램이 있으면 캘린더 일정 파일을 내려받을 수 있음', async () => {
+  const ad = adapter({ config: { startDate: '2026-11-02', program: 'starter', restDays: [0, 2, 3, 4, 6], runPlan: { 2: 30, 4: 30, 6: 30 } } });
+  document.body.innerHTML = '<div id="settings"></div>';
+  const store = createStore(ad);
+  await tick();
+  const root = document.getElementById('settings');
+  store.subscribe(mountSettings(root, store));
+  assert.equal(root.querySelector('#icsBox').hidden, false);
+  let blob = null;
+  let name = '';
+  const orig = [URL.createObjectURL, URL.revokeObjectURL, window.HTMLAnchorElement.prototype.click];
+  URL.createObjectURL = (b) => { blob = b; return 'blob:x'; };
+  URL.revokeObjectURL = () => {};
+  window.HTMLAnchorElement.prototype.click = function () { name = this.download; };
+  try {
+    root.querySelector('#icsTime').value = '06:00';
+    root.querySelector('#icsBtn').click();
+  } finally {
+    [URL.createObjectURL, URL.revokeObjectURL, window.HTMLAnchorElement.prototype.click] = orig;
+  }
+  assert.equal(name, 'repday-운동일정.ics');
+  assert.match(await blob.text(), /DTSTART:\d{8}T060000/);
+});

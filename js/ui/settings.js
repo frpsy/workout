@@ -13,6 +13,7 @@ import { icon } from './icon.js';
 import { mountSoundToggle } from './sound-ui.js';
 import { applyProgram, PROGRAMS, weeklyRunMin } from '../program.js';
 import { openOnboard } from './onboard.js';
+import { buildIcs } from '../ics.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 /** 무게 칸을 보일 종목: 아령 동작, 직접 만든 종목, 이미 무게가 있는 종목 */
@@ -59,8 +60,16 @@ export function mountSettings(root, store, theme = null) {
       <div class="programs" id="programs" role="radiogroup" aria-label="운동 프로그램">
         ${PROGRAMS.map(programCard).join('')}
       </div>
-      <button type="button" class="btn ghost sm ob-open" id="obOpen">두 가지 질문으로 맞춤 구성 받기</button>
       <p class="shint">프로그램을 고르면 근력하는 요일과 달리기 목표가 바로 바뀝니다. 근력과 Zone 2 달리기를 한 주에 고르게 나눴습니다. 근력은 이틀 연속 하지 않고, 긴 달리기 다음 날은 짧게 달리며, 한 주에 하루는 온전히 쉽니다. 몸이 아픈 날은 계획보다 쉬는 것을 먼저 챙겨 주세요.</p>
+      <button type="button" class="btn ghost sm ob-open" id="obOpen">두 가지 질문으로 맞춤 구성 받기</button>
+      <div class="ics-box" id="icsBox" hidden>
+        <div class="ics-row">
+          <label for="icsTime">캘린더 알림</label>
+          <input id="icsTime" type="time" value="07:00">
+          <button type="button" class="btn ghost sm" id="icsBtn">일정 파일 받기</button>
+        </div>
+        <p class="shint">운동하는 요일마다 반복 일정과 10분 전 알림이 휴대폰 캘린더에 들어가요. 프로그램을 바꾸면 다시 받아 주세요.</p>
+      </div>
     </section>
 
     <section class="sgroup" id="acctBox">
@@ -236,6 +245,7 @@ export function mountSettings(root, store, theme = null) {
     for (const box of root.querySelectorAll('#restDays input')) box.checked = (draft.restDays || []).includes(+box.value);
     for (const box of root.querySelectorAll('#equip input')) box.checked = !draft.equipment || draft.equipment.includes(box.value);
     for (const b of root.querySelectorAll('.program')) b.setAttribute('aria-checked', String(b.dataset.program === draft.program));
+    el('icsBox').hidden = !store.state.config.program; // 저장된 프로그램이 있을 때만
     renderList();
   }
 
@@ -385,6 +395,18 @@ export function mountSettings(root, store, theme = null) {
     if (v >= 10 && v <= 100) draft.age = v;
     else delete draft.age; // 비우거나 범위 밖이면 심박 안내 없음
     markDirty();
+  });
+  // 캘린더 일정: 저장된 프로그램 요일로 .ics 파일을 만들어 내려받음(휴대폰이 캘린더에 넣을지 물음)
+  el('icsBtn').addEventListener('click', () => {
+    const text = buildIcs(store.state.config, { time: el('icsTime').value || '07:00', today: store.state.today });
+    if (!text || typeof URL.createObjectURL !== 'function') return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/calendar;charset=utf-8' }));
+    a.download = 'repday-운동일정.ics';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
   el('obOpen').addEventListener('click', () => openOnboard(store, { fresh: !Object.keys(store.state.days).length }));
   el('startDate').addEventListener('input', (e) => {

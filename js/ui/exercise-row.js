@@ -132,7 +132,7 @@ export function createRow(ex, h) {
 }
 
 /** 종목 상태(v)를 줄에 그림. current: 지금 할 종목, ready: 기록을 불러왔는지, countValue: 개수 칸에 넣을 값(초 재는 중이면 잰 초) */
-export function paintRow(r, v, { current = false, ready = true, countValue = null, canRaise = false } = {}) {
+export function paintRow(r, v, { current = false, ready = true, countValue = null, canRaise = false, planSets = r.ex.sets } = {}) {
   if (r.kgup) r.kgup.hidden = !canRaise;
   r.target.textContent = v.target;
   r.target.closest('.goal').title = `목표 ${v.target}${r.unit.label} × ${v.sets}세트`;
@@ -180,7 +180,7 @@ export function paintRow(r, v, { current = false, ready = true, countValue = nul
   if (document.activeElement !== r.setsIn) r.setsIn.value = v.sets;
   // 목표와 다르게 한 부분만 짧게 알려 줌 (예: +2개 · 세트 -1)
   const diff = v.count - v.target;
-  const setDiff = v.setsKnown ? v.sets - r.ex.sets : 0;
+  const setDiff = v.setsKnown ? v.sets - planSets : 0; // 바쁜 날은 1세트가 계획
   const parts = [];
   if (diff) parts.push(`${diff > 0 ? '+' : ''}${diff}${r.unit.label}`);
   if (setDiff) parts.push(`세트 ${setDiff > 0 ? '+' : ''}${setDiff}`);

@@ -171,7 +171,9 @@ export function createStore(adapter) {
     const entries = !aggregate && date === state.today && date === state.selected && day?.rounds?.length
       ? day.activeEntries || {} : day?.entries || {};
     const level = (day && day.level) || 'normal';
-    return entryView(entries[ex.id], ex, plannedTarget(res.targetForDate(ex, date), level, ex.unit), level);
+    // 바쁜 날(최소 버전)은 종목마다 1세트만 하면 완료
+    const exNow = day?.mini ? { ...ex, sets: 1 } : ex;
+    return entryView(entries[ex.id], exNow, plannedTarget(res.targetForDate(ex, date), level, ex.unit), level);
   }
 
   const findExercise = (id) => state.config.exercises.find((e) => e.id === id);
@@ -340,6 +342,16 @@ export function createStore(adapter) {
     },
 
     /** 운동 전(pre)·후(post) 스트레칭을 했는지 켜고 끔. 운동 완료·연속 일수·진행률에는 영향 없음 */
+    /** 바쁜 날(최소 버전) 켜기·끄기: 근력은 1세트, 달리기는 10분이면 그날 할 일을 한 것으로 봄 */
+    setMini(date, on) {
+      if (!state.ready || !isDateStr(date) || date > state.today) return false;
+      const day = ensureDay(date);
+      if (on) day.mini = true;
+      else delete day.mini;
+      commitDay(date);
+      return true;
+    },
+
     setStretch(date, kind, on) {
       if (!state.ready || !isDateStr(date) || date > state.today || (kind !== 'pre' && kind !== 'post')) return false;
       const day = ensureDay(date);
