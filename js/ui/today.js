@@ -11,6 +11,7 @@ import { mountSoundButton, soundFor } from './sound-ui.js';
 import { mountWorkbar } from './workbar.js';
 import { createRow, paintRow } from './exercise-row.js';
 import { openSwap } from './swap.js';
+import { mountRunbar } from './runbar.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 import { readJson, writeJson } from '../local-store.js';
@@ -31,11 +32,10 @@ export function mountToday(root, store) {
   let picked = null; // 직접 고른 지금 할 종목 { date, id }: 마치면 풀려 다시 마치지 않은 첫 종목으로
 
   root.innerHTML = `
-    <header class="head">
+    <div class="topbar">
       <div class="brandline">
         <img class="brand-symbol" src="icons/icon-192.png" width="32" height="32" alt="">
         <svg class="brand-name" role="img" aria-label="Repday"><use href="#wordmark"/></svg>
-        <button type="button" class="snd quick" id="sndQuick" aria-pressed="true"></button>
         <span class="brand-state" id="brandState" hidden>운동 준비</span>
         <h1 class="brand-date" id="dateLabel" tabindex="-1"></h1>
       </div>
@@ -44,6 +44,9 @@ export function mountToday(root, store) {
         <h2 class="sub-title" id="subTitle" tabindex="-1"></h2>
         <span class="sub-stat" id="subStat"></span>
       </div>
+      <button type="button" class="snd quick" id="sndQuick" aria-pressed="true"></button>
+    </div>
+    <header class="head">
       <div class="headline">
         <div class="hdate">
           <p class="eyebrow" id="weekLabel"></p>
@@ -110,8 +113,16 @@ export function mountToday(root, store) {
           <button type="button" class="undo" id="runUndo" hidden aria-label="달리기 기록 지우기">${icon('undo', 18)}</button>
         </div>
         <div class="chips places" id="runPlaces" role="group" aria-label="달린 곳">${Object.entries(RUN_PLACES).map(([k, v]) => `<button type="button" class="chip" data-place="${k}" aria-pressed="false">${v}</button>`).join('')}</div>
+        <div class="run-timer" id="runTimer">
+          <span class="run-clock" id="runClock" aria-live="off" hidden></span>
+          <button type="button" class="run-go" id="runGo"></button>
+          <div class="run-ctrl" id="runCtrl" hidden>
+            <button type="button" class="wsec" id="runPause">중지</button>
+            <button type="button" class="wsec wcancel" id="runDrop" aria-label="지금 재는 달리기를 기록하지 않고 취소">취소</button>
+          </div>
+          <p class="run-note" id="runNote" role="status" hidden></p>
+        </div>
         <button type="button" class="run-done" id="runBtn" aria-pressed="false"></button>
-        <button type="button" class="run-watch" id="runWatch" hidden></button>
         <div class="chips" id="runMinChips" role="group" aria-label="달린 시간 고르기">${RUN_MIN_PRESETS.map((m) => `<button type="button" class="chip" data-min="${m}" aria-pressed="false">${m}분</button>`).join('')}</div>
         <div class="chips" id="runKmChips" role="group" aria-label="달린 거리 고르기" hidden>${RUN_KM_PRESETS.map((k) => `<button type="button" class="chip" data-km="${k}" aria-pressed="false">${k}km</button>`).join('')}</div>
         <div class="chips" id="runSpeedChips" role="group" aria-label="러닝머신 속도 고르기" hidden>${RUN_SPEED_PRESETS.map((v) => `<button type="button" class="chip" data-speed="${v}" aria-pressed="false">${v}km/h</button>`).join('')}</div>
@@ -164,34 +175,6 @@ export function mountToday(root, store) {
   });
   $('#runUndo', root).addEventListener('click', () => {
     if (store.state.ready) actions.setRun(store.state.selected, { done: false });
-  });
-  // 달리기 화면에서 ‘운동 시작’으로 잰 시간: 끝나면 그 시간으로 달리기(또는 한 번 더)를 한 번에 기록
-  let watchFrom = Infinity; // 달리기 화면에서 스톱워치를 시작한 시각(ms)
-  let usedSpan = 0; // 이미 기록에 쓴 구간의 끝 시각
-  $('#wBtn', root).addEventListener('click', () => {
-    if (mode !== 'run') watchFrom = Infinity; // 근력 화면에서 잰 시간은 달리기로 쓰지 않음
-    else if (watchFrom === Infinity) watchFrom = Date.now() - 1000;
-  }, true);
-  const watchSpan = () => {
-    const { days, today, selected } = store.state;
-    const last = selected === today ? (days[today]?.sessions || []).at(-1) : null;
-    const full = (days[today]?.run?.more || []).length >= RUN_MORE_MAX; // 한 번 더가 꽉 차면 더할 곳이 없음
-    return last && !full && last.s >= watchFrom && last.e > usedSpan && last.sec >= 60 ? last : null;
-  };
-  $('#runWatch', root).addEventListener('click', () => {
-    const span = watchSpan();
-    if (!span || !store.state.ready) return;
-    const { selected, days } = store.state;
-    const run = days[selected]?.run;
-    const sec = Math.round(span.sec / 60) * 60;
-    const ok = run
-      ? actions.setRun(selected, { more: [...(run.more || []), { sec }] })
-      : actions.setRun(selected, withKm({ done: true, sec }));
-    if (ok) {
-      usedSpan = span.e;
-      watchFrom = Infinity;
-      haptic();
-    }
   });
   $('#runMoreList', root).addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-i]');
@@ -281,6 +264,7 @@ export function mountToday(root, store) {
   });
 
   const workbar = mountWorkbar(root, store);
+  const runbar = mountRunbar(root, store, { place: () => placeNow(), onChange: () => render(store.state) });
   const renderLoginNote = mountLoginNote(root, store);
 
   /**
@@ -309,7 +293,7 @@ export function mountToday(root, store) {
     const strStat = strDone ? `${icon('check', 18)}완료` : !strPlanned && !started ? '쉬는 날' : `<b>${done}</b>/${total}`;
     const runStat = run ? `${icon('check', 18)}완료` : runPlanned ? `<b>${plan.runMin}</b>분` : '자유';
     const strSub = roundOpen ? `${round + 1}회차 하는 중 · ${done}/${total}` : strPlanned || started ? names || '운동을 설정에서 넣어 주세요' : '오늘은 쉬어도 좋아요';
-    const runSub = tot.count > 1 ? `${tot.count}회 · 합계 ${fmtRunTime(tot.sec)}${tot.km ? ` · ${Math.round(tot.km * 100) / 100}km` : ''}` : run ? runLine(run) || '달렸어요' : runPlanned ? `${where}대화할 수 있는 편한 속도` : '계획 없는 날 · 달려도 좋아요';
+    const runSub = runbar.running ? '달리는 중' : tot.count > 1 ? `${tot.count}회 · 합계 ${fmtRunTime(tot.sec)}${tot.km ? ` · ${Math.round(tot.km * 100) / 100}km` : ''}` : run ? runLine(run) || '달렸어요' : runPlanned ? `${where}대화할 수 있는 편한 속도` : '계획 없는 날 · 달려도 좋아요';
     const pct = total ? Math.round(((strDone ? total : done) / total) * 100) : 0;
     const again = selected === today ? '<span class="hc-again">＋ 한 번 더</span>' : '';
     const card = (kind, title, stat, sub, isDone, off, extra = '') => // 끝난 카드에는 ‘＋ 한 번 더’(누르면 그 화면에서 이어서)
@@ -607,10 +591,7 @@ export function mountToday(root, store) {
     $('#runTread', root).hidden = !tread;
     $('#runDetail', root).hidden = !run;
     $('#runHint', root).hidden = !!run;
-    const span = watchSpan();
-    const wb = $('#runWatch', root);
-    wb.hidden = !span || mode !== 'run';
-    if (span) wb.textContent = run ? `방금 잰 ${fmtRunTime(Math.round(span.sec / 60) * 60)}을 한 번 더로 기록` : `방금 잰 ${fmtRunTime(Math.round(span.sec / 60) * 60)}으로 달리기 기록`;
+    runbar.render();
     // 한 번 더 달리기: 달린 뒤에만, 더한 기록 목록과 오늘 합계
     const tot = runTotal(run);
     $('#runMore', root).hidden = !run;

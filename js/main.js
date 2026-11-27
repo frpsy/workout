@@ -103,7 +103,7 @@ if ('serviceWorker' in navigator && document.documentElement.classList.contains(
   // 운동 시간을 재거나 쉬는 중에는 새로 불러오지 않음(운동 도중 시작 화면이 다시 뜨지 않게). 끝난 뒤 앱을 다시 볼 때 반영
   // 멈춰 둔(중지) 스톱워치는 기다리지 않고, 아무리 길어도 30분 뒤에는 반영
   const DEFER_MAX_MS = 30 * 60_000;
-  const busy = () => !!document.querySelector('.wtime.running:not(.paused), .timer.running') && Date.now() - pendingAt < DEFER_MAX_MS;
+  const busy = () => !!document.querySelector('.wtime.running:not(.paused), .run-clock.running:not(.paused), .timer.running') && Date.now() - pendingAt < DEFER_MAX_MS;
   let pending = false;
   let pendingAt = 0;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
