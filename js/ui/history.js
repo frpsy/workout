@@ -248,12 +248,14 @@ export function mountHistory(root, store) {
     const adaptive = config.plan.mode === 'adaptive';
     const res = adaptive ? store.resolver() : null;
     const wk = Math.max(0, weekIndex(today, config.startDate));
+    // 종목별 기록은 그 종목의 체크만 봄(운동을 바꿀 때 남긴 하루 전체 판정 full은 빼고 계산)
+    const own = Object.fromEntries(Object.entries(days).map(([d, v]) => [d, { ...v, full: undefined }]));
     $('#perEx', root).innerHTML = exs
       .map((e) => {
         const one = [e];
-        const p = percent(achievement(days, today, one, { ...opts, window: 30 }));
-        const c = currentStreak(days, today, one, rest);
-        const b = bestStreak(days, one, rest);
+        const p = percent(achievement(own, today, one, { ...opts, window: 30 }));
+        const c = currentStreak(own, today, one, rest);
+        const b = bestStreak(own, one, rest);
         return (
           `<li><div class="pe-head"><span class="pe-name">${esc(e.name)}</span><span class="pe-meta">연속 <b>${c}</b>일 · 최고 <b>${b}</b>일${adaptive ? ` · 이번 주 <b>${res.ctx.counts(e.id).get(wk) || 0}</b>/${config.plan.passDays}일` : ''}</span></div>` +
           `<div class="pe-bar" role="img" aria-label="${esc(e.name)} 30일 달성률 ${p === null ? '없음' : p + '%'}"><i style="width:${p || 0}%"></i></div>` +

@@ -57,6 +57,7 @@ const ASSETS = [
   './js/ui/row-drag.js',
   './js/ui/settings.js',
   './js/ui/sound-ui.js',
+  './js/ui/swap.js',
   './js/ui/tabs.js',
   './js/ui/timer.js',
   './js/ui/today.js',
