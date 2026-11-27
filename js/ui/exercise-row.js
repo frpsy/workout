@@ -46,11 +46,11 @@ export function holdStep(btn, onTap, onHold) {
   btn.addEventListener('contextmenu', (e) => e.preventDefault()); // 꾹 누를 때 메뉴가 뜨지 않게
 }
 
-const FIELDS = ['target', 'sets', 'pips', 'undo', 'frac', 'cap', 'delta', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus'];
+const FIELDS = ['swap', 'target', 'sets', 'pips', 'undo', 'frac', 'cap', 'delta', 'check', 'watch', 'minus', 'plus', 'cnt', 'setsMinus', 'setsIn', 'setsPlus'];
 
 /**
  * 종목 줄을 만들고 버튼을 handlers에 연결합니다.
- * handlers: { check(), undo(), step(d), countTo(n), setsBy(d), setsTo(n), watch() }
+ * handlers: { swap(), check(), undo(), step(d), countTo(n), setsBy(d), setsTo(n), watch() }
  * 돌려주는 값: { el, ex, unit, ...FIELDS }
  */
 export function createRow(ex, h) {
@@ -69,7 +69,7 @@ export function createRow(ex, h) {
   el.className = 'row';
   el.innerHTML = `
     <div class="info">
-      <div class="nameline"><h2 class="name">${n}<span class="delta" data-f="delta"></span></h2><a class="video" data-f="video" href="${esc(videoHref)}" target="_blank" rel="noopener noreferrer" title="${esc(videoTitle)}" aria-label="${n} ${video ? `운동법 영상 보기(유튜브, ${esc(video.ch)})` : '운동법 영상 찾기(유튜브 검색)'}">${icon('video', 22)}<span>${video ? '운동법' : '운동법 찾기'}</span></a></div>
+      <div class="nameline"><h2 class="name">${n}<span class="delta" data-f="delta"></span></h2><a class="video" data-f="video" href="${esc(videoHref)}" target="_blank" rel="noopener noreferrer" title="${esc(videoTitle)}" aria-label="${n} ${video ? `운동법 영상 보기(유튜브, ${esc(video.ch)})` : '운동법 영상 찾기(유튜브 검색)'}">${icon('video', 22)}<span>${video ? '운동법' : '운동법 찾기'}</span></a><button type="button" class="swap" data-f="swap" aria-label="${n} 운동 바꾸기">${icon('swap', 18)}<span>바꾸기</span></button></div>
       ${cue}
       <p class="goal"><span class="label">목표</span><span class="num" data-f="target"></span><span class="unit">${u}</span><span class="sets" data-f="sets"></span>${ex.kg ? `<span class="kg">${ex.kg}kg</span>` : ''}<span class="setpips" data-f="pips" aria-hidden="true"></span><button type="button" class="undo" data-f="undo" hidden aria-label="${n} 한 세트 되돌리기">${UNDO_SVG}</button><button type="button" class="more" data-f="more" aria-expanded="false" aria-label="${n} 개수·세트 조절 펴기">${icon('down', 18)}</button></p>
     </div>
@@ -110,6 +110,7 @@ export function createRow(ex, h) {
   });
   // 되돌리기: 마지막으로 체크한 한 세트만 취소(세트 표시는 누르는 버튼이 아님)
   r.undo.addEventListener('click', () => h.undo());
+  r.swap.addEventListener('click', () => h.swap());
   // 한 번 누르면 작은 단위, 꾹 누르면 큰 단위(개수 5)씩 계속 바뀜
   holdStep(r.minus, () => h.step(-unit.inc), () => h.step(-unit.big));
   holdStep(r.plus, () => h.step(unit.inc), () => h.step(unit.big));
@@ -135,7 +136,8 @@ export function createRow(ex, h) {
 }
 
 /** 종목 상태(v)를 줄에 그림. current: 지금 할 종목, ready: 기록을 불러왔는지, countValue: 개수 칸에 넣을 값(초 재는 중이면 잰 초) */
-export function paintRow(r, v, { current = false, ready = true, countValue = null, canRaise = false, planSets = r.ex.sets } = {}) {
+export function paintRow(r, v, { current = false, ready = true, countValue = null, canRaise = false, canSwap = false, planSets = r.ex.sets } = {}) {
+  r.swap.hidden = !canSwap || v.done; // 마친 종목은 바꾸지 않음(한 운동이 화면에서 사라지지 않게)
   if (r.kgup) r.kgup.hidden = !canRaise;
   r.target.textContent = v.target;
   r.target.closest('.goal').title = `목표 ${v.target}${r.unit.label} × ${v.sets}세트`;
@@ -178,7 +180,7 @@ export function paintRow(r, v, { current = false, ready = true, countValue = nul
   // 버튼이 하는 일을 글자로 알림: 눌렀을 때 완료되는 세트(마친 뒤에는 '완료')
   r.cap.textContent = v.done ? '완료' : v.sets > 1 ? `${v.setsDone + 1}세트 완료` : '완료';
   r.check.setAttribute('aria-label', v.done ? `${r.ex.name} 완료됨` : v.sets > 1 ? `${r.ex.name} ${v.setsDone + 1}세트 완료 (${v.setsDone}/${v.sets}세트 마침)` : `${r.ex.name} 완료`);
-  for (const b of [r.check, r.undo, r.watch, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) if (b) b.disabled = !ready;
+  for (const b of [r.swap, r.check, r.undo, r.watch, r.minus, r.plus, r.cnt, r.setsMinus, r.setsIn, r.setsPlus]) if (b) b.disabled = !ready;
   if (document.activeElement !== r.cnt) r.cnt.value = countValue ?? v.count;
   if (document.activeElement !== r.setsIn) r.setsIn.value = v.sets;
   // 목표와 다르게 한 부분만 짧게 알려 줌 (예: +2개 · 세트 -1)

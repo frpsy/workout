@@ -10,6 +10,7 @@ import { mountLoginNote } from './login-note.js';
 import { mountSoundButton, soundFor } from './sound-ui.js';
 import { mountWorkbar } from './workbar.js';
 import { createRow, paintRow } from './exercise-row.js';
+import { openSwap } from './swap.js';
 import { enableRowDrag } from './row-drag.js';
 import { EV, emit } from '../events.js';
 import { readJson, writeJson } from '../local-store.js';
@@ -296,7 +297,7 @@ export function mountToday(root, store) {
     const res = store.resolver();
     const exs = store.activeExercises();
     const aggDone = exs.filter((e) => store.view(selected, e, res, { aggregate: true }).done).length;
-    const strDone = total > 0 && aggDone === total;
+    const strDone = total > 0 && (aggDone === total || days[selected]?.full === true);
     const round = days[selected]?.rounds?.length || 0;
     const roundOpen = selected === today && round > 0 && !store.isSessionClosed();
     const tread = !config.equipment || config.equipment.includes('tread');
@@ -438,6 +439,17 @@ export function mountToday(root, store) {
           picked = { date: store.state.selected, id: ex.id }; // 체크한 종목이 지금 할 종목이 됨
           changeProgress(view, () => actions.setProgress(ex.id, v.setsDone + 1));
         },
+        // 바꾸기: 고른 운동이 그 자리에 들어오고 바로 지금 할 종목이 됨
+        swap() {
+          openSwap(store, r.ex, (id) => {
+            picked = { date: store.state.selected, id };
+            haptic();
+            render(store.state);
+            const next = rows.get(id);
+            $('#nextNote', root).textContent = `${next.ex.name}(으)로 바꿨어요`;
+            next.check.focus({ preventScroll: true });
+          });
+        },
         undo() {
           const v = view();
           if (v.setsDone < 1) return;
@@ -557,7 +569,7 @@ export function mountToday(root, store) {
       if (v.done) done++;
       // 무게 올리기 제안: 오늘, 아령 종목을 상한 개수로 모두 마쳤을 때
       const canRaise = selected === state.today && r.ex.kg > 0 && r.ex.max > 0 && v.done && v.count >= r.ex.max;
-      paintRow(r, v, { current: picked ? r === pr : !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null, canRaise, planSets: state.days[selected]?.mini ? 1 : r.ex.sets });
+      paintRow(r, v, { current: picked ? r === pr : !v.done && !currentSeen, ready: state.ready, countValue: watch && watch.id === r.ex.id ? elapsed() : null, canRaise, canSwap: selected === state.today, planSets: state.days[selected]?.mini ? 1 : r.ex.sets });
       if (!v.done) currentSeen = true;
     }
 

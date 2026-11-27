@@ -1,12 +1,15 @@
 // 앱 상태와 동작. 화면은 subscribe로 상태를 받아 그리기만 합니다.
 
 import { LEVELS, LIMITS } from './config.js';
+import { libById } from './library.js';
 import { entryView, hasChecks, markDone, markProgress, markSets, markUndone, mergeRounds, plannedTarget } from './day.js';
 import { isDateStr, todayStr } from './dates.js';
 import { normalizeRun } from './run.js';
-import { MAX_SESSIONS, NOTE_MAX, normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
+import { MAX_SESSIONS, NOTE_MAX, newExerciseId, normalizeConfig, normalizeDay, serializeConfig, serializeDay } from './model.js';
 import { createTargetResolver } from './progression.js';
 import { kgStep, setSetCount, syncSets } from './setlog.js';
+import { START_KG } from './onboard.js';
+import { isComplete } from './stats.js';
 
 const SAVE_DELAY = 350;
 
@@ -235,6 +238,23 @@ export function createStore(adapter) {
     else delete day.log;
   }
 
+  /** 체크를 고치면 운동을 바꿀 때 남긴 판정(full)은 지우고 다시 계산. 오늘 앞 회차의 판정은 남김 */
+  function dropFull(date) {
+    const day = state.days[date];
+    if (day && (date !== state.today || !day.rounds?.length)) delete day.full;
+  }
+
+  /** 운동 목록이 바뀌어도 지난 날의 완료 판정(연속·달성률)이 그대로이게, 달라지는 날에만 지금 판정을 남김 */
+  function keepResults(before, after) {
+    for (const [date, day] of Object.entries(state.days)) {
+      const was = isComplete(day, before, date);
+      if (was === isComplete(day, after, date) || (date === state.today && !was)) continue;
+      day.full = was;
+      scheduleSave(date);
+      state.daysRev++;
+    }
+  }
+
   /** 그날 기록을 바꾼 뒤: 저장 예약 + 화면 갱신 */
   function commitDay(date) {
     updateAggregate(date);
@@ -274,6 +294,7 @@ export function createStore(adapter) {
       const date = state.selected;
       const v = view(date, ex);
       const entry = ensureEntry(date, id);
+      dropFull(date);
       if (v.done) markUndone(entry, v, ex);
       else markDone(entry, v);
       logSets(date, id);
@@ -289,6 +310,7 @@ export function createStore(adapter) {
       const v = view(date, ex);
       const k = Math.max(0, Math.min(v.sets, Math.round(n)));
       markProgress(ensureEntry(date, id), v, k);
+      dropFull(date);
       logSets(date, id);
       commitDay(date);
     },
@@ -401,6 +423,7 @@ export function createStore(adapter) {
       const v = view(date, ex);
       const k = Math.max(LIMITS.sets[0], Math.min(LIMITS.sets[1], Math.round(n)));
       markSets(ensureEntry(date, id), v, k);
+      dropFull(date);
       logSets(date, id);
       commitDay(date);
     },
@@ -436,6 +459,34 @@ export function createStore(adapter) {
       const exs = state.config.exercises.map((e) => (e.id === id ? { ...e, kg: e.kg + kgStep(e.kg), from: state.today } : e));
       actions.saveConfig({ ...state.config, exercises: exs }).catch(() => {});
       return true;
+    },
+
+    /**
+     * 오늘 화면의 ‘바꾸기’: 사용 중인 종목(id)을 쉬고 있는 내 운동(next.id)이나 도감 동작(next.lib)으로 그 자리에서 바꿈.
+     * 빠진 종목은 지우지 않고 ‘사용 안 함’으로 남음. 새 종목의 id를 돌려주고, 바꾸지 못하면 null
+     */
+    swapExercise(id, next = {}) {
+      if (!state.ready || state.selected !== state.today) return null;
+      const list = state.config.exercises.slice();
+      const from = list.findIndex((e) => e.id === id && e.active);
+      if (from < 0) return null;
+      let to = list.findIndex((e) => e.id === next.id && !e.active);
+      if (to < 0) {
+        const x = libById(next.lib);
+        if (!x || list.length >= LIMITS.maxExercises) return null;
+        to = list.push({
+          id: newExerciseId(new Set(list.map((e) => e.id))), name: x.name, unit: x.unit, base: x.base, step: x.step,
+          ...(x.max ? { max: x.max } : {}), sets: list[from].sets, active: false, since: state.today, lib: x.id,
+          ...(x.equip === 'db' ? { kg: START_KG } : {}),
+        }) - 1;
+      }
+      const old = list[from];
+      const picked = list[to];
+      list[from] = { ...picked, active: true };
+      list[to] = { ...old, active: false };
+      keepResults(activeExercises(), list.filter((e) => e.active));
+      actions.saveConfig({ ...state.config, exercises: list }).catch(() => {}); // 실패는 saveConfig가 상태 문구로 알림
+      return picked.id;
     },
 
     /** 사용 중인 종목을 ids 순서로 다시 놓음(끌어서 옮기기). 쓰지 않는 종목은 제자리. 바뀐 게 없거나 목록이 맞지 않으면 false */

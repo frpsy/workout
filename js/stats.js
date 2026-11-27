@@ -12,8 +12,9 @@ export function doneCount(day, ids) {
 /** 그날 해야 했던 종목: 운동을 추가한 날(since) 이전의 기록에는 요구하지 않습니다. */
 export const requiredOn = (exs, date) => exs.filter((e) => !e.since || e.since <= date);
 
-/** 그날 해야 했던 종목을 모두 마친 날 */
+/** 그날 해야 했던 종목을 모두 마친 날. 운동을 바꿔도 지난 판정이 달라지지 않게, 바꿀 때 남긴 값(day.full)이 있으면 그 값 */
 export function isComplete(day, exs, date) {
+  if (typeof day?.full === 'boolean') return day.full;
   const req = requiredOn(exs, date);
   return req.length > 0 && req.every((e) => isDone(day, e.id));
 }
