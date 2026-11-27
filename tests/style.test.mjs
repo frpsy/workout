@@ -55,7 +55,7 @@ test('홈 화면 앱: 상태 표시줄 뒤를 배경색으로 덮고 html 배경
 });
 
 test('오늘 머리말: 앱 줄(로고·상태 알약) 아래에 얇은 선, 상태는 알약 모양', () => {
-  assert.equal(value('.brandline', 'border-bottom', { raw: true }), '1px solid var(--line)');
+  assert.equal(value('.topbar', 'border-bottom', { raw: true }), '1px solid var(--line)');
   assert.equal(value('.brand-state', 'border-radius'), '999px');
   assert.equal(value('.brand-state.done', 'background', { raw: true }), 'var(--accent-soft)');
 });

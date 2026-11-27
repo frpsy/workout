@@ -55,6 +55,7 @@ const ASSETS = [
   './js/ui/onboard.js',
   './js/ui/plan.js',
   './js/ui/row-drag.js',
+  './js/ui/runbar.js',
   './js/ui/settings.js',
   './js/ui/sound-ui.js',
   './js/ui/swap.js',
